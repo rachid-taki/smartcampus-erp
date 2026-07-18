@@ -1,0 +1,113 @@
+@startuml
+title Module 1 : Authentification et Hiérarchie des Utilisateurs - SmartCampus ERP
+skinparam classAttributeIconSize 0
+hide circle
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Authentification & Utilisateurs" {
+
+  entity "UTILISATEUR" as utilisateur {
+    * idUtilisateur : <<PK>> UUID
+    --
+    idRole : <<FK>> UUID
+    nom : String
+    prenom : String
+    email : String <<unique>>
+    motDePasse : String
+    telephone : String
+    photo : String
+    actif : Boolean
+    dateCreation : DateTime
+    derniereConnexion : DateTime
+  }
+
+  entity "ROLE" as role {
+    * idRole : <<PK>> UUID
+    --
+    nomRole : String <<unique>>
+    description : String
+  }
+
+  entity "PERMISSION" as permission {
+    * idPermission : <<PK>> UUID
+    --
+    nom : String
+    module : String
+    description : String
+  }
+
+  entity "ROLE_PERMISSION" as rolePermission {
+    * idRole : <<PK,FK>> UUID
+    * idPermission : <<PK,FK>> UUID
+  }
+
+  role "1,1" -- "0,N" utilisateur : possède >
+  role "1,1" -- "0,N" rolePermission
+  permission "1,1" -- "0,N" rolePermission
+}
+
+package "Hiérarchie des Utilisateurs (Héritage)" {
+
+  entity "ETUDIANT" as etudiant {
+    * idEtudiant : <<PK,FK -> UTILISATEUR>> UUID
+    --
+    idFiliere : <<FK>> UUID
+    CNE : String <<unique>>
+    CIN : String <<unique>>
+    codeApogee : String <<unique>>
+    niveau : String
+    groupe : String
+    emailAcademique : String <<unique>>
+    dateInscription : Date
+    statut : Enum(Actif, Diplome, Abandon)
+  }
+
+  entity "EMPLOYE" as employe {
+    * idEmploye : <<PK,FK -> UTILISATEUR>> UUID
+    --
+    idRHGestionnaire : <<FK>> UUID
+    matricule : String <<unique>>
+    fonction : String
+    departement : String
+    dateEmbauche : Date
+    statut : Enum(Actif, Inactif, Conge)
+    grade : String
+  }
+
+  entity "PROFESSEUR" as professeur {
+    * idProfesseur : <<PK,FK -> EMPLOYE>> UUID
+    --
+    specialite : String
+    gradeAcademique : String
+    heuresHebdomadaires : Integer
+  }
+
+  entity "SCOLARITE_STAFF" as scolariteStaff {
+    * idScolarite : <<PK,FK -> EMPLOYE>> UUID
+    --
+    service : String
+    poste : String
+    bureau : String
+  }
+
+  entity "RH_RESPONSABLE" as rhResponsable {
+    * idRH : <<PK,FK -> EMPLOYE>> UUID
+    --
+    service : String
+    poste : String
+    niveauAutorite : Integer
+    bureau : String
+  }
+
+  utilisateur <|-- etudiant
+  utilisateur <|-- employe
+  employe <|-- professeur
+  employe <|-- scolariteStaff
+  employe <|-- rhResponsable
+
+  rhResponsable "1,1" -- "0,N" employe : gère >
+}
+@enduml

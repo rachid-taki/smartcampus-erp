@@ -1,0 +1,189 @@
+@startuml
+title Module 2 : Étudiants, Scolarité et Réclamations - SmartCampus ERP
+skinparam classAttributeIconSize 0
+hide circle
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' --- Stubs (Classes externes référencées) ---
+entity "ETUDIANT" as etudiant <<Externe>>
+entity "PROFESSEUR" as professeur <<Externe>>
+entity "SCOLARITE_STAFF" as scolariteStaff <<Externe>>
+
+package "Étudiants & Scolarité" {
+
+  entity "FILIERE" as filiere {
+    * idFiliere : <<PK>> UUID
+    --
+    nom : String
+    departement : String
+    niveau : String
+    duree : Integer
+  }
+
+  entity "COURS" as cours {
+    * idCours : <<PK>> UUID
+    --
+    code : String <<unique>>
+    nom : String
+    credits : Integer
+    coefficient : Integer
+  }
+
+  entity "COURS_PROFESSEUR" as coursProfesseur {
+    * idCours : <<PK,FK>> UUID
+    * idProfesseur : <<PK,FK>> UUID
+  }
+
+  entity "WORKFLOW" as workflow {
+    * idWorkflow : <<PK>> UUID
+    --
+    nom : String
+    description : String
+    statut : Enum(Actif, Inactif)
+    dateCreation : DateTime
+  }
+
+  entity "ETAPE_WORKFLOW" as etapeWorkflow {
+    * idEtape : <<PK>> UUID
+    --
+    idWorkflow : <<FK>> UUID
+    ordre : Integer
+    nom : String
+    roleResponsable : String
+    statut : Enum(En_Attente, En_Cours, Validee, Rejetee)
+    dateDebut : DateTime
+    dateFin : DateTime
+    commentaires : Text
+  }
+
+  entity "TYPE_DEMANDE" as typeDemande {
+    * idType : <<PK>> UUID
+    --
+    idWorkflow : <<FK>> UUID
+    libelle : String
+    code : String <<unique>>
+    description : String
+    delaiTraitement : Integer
+    piecesRequises : JSON
+  }
+
+  entity "DEMANDE" as demande {
+    * idDemande : <<PK>> UUID
+    --
+    idEtudiant : <<FK>> UUID
+    idType : <<FK>> UUID
+    idWorkflow : <<FK>> UUID
+    idTraitePar : <<FK -> SCOLARITE_STAFF>> UUID
+    numero : String <<unique>>
+    objet : String
+    description : Text
+    dateCreation : DateTime
+    statut : Enum(Brouillon, Soumise, En_Traitement, Validee, Rejetee, Cloturee)
+    priorite : Enum(Basse, Normale, Haute, Urgente)
+    commentaires : Text
+  }
+
+  entity "TYPE_RECLAMATION" as typeReclamation {
+    * idType : <<PK>> UUID
+    --
+    libelle : String
+    code : String <<unique>>
+    categorie : Enum(Note, AMO, Bourse, Email, Autre)
+    delaiLimite : Integer
+    quotaMax : Integer
+    conditionsEligibilite : JSON
+  }
+
+  entity "RECLAMATION" as reclamation {
+    * idReclamation : <<PK>> UUID
+    --
+    idEtudiant : <<FK>> UUID
+    idType : <<FK>> UUID
+    idCours : <<FK>> UUID
+    idTraitePar : <<FK -> SCOLARITE_STAFF>> UUID
+    objet : String
+    description : Text
+    dateSoumission : DateTime
+    statut : Enum(Soumise, Recue, Transmise, Acceptee, Rejetee, Cloturee)
+    priorite : Enum(Basse, Normale, Haute, Urgente)
+    nombreTraitements : Integer
+  }
+
+  entity "DOCUMENT" as document {
+    * idDocument : <<PK>> UUID
+    --
+    idDemande : <<FK, nullable>> UUID
+    idReclamation : <<FK, nullable>> UUID
+    nom : String
+    type : String
+    url : String
+    taille : Integer
+    hash : String
+    version : Integer
+    dateUpload : DateTime
+    .. CHECK ..
+    Soit idDemande, soit idReclamation doit être renseigné
+  }
+
+  entity "CERTIFICAT_MEDICAL" as certificatMedical {
+    * idCertificat : <<PK>> UUID
+    --
+    idEtudiant : <<FK>> UUID
+    idValidePar : <<FK -> SCOLARITE_STAFF>> UUID
+    dateDepot : DateTime
+    fichierUrl : String
+    dateDebut : Date
+    dateFin : Date
+    motif : Text
+    statut : Enum(En_Attente, Valide, Rejete)
+  }
+
+  filiere "1,1" -- "0,N" etudiant : contient >
+  etudiant "1,1" -- "0,N" demande : soumet >
+  typeDemande "1,1" -- "0,N" demande : catégorise >
+  workflow "1,1" -- "0,N" typeDemande : associé à >
+  workflow "1,1" -- "1,N" etapeWorkflow : composé de >
+  demande "1,1" -- "1,1" workflow : suit >
+  demande "0,1" -- "0,N" document : contient >
+  reclamation "0,1" -- "0,N" document : contient >
+
+  etudiant "1,1" -- "0,N" reclamation : soumet >
+  typeReclamation "1,1" -- "0,N" reclamation : catégorise >
+  cours "1,1" -- "0,N" reclamation : concerne >
+
+  etudiant "1,1" -- "0,N" certificatMedical : dépose >
+
+  cours "1,1" -- "0,N" coursProfesseur
+  professeur "1,1" -- "0,N" coursProfesseur
+
+  scolariteStaff "1,1" -- "0,N" demande : traite >
+  scolariteStaff "1,1" -- "0,N" reclamation : traite >
+  scolariteStaff "1,1" -- "0,N" certificatMedical : valide >
+}
+
+package "Réclamations de Notes (Professeur)" {
+
+  entity "VERIFICATION_EXAMEN" as verificationExamen {
+    * idVerification : <<PK>> UUID
+    --
+    idEtudiant : <<FK>> UUID
+    idProfesseur : <<FK>> UUID
+    idTransmisPar : <<FK -> SCOLARITE_STAFF>> UUID
+    dateDemande : DateTime
+    motif : Text
+    statut : Enum(Demandee, Acceptee, Rejetee, Planifiee, Consultee, Cloturee)
+    datePlanification : DateTime
+    heurePlanification : Time
+    sallePlanification : String
+    commentairesProf : Text
+    commentairesEtudiant : Text
+  }
+
+  professeur "1,1" -- "0,N" verificationExamen : reçoit >
+  etudiant "1,1" -- "0,N" verificationExamen : demande >
+  scolariteStaff "1,1" -- "0,N" verificationExamen : transmet >
+}
+@enduml

@@ -1,0 +1,86 @@
+@startuml
+title Module 3 : Ressources Humaines et Vie Étudiante - SmartCampus ERP
+skinparam classAttributeIconSize 0
+hide circle
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' --- Stubs (Classes externes référencées) ---
+entity "ETUDIANT" as etudiant <<Externe>>
+entity "EMPLOYE" as employe <<Externe>>
+entity "RH_RESPONSABLE" as rhResponsable <<Externe>>
+entity "SCOLARITE_STAFF" as scolariteStaff <<Externe>>
+
+package "Ressources Humaines" {
+
+  entity "DEMANDE_RH" as demandeRH {
+    * idDemandeRH : <<PK>> UUID
+    --
+    idEmploye : <<FK>> UUID
+    idTraitePar : <<FK -> RH_RESPONSABLE>> UUID
+    type : Enum(Attestation_Travail, Attestation_Salaire, Conge_Normal, Conge_Exceptionnel, Conge_Maladie, Heure_Supplementaire, Mission, Autre)
+    statut : Enum(Brouillon, Soumise, En_Traitement, Validee, Rejetee, Cloturee)
+    dateDemande : DateTime
+    dateDebut : Date
+    dateFin : Date
+    duree : Integer
+    motif : Text
+    justificatif : String
+    commentairesRH : Text
+  }
+
+  employe "1,1" -- "0,N" demandeRH : soumet >
+  rhResponsable "1,1" -- "0,N" demandeRH : traite >
+}
+
+package "Clubs & Vie Étudiante" {
+
+  entity "CLUB" as club {
+    * idClub : <<PK>> UUID
+    --
+    nom : String <<unique>>
+    description : Text
+    dateCreation : Date
+    statut : Enum(Actif, Inactif, Suspendu)
+    budget : Decimal
+  }
+
+  entity "PRESIDENT_CLUB" as presidentClub {
+    * idPresident : <<PK>> UUID
+    --
+    idClub : <<FK, unique>> UUID
+    idEtudiant : <<FK>> UUID
+    idDesignePar : <<FK -> SCOLARITE_STAFF>> UUID
+    dateDesignation : Date
+    dateFinMandat : Date
+    statut : Enum(Actif, Expire)
+  }
+
+  entity "DEMANDE_CLUB" as demandeClub {
+    * idDemandeClub : <<PK>> UUID
+    --
+    idClub : <<FK>> UUID
+    idPresident : <<FK>> UUID
+    idTraitePar : <<FK -> SCOLARITE_STAFF>> UUID
+    type : Enum(Evenement, Salle, Materiel, Budget, Communication, Sponsoring)
+    objet : String
+    description : Text
+    dateDemande : DateTime
+    statut : Enum(Soumise, En_Revue, Approuvee, Rejetee)
+    dateEvenement : Date
+    heureDebut : Time
+    heureFin : Time
+    budgetDemande : Decimal
+    justificatifs : JSON
+  }
+
+  club "1,1" -- "1,1" presidentClub : dirigé par >
+  presidentClub "1,1" -- "1,1" etudiant : est >
+  club "1,1" -- "0,N" demandeClub : génère >
+  presidentClub "1,1" -- "0,N" demandeClub : soumet >
+  scolariteStaff "1,1" -- "0,N" presidentClub : désigne >
+  scolariteStaff "1,1" -- "0,N" demandeClub : traite >
+}
+@enduml

@@ -1,0 +1,91 @@
+@startuml
+title Module 4 : Smart Campus et Salles Intelligentes - SmartCampus ERP
+skinparam classAttributeIconSize 0
+hide circle
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' --- Stubs (Classes externes référencées) ---
+entity "UTILISATEUR" as utilisateur <<Externe>>
+entity "ETUDIANT" as etudiant <<Externe>>
+entity "PROFESSEUR" as professeur <<Externe>>
+entity "COURS" as cours <<Externe>>
+
+package "Smart Campus & Salles Intelligentes" {
+
+  entity "SALLE" as salle {
+    * idSalle : <<PK>> UUID
+    --
+    numero : String <<unique>>
+    nom : String
+    capacite : Integer
+    type : Enum(Amphitheatre, Salle_Cours, Laboratoire, Salle_Reunion)
+    equipements : JSON
+    localisation : String
+    statut : Enum(Disponible, Occupee, Maintenance)
+  }
+
+  entity "SESSION_SALLE" as sessionSalle {
+    * idSession : <<PK>> UUID
+    --
+    idSalle : <<FK>> UUID
+    idCours : <<FK>> UUID
+    idProfesseur : <<FK>> UUID
+    date : Date
+    heureDebut : Time
+    heureFin : Time
+    heureDebutReelle : Time
+    heureFinReelle : Time
+    statut : Enum(Planifiee, En_Cours, Terminee, Annulee)
+    nombreEtudiants : Integer
+    retardMoyen : Integer
+  }
+
+  entity "PRESENCE_ETUDIANT" as presenceEtudiant {
+    * idPresence : <<PK>> UUID
+    --
+    idSession : <<FK>> UUID
+    idEtudiant : <<FK>> UUID
+    heureArrivee : Time
+    heureDepart : Time
+    statut : Enum(Present, Retard, Absent, Excuse)
+    methodeIdentification : Enum(RFID, QR_Code, Reconnaissance_Faciale)
+    .. contrainte ..
+    unique(idSession, idEtudiant)
+  }
+
+  entity "RESERVATION_SALLE" as reservationSalle {
+    * idReservation : <<PK>> UUID
+    --
+    idSalle : <<FK>> UUID
+    idDemandeur : <<FK -> UTILISATEUR>> UUID
+    date : Date
+    heureDebut : Time
+    heureFin : Time
+    motif : String
+    statut : Enum(Demandee, Approuvee, Rejetee, Annulee)
+  }
+
+  entity "ALERTE_IA" as alerteIA {
+    * idAlerte : <<PK>> UUID
+    --
+    idSalle : <<FK, nullable>> UUID
+    type : Enum(Conflit_Planning, Salle_Fantome, Surcharge, Anomalie)
+    description : Text
+    dateDetection : DateTime
+    statut : Enum(Nouvelle, En_Traitement, Resolue, Ignoree)
+    priorite : Enum(Basse, Normale, Haute, Urgente)
+  }
+
+  salle "1,1" -- "0,N" sessionSalle : accueille >
+  salle "1,1" -- "0,N" reservationSalle : réservée pour >
+  utilisateur "1,1" -- "0,N" reservationSalle : demande >
+  sessionSalle "1,1" -- "0,N" presenceEtudiant : enregistre >
+  etudiant "1,1" -- "0,N" presenceEtudiant : concerne >
+  professeur "1,1" -- "0,N" sessionSalle : anime >
+  cours "1,1" -- "0,N" sessionSalle : planifié pour >
+  salle "0,1" -- "0,N" alerteIA : génère >
+}
+@enduml

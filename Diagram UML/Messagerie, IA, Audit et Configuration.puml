@@ -1,0 +1,139 @@
+@startuml
+title Module 5 : Messagerie, Assistant IA, Audit et Configuration - SmartCampus ERP
+skinparam classAttributeIconSize 0
+hide circle
+skinparam nodesep 60
+skinparam ranksep 80
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+' --- Stubs (Classes externes référencées) ---
+entity "UTILISATEUR" as utilisateur <<Externe>>
+entity "ETUDIANT" as etudiant <<Externe>>
+
+package "Messagerie & Notifications" {
+
+  entity "CONVERSATION" as conversation {
+    * idConversation : <<PK>> UUID
+    --
+    sujet : String
+    dateCreation : DateTime
+    statut : Enum(Ouverte, Fermee)
+  }
+
+  entity "CONVERSATION_PARTICIPANT" as conversationParticipant {
+    * idConversation : <<PK,FK>> UUID
+    * idUtilisateur : <<PK,FK>> UUID
+    dateAjout : DateTime
+  }
+
+  entity "MESSAGE" as message {
+    * idMessage : <<PK>> UUID
+    --
+    idConversation : <<FK>> UUID
+    idExpediteur : <<FK -> UTILISATEUR>> UUID
+    contenu : Text
+    dateEnvoi : DateTime
+    lu : Boolean
+    piecesJointes : JSON
+  }
+
+  entity "NOTIFICATION" as notification {
+    * idNotification : <<PK>> UUID
+    --
+    idUtilisateur : <<FK>> UUID
+    titre : String
+    message : Text
+    type : Enum(Email, SMS, Push, Plateforme)
+    dateEnvoi : DateTime
+    lu : Boolean
+    priorite : Enum(Info, Warning, Urgent)
+  }
+
+  conversation "1,1" -- "0,N" conversationParticipant
+  utilisateur "1,1" -- "0,N" conversationParticipant
+  conversation "1,1" -- "1,N" message : contient >
+  utilisateur "1,1" -- "0,N" message : envoie >
+  utilisateur "1,1" -- "0,N" notification : reçoit >
+}
+
+package "Assistant IA & Chatbot" {
+
+  entity "CONVERSATION_IA" as conversationIA {
+    * idConversationIA : <<PK>> UUID
+    --
+    idEtudiant : <<FK>> UUID
+    dateCreation : DateTime
+    statut : Enum(Active, Cloturee)
+    satisfaction : Integer
+  }
+
+  entity "MESSAGE_IA" as messageIA {
+    * idMessageIA : <<PK>> UUID
+    --
+    idConversationIA : <<FK>> UUID
+    idBase : <<FK, nullable>> UUID
+    role : Enum(User, Assistant, System)
+    contenu : Text
+    dateEnvoi : DateTime
+    tokens : Integer
+  }
+
+  entity "BASE_CONNAISSANCE" as baseConnaissance {
+    * idBase : <<PK>> UUID
+    --
+    titre : String
+    contenu : Text
+    categorie : String
+    dateMiseAJour : DateTime
+    vecteur : Vector
+  }
+
+  etudiant "1,1" -- "0,N" conversationIA : utilise >
+  conversationIA "1,1" -- "1,N" messageIA : contient >
+  baseConnaissance "0,1" -- "0,N" messageIA : alimente >
+}
+
+package "Audit & Traçabilité" {
+
+  entity "AUDIT_LOG" as auditLog {
+    * idLog : <<PK>> BigInt
+    --
+    idUtilisateur : <<FK, nullable>> UUID
+    action : String
+    module : String
+    entite : String
+    entiteId : UUID
+    dateAction : DateTime
+    adresseIP : String
+    userAgent : String
+    donneesAvant : JSON
+    donneesApres : JSON
+  }
+
+  utilisateur "0,1" -- "0,N" auditLog : effectue >
+}
+
+package "Configuration Système" {
+
+  entity "PARAMETRE_SYSTEME" as parametreSysteme {
+    * idParametre : <<PK>> UUID
+    --
+    cle : String <<unique>>
+    valeur : String
+    type : Enum(String, Integer, Boolean, JSON)
+    description : String
+    module : String
+  }
+
+  entity "CALENDRIER_ACADEMIQUE" as calendrierAcademique {
+    * idCalendrier : <<PK>> UUID
+    --
+    nom : String
+    anneeScolaire : String <<unique>>
+    dateDebut : Date
+    dateFin : Date
+    periodes : JSON
+  }
+}
+@enduml
