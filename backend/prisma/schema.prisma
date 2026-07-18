@@ -1,0 +1,820 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model alerte_ia {
+  id_alerte      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle       String?            @db.Uuid
+  type           enum_type_alerte
+  description    String?
+  date_detection DateTime           @default(now()) @db.Timestamptz(6)
+  statut         enum_statut_alerte @default(Nouvelle)
+  priorite       enum_priorite      @default(Normale)
+  salle          salle?             @relation(fields: [id_salle], references: [id_salle], onUpdate: NoAction)
+
+  @@index([id_salle], map: "idx_alerte_ia_salle")
+  @@index([statut], map: "idx_alerte_ia_statut")
+}
+
+model audit_log {
+  id_log         BigInt       @id @default(autoincrement())
+  id_utilisateur String?      @db.Uuid
+  action         String       @db.VarChar(100)
+  module         String       @db.VarChar(100)
+  entite         String       @db.VarChar(100)
+  entite_id      String?      @db.Uuid
+  date_action    DateTime     @default(now()) @db.Timestamptz(6)
+  adresse_ip     String?      @db.Inet
+  user_agent     String?      @db.VarChar(500)
+  donnees_avant  Json?
+  donnees_apres  Json?
+  utilisateur    utilisateur? @relation(fields: [id_utilisateur], references: [id_utilisateur], onUpdate: NoAction)
+
+  @@index([date_action], map: "idx_audit_log_date")
+  @@index([entite, entite_id], map: "idx_audit_log_entite")
+  @@index([id_utilisateur], map: "idx_audit_log_utilisateur")
+}
+
+model base_connaissance {
+  id_base    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  titre      String       @db.VarChar(255)
+  contenu    String
+  categorie  String?      @db.VarChar(100)
+  date_maj   DateTime     @default(now()) @db.Timestamptz(6)
+  vecteur    Json?
+  message_ia message_ia[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model calendrier_academique {
+  id_calendrier  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom            String   @db.VarChar(150)
+  annee_scolaire String   @unique @db.VarChar(20)
+  date_debut     DateTime @db.Date
+  date_fin       DateTime @db.Date
+  periodes       Json?
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model certificat_medical {
+  id_certificat   String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_etudiant     String                 @db.Uuid
+  id_valide_par   String?                @db.Uuid
+  date_depot      DateTime               @default(now()) @db.Timestamptz(6)
+  fichier_url     String                 @db.VarChar(500)
+  date_debut      DateTime               @db.Date
+  date_fin        DateTime               @db.Date
+  motif           String?
+  statut          enum_statut_certificat @default(En_Attente)
+  etudiant        etudiant               @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff scolarite_staff?       @relation(fields: [id_valide_par], references: [id_scolarite], onUpdate: NoAction)
+
+  @@index([id_etudiant], map: "idx_certificat_etudiant")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model club {
+  id_club        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom            String           @unique @db.VarChar(150)
+  description    String?
+  date_creation  DateTime         @default(dbgenerated("CURRENT_DATE")) @db.Date
+  statut         enum_statut_club @default(Actif)
+  budget         Decimal          @default(0) @db.Decimal(12, 2)
+  demande_club   demande_club[]
+  president_club president_club?
+}
+
+model conversation {
+  id_conversation          String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sujet                    String?                    @db.VarChar(255)
+  date_creation            DateTime                   @default(now()) @db.Timestamptz(6)
+  statut                   enum_statut_conversation   @default(Ouverte)
+  conversation_participant conversation_participant[]
+  message                  message[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model conversation_ia {
+  id_conversation_ia String                      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_etudiant        String                      @db.Uuid
+  date_creation      DateTime                    @default(now()) @db.Timestamptz(6)
+  statut             enum_statut_conversation_ia @default(Active)
+  satisfaction       Int?                        @db.SmallInt
+  etudiant           etudiant                    @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  message_ia         message_ia[]
+
+  @@index([id_etudiant], map: "idx_conversation_ia_etudiant")
+}
+
+model conversation_participant {
+  id_conversation String       @db.Uuid
+  id_utilisateur  String       @db.Uuid
+  date_ajout      DateTime     @default(now()) @db.Timestamptz(6)
+  conversation    conversation @relation(fields: [id_conversation], references: [id_conversation], onDelete: Cascade, onUpdate: NoAction)
+  utilisateur     utilisateur  @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_conversation, id_utilisateur])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model cours {
+  id_cours         String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code             String             @unique @db.VarChar(30)
+  nom              String             @db.VarChar(200)
+  credits          Int                @db.SmallInt
+  coefficient      Int                @db.SmallInt
+  cours_professeur cours_professeur[]
+  reclamation      reclamation[]
+  session_salle    session_salle[]
+}
+
+model cours_professeur {
+  id_cours      String     @db.Uuid
+  id_professeur String     @db.Uuid
+  cours         cours      @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade, onUpdate: NoAction)
+  professeur    professeur @relation(fields: [id_professeur], references: [id_professeur], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_cours, id_professeur])
+}
+
+model demande {
+  id_demande      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero          String              @unique @db.VarChar(50)
+  id_etudiant     String              @db.Uuid
+  id_type         String              @db.Uuid
+  id_workflow     String              @db.Uuid
+  id_traite_par   String?             @db.Uuid
+  objet           String              @db.VarChar(255)
+  description     String?
+  date_creation   DateTime            @default(now()) @db.Timestamptz(6)
+  statut          enum_statut_demande @default(Brouillon)
+  priorite        enum_priorite       @default(Normale)
+  commentaires    String?
+  etudiant        etudiant            @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff scolarite_staff?    @relation(fields: [id_traite_par], references: [id_scolarite], onUpdate: NoAction)
+  type_demande    type_demande        @relation(fields: [id_type], references: [id_type], onUpdate: NoAction)
+  workflow        workflow            @relation(fields: [id_workflow], references: [id_workflow], onUpdate: NoAction)
+  document        document[]
+
+  @@index([id_etudiant], map: "idx_demande_etudiant")
+  @@index([statut], map: "idx_demande_statut")
+  @@index([id_traite_par], map: "idx_demande_traite_par")
+  @@index([id_type], map: "idx_demande_type")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model demande_club {
+  id_demande_club String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_club         String                   @db.Uuid
+  id_president    String                   @db.Uuid
+  id_traite_par   String?                  @db.Uuid
+  type            enum_type_demande_club
+  objet           String                   @db.VarChar(255)
+  description     String?
+  date_demande    DateTime                 @default(now()) @db.Timestamptz(6)
+  statut          enum_statut_demande_club @default(Soumise)
+  date_evenement  DateTime?                @db.Date
+  heure_debut     DateTime?                @db.Time(6)
+  heure_fin       DateTime?                @db.Time(6)
+  budget_demande  Decimal?                 @db.Decimal(12, 2)
+  justificatifs   Json?
+  club            club                     @relation(fields: [id_club], references: [id_club], onDelete: Cascade, onUpdate: NoAction)
+  president_club  president_club           @relation(fields: [id_president], references: [id_president], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff scolarite_staff?         @relation(fields: [id_traite_par], references: [id_scolarite], onUpdate: NoAction)
+
+  @@index([id_club], map: "idx_demande_club_club")
+  @@index([id_president], map: "idx_demande_club_president")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model demande_rh {
+  id_demande_rh   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_employe      String               @db.Uuid
+  id_traite_par   String?              @db.Uuid
+  type            enum_type_demande_rh
+  statut          enum_statut_demande  @default(Soumise)
+  date_demande    DateTime             @default(now()) @db.Timestamptz(6)
+  date_debut      DateTime?            @db.Date
+  date_fin        DateTime?            @db.Date
+  duree           Int?
+  motif           String?
+  justificatif    String?              @db.VarChar(500)
+  commentaires_rh String?
+  employe         employe              @relation(fields: [id_employe], references: [id_employe], onDelete: Cascade, onUpdate: NoAction)
+  rh_responsable  rh_responsable?      @relation(fields: [id_traite_par], references: [id_rh], onUpdate: NoAction)
+
+  @@index([id_employe], map: "idx_demande_rh_employe")
+  @@index([id_traite_par], map: "idx_demande_rh_traite_par")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model document {
+  id_document    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_demande     String?      @db.Uuid
+  id_reclamation String?      @db.Uuid
+  nom            String       @db.VarChar(255)
+  type           String?      @db.VarChar(100)
+  url            String       @db.VarChar(500)
+  taille         Int?
+  hash           String?      @db.VarChar(128)
+  version        Int          @default(1)
+  date_upload    DateTime     @default(now()) @db.Timestamptz(6)
+  demande        demande?     @relation(fields: [id_demande], references: [id_demande], onDelete: Cascade, onUpdate: NoAction)
+  reclamation    reclamation? @relation(fields: [id_reclamation], references: [id_reclamation], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_demande], map: "idx_document_demande")
+  @@index([id_reclamation], map: "idx_document_reclamation")
+}
+
+model employe {
+  id_employe                                                String              @id @db.Uuid
+  matricule                                                 String              @unique @db.VarChar(30)
+  fonction                                                  String              @db.VarChar(150)
+  departement                                               String?             @db.VarChar(150)
+  date_embauche                                             DateTime            @db.Date
+  statut                                                    enum_statut_employe @default(Actif)
+  grade                                                     String?             @db.VarChar(50)
+  id_rh_gestionnaire                                        String?             @db.Uuid
+  demande_rh                                                demande_rh[]
+  utilisateur                                               utilisateur         @relation(fields: [id_employe], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+  rh_responsable_employe_id_rh_gestionnaireTorh_responsable rh_responsable?     @relation("employe_id_rh_gestionnaireTorh_responsable", fields: [id_rh_gestionnaire], references: [id_rh], onUpdate: NoAction, map: "fk_employe_rh_gestionnaire")
+  professeur                                                professeur?
+  rh_responsable_rh_responsable_id_rhToemploye              rh_responsable?     @relation("rh_responsable_id_rhToemploye")
+  scolarite_staff                                           scolarite_staff?
+
+  @@index([id_rh_gestionnaire], map: "idx_employe_rh_gestionnaire")
+  @@index([statut], map: "idx_employe_statut")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model etape_workflow {
+  id_etape         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_workflow      String            @db.Uuid
+  ordre            Int               @db.SmallInt
+  nom              String            @db.VarChar(150)
+  role_responsable String?           @db.VarChar(100)
+  statut           enum_statut_etape @default(En_Attente)
+  date_debut       DateTime?         @db.Timestamptz(6)
+  date_fin         DateTime?         @db.Timestamptz(6)
+  commentaires     String?
+  workflow         workflow          @relation(fields: [id_workflow], references: [id_workflow], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_workflow, ordre])
+  @@index([id_workflow], map: "idx_etape_workflow_workflow")
+}
+
+model etudiant {
+  id_etudiant         String                @id @db.Uuid
+  id_filiere          String                @db.Uuid
+  cne                 String                @unique @db.VarChar(20)
+  cin                 String                @unique @db.VarChar(20)
+  code_apogee         String?               @unique @db.VarChar(20)
+  niveau              String?               @db.VarChar(50)
+  groupe              String?               @db.VarChar(50)
+  email_academique    String?               @unique @db.VarChar(255)
+  date_inscription    DateTime              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  statut              enum_statut_etudiant  @default(Actif)
+  certificat_medical  certificat_medical[]
+  conversation_ia     conversation_ia[]
+  demande             demande[]
+  utilisateur         utilisateur           @relation(fields: [id_etudiant], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+  filiere             filiere               @relation(fields: [id_filiere], references: [id_filiere], onUpdate: NoAction)
+  presence_etudiant   presence_etudiant[]
+  president_club      president_club[]
+  reclamation         reclamation[]
+  verification_examen verification_examen[]
+
+  @@index([id_filiere], map: "idx_etudiant_filiere")
+  @@index([statut], map: "idx_etudiant_statut")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model filiere {
+  id_filiere  String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom         String     @db.VarChar(150)
+  departement String     @db.VarChar(150)
+  niveau      String     @db.VarChar(50)
+  duree       Int        @db.SmallInt
+  etudiant    etudiant[]
+}
+
+model message {
+  id_message      String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_conversation String       @db.Uuid
+  id_expediteur   String       @db.Uuid
+  contenu         String
+  date_envoi      DateTime     @default(now()) @db.Timestamptz(6)
+  lu              Boolean      @default(false)
+  pieces_jointes  Json?
+  conversation    conversation @relation(fields: [id_conversation], references: [id_conversation], onDelete: Cascade, onUpdate: NoAction)
+  utilisateur     utilisateur  @relation(fields: [id_expediteur], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_conversation], map: "idx_message_conversation")
+  @@index([id_expediteur], map: "idx_message_expediteur")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model message_ia {
+  id_message_ia      String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_conversation_ia String               @db.Uuid
+  id_base            String?              @db.Uuid
+  role               enum_role_message_ia
+  contenu            String
+  date_envoi         DateTime             @default(now()) @db.Timestamptz(6)
+  tokens             Int?
+  base_connaissance  base_connaissance?   @relation(fields: [id_base], references: [id_base], onUpdate: NoAction)
+  conversation_ia    conversation_ia      @relation(fields: [id_conversation_ia], references: [id_conversation_ia], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_base], map: "idx_message_ia_base")
+  @@index([id_conversation_ia], map: "idx_message_ia_conversation")
+}
+
+model notification {
+  id_notification String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_utilisateur  String                     @db.Uuid
+  titre           String                     @db.VarChar(255)
+  message         String
+  type            enum_type_notification
+  date_envoi      DateTime                   @default(now()) @db.Timestamptz(6)
+  lu              Boolean                    @default(false)
+  priorite        enum_priorite_notification @default(Info)
+  utilisateur     utilisateur                @relation(fields: [id_utilisateur], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([lu], map: "idx_notification_lu")
+  @@index([id_utilisateur], map: "idx_notification_utilisateur")
+}
+
+model parametre_systeme {
+  id_parametre String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  cle          String              @unique @db.VarChar(150)
+  valeur       String?
+  type         enum_type_parametre @default(String)
+  description  String?
+  module       String?             @db.VarChar(100)
+}
+
+model permission {
+  id_permission   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom             String            @db.VarChar(150)
+  module          String            @db.VarChar(100)
+  description     String?
+  role_permission role_permission[]
+
+  @@unique([nom, module])
+}
+
+model presence_etudiant {
+  id_presence            String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_session             String                       @db.Uuid
+  id_etudiant            String                       @db.Uuid
+  heure_arrivee          DateTime?                    @db.Time(6)
+  heure_depart           DateTime?                    @db.Time(6)
+  statut                 enum_statut_presence         @default(Absent)
+  methode_identification enum_methode_identification?
+  etudiant               etudiant                     @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  session_salle          session_salle                @relation(fields: [id_session], references: [id_session], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([id_session, id_etudiant])
+  @@index([id_etudiant], map: "idx_presence_etudiant")
+  @@index([id_session], map: "idx_presence_session")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model president_club {
+  id_president     String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_club          String                @unique @db.Uuid
+  id_etudiant      String                @db.Uuid
+  id_designe_par   String?               @db.Uuid
+  date_designation DateTime              @default(dbgenerated("CURRENT_DATE")) @db.Date
+  date_fin_mandat  DateTime?             @db.Date
+  statut           enum_statut_president @default(Actif)
+  demande_club     demande_club[]
+  club             club                  @relation(fields: [id_club], references: [id_club], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff  scolarite_staff?      @relation(fields: [id_designe_par], references: [id_scolarite], onUpdate: NoAction)
+  etudiant         etudiant              @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_etudiant], map: "idx_president_club_etudiant")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model professeur {
+  id_professeur        String                @id @db.Uuid
+  specialite           String?               @db.VarChar(150)
+  grade_academique     String?               @db.VarChar(100)
+  heures_hebdomadaires Int?                  @db.SmallInt
+  cours_professeur     cours_professeur[]
+  employe              employe               @relation(fields: [id_professeur], references: [id_employe], onDelete: Cascade, onUpdate: NoAction)
+  session_salle        session_salle[]
+  verification_examen  verification_examen[]
+}
+
+model reclamation {
+  id_reclamation    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_etudiant       String                  @db.Uuid
+  id_type           String                  @db.Uuid
+  id_cours          String?                 @db.Uuid
+  id_traite_par     String?                 @db.Uuid
+  objet             String                  @db.VarChar(255)
+  description       String?
+  date_soumission   DateTime                @default(now()) @db.Timestamptz(6)
+  statut            enum_statut_reclamation @default(Soumise)
+  priorite          enum_priorite           @default(Normale)
+  nombre_traitement Int                     @default(0)
+  document          document[]
+  cours             cours?                  @relation(fields: [id_cours], references: [id_cours], onUpdate: NoAction)
+  etudiant          etudiant                @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff   scolarite_staff?        @relation(fields: [id_traite_par], references: [id_scolarite], onUpdate: NoAction)
+  type_reclamation  type_reclamation        @relation(fields: [id_type], references: [id_type], onUpdate: NoAction)
+
+  @@index([id_etudiant], map: "idx_reclamation_etudiant")
+  @@index([statut], map: "idx_reclamation_statut")
+  @@index([id_traite_par], map: "idx_reclamation_traite_par")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model reservation_salle {
+  id_reservation String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle       String                  @db.Uuid
+  id_demandeur   String                  @db.Uuid
+  date           DateTime                @db.Date
+  heure_debut    DateTime                @db.Time(6)
+  heure_fin      DateTime                @db.Time(6)
+  motif          String?                 @db.VarChar(255)
+  statut         enum_statut_reservation @default(Demandee)
+  utilisateur    utilisateur             @relation(fields: [id_demandeur], references: [id_utilisateur], onDelete: Cascade, onUpdate: NoAction)
+  salle          salle                   @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_demandeur], map: "idx_reservation_salle_demandeur")
+  @@index([id_salle], map: "idx_reservation_salle_salle")
+}
+
+model rh_responsable {
+  id_rh                                              String       @id @db.Uuid
+  service                                            String?      @db.VarChar(150)
+  poste                                              String?      @db.VarChar(150)
+  niveau_autorite                                    Int          @default(1) @db.SmallInt
+  bureau                                             String?      @db.VarChar(50)
+  demande_rh                                         demande_rh[]
+  employe_employe_id_rh_gestionnaireTorh_responsable employe[]    @relation("employe_id_rh_gestionnaireTorh_responsable")
+  employe_rh_responsable_id_rhToemploye              employe      @relation("rh_responsable_id_rhToemploye", fields: [id_rh], references: [id_employe], onDelete: Cascade, onUpdate: NoAction)
+}
+
+model role {
+  id_role         String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom_role        String            @unique @db.VarChar(100)
+  description     String?
+  created_at      DateTime          @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime          @default(now()) @db.Timestamptz(6)
+  role_permission role_permission[]
+  utilisateur     utilisateur[]
+}
+
+model role_permission {
+  id_role       String     @db.Uuid
+  id_permission String     @db.Uuid
+  permission    permission @relation(fields: [id_permission], references: [id_permission], onDelete: Cascade, onUpdate: NoAction)
+  role          role       @relation(fields: [id_role], references: [id_role], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([id_role, id_permission])
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model salle {
+  id_salle          String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero            String              @unique @db.VarChar(30)
+  nom               String?             @db.VarChar(150)
+  capacite          Int                 @db.SmallInt
+  type              enum_type_salle
+  equipements       Json?
+  localisation      String?             @db.VarChar(255)
+  statut            enum_statut_salle   @default(Disponible)
+  alerte_ia         alerte_ia[]
+  reservation_salle reservation_salle[]
+  session_salle     session_salle[]
+}
+
+model scolarite_staff {
+  id_scolarite        String                @id @db.Uuid
+  service             String?               @db.VarChar(150)
+  poste               String?               @db.VarChar(150)
+  bureau              String?               @db.VarChar(50)
+  certificat_medical  certificat_medical[]
+  demande             demande[]
+  demande_club        demande_club[]
+  president_club      president_club[]
+  reclamation         reclamation[]
+  employe             employe               @relation(fields: [id_scolarite], references: [id_employe], onDelete: Cascade, onUpdate: NoAction)
+  verification_examen verification_examen[]
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model session_salle {
+  id_session         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle           String              @db.Uuid
+  id_cours           String              @db.Uuid
+  id_professeur      String              @db.Uuid
+  date               DateTime            @db.Date
+  heure_debut        DateTime            @db.Time(6)
+  heure_fin          DateTime            @db.Time(6)
+  heure_debut_reelle DateTime?           @db.Time(6)
+  heure_fin_reelle   DateTime?           @db.Time(6)
+  statut             enum_statut_session @default(Planifiee)
+  nombre_etudiants   Int?
+  retard_moyen       Int?
+  presence_etudiant  presence_etudiant[]
+  cours              cours               @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade, onUpdate: NoAction)
+  professeur         professeur          @relation(fields: [id_professeur], references: [id_professeur], onUpdate: NoAction)
+  salle              salle               @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([id_cours], map: "idx_session_salle_cours")
+  @@index([date], map: "idx_session_salle_date")
+  @@index([id_professeur], map: "idx_session_salle_professeur")
+  @@index([id_salle], map: "idx_session_salle_salle")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model type_demande {
+  id_type          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  libelle          String    @db.VarChar(150)
+  code             String    @unique @db.VarChar(30)
+  description      String?
+  id_workflow      String?   @db.Uuid
+  delai_traitement Int?
+  pieces_requises  Json?
+  demande          demande[]
+  workflow         workflow? @relation(fields: [id_workflow], references: [id_workflow], onUpdate: NoAction)
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+model type_reclamation {
+  id_type                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  libelle                String                     @db.VarChar(150)
+  code                   String                     @unique @db.VarChar(30)
+  categorie              enum_categorie_reclamation
+  delai_limite           Int?
+  quota_max              Int?
+  conditions_eligibilite Json?
+  reclamation            reclamation[]
+}
+
+model utilisateur {
+  id_utilisateur           String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_role                  String                     @db.Uuid
+  nom                      String                     @db.VarChar(100)
+  prenom                   String                     @db.VarChar(100)
+  email                    String                     @unique @db.VarChar(255)
+  mot_de_passe             String                     @db.VarChar(255)
+  telephone                String?                    @db.VarChar(30)
+  photo                    String?                    @db.VarChar(500)
+  actif                    Boolean                    @default(true)
+  date_creation            DateTime                   @default(now()) @db.Timestamptz(6)
+  derniere_connexion       DateTime?                  @db.Timestamptz(6)
+  updated_at               DateTime                   @default(now()) @db.Timestamptz(6)
+  audit_log                audit_log[]
+  conversation_participant conversation_participant[]
+  employe                  employe?
+  etudiant                 etudiant?
+  message                  message[]
+  notification             notification[]
+  reservation_salle        reservation_salle[]
+  role                     role                       @relation(fields: [id_role], references: [id_role], onUpdate: NoAction)
+
+  @@index([id_role], map: "idx_utilisateur_role")
+}
+
+model verification_examen {
+  id_verification       String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_etudiant           String                   @db.Uuid
+  id_professeur         String                   @db.Uuid
+  id_transmis_par       String?                  @db.Uuid
+  date_demande          DateTime                 @default(now()) @db.Timestamptz(6)
+  motif                 String?
+  statut                enum_statut_verification @default(Demandee)
+  date_planification    DateTime?                @db.Date
+  heure_planification   DateTime?                @db.Time(6)
+  salle_planification   String?                  @db.VarChar(50)
+  commentaires_prof     String?
+  commentaires_etudiant String?
+  etudiant              etudiant                 @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade, onUpdate: NoAction)
+  professeur            professeur               @relation(fields: [id_professeur], references: [id_professeur], onDelete: Cascade, onUpdate: NoAction)
+  scolarite_staff       scolarite_staff?         @relation(fields: [id_transmis_par], references: [id_scolarite], onUpdate: NoAction)
+
+  @@index([id_etudiant], map: "idx_verif_examen_etudiant")
+  @@index([id_professeur], map: "idx_verif_examen_professeur")
+}
+
+model workflow {
+  id_workflow    String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom            String               @db.VarChar(150)
+  description    String?
+  statut         enum_statut_workflow @default(Actif)
+  date_creation  DateTime             @default(now()) @db.Timestamptz(6)
+  demande        demande[]
+  etape_workflow etape_workflow[]
+  type_demande   type_demande[]
+}
+
+enum enum_categorie_reclamation {
+  Note
+  AMO
+  Bourse
+  Email
+  Autre
+}
+
+enum enum_methode_identification {
+  RFID
+  QR_Code
+  Reconnaissance_Faciale
+}
+
+enum enum_priorite {
+  Basse
+  Normale
+  Haute
+  Urgente
+}
+
+enum enum_priorite_notification {
+  Info
+  Warning
+  Urgent
+}
+
+enum enum_role_message_ia {
+  User
+  Assistant
+  System
+}
+
+enum enum_statut_alerte {
+  Nouvelle
+  En_Traitement
+  Resolue
+  Ignoree
+}
+
+enum enum_statut_certificat {
+  En_Attente
+  Valide
+  Rejete
+}
+
+enum enum_statut_club {
+  Actif
+  Inactif
+  Suspendu
+}
+
+enum enum_statut_conversation {
+  Ouverte
+  Fermee
+}
+
+enum enum_statut_conversation_ia {
+  Active
+  Cloturee
+}
+
+enum enum_statut_demande {
+  Brouillon
+  Soumise
+  En_Traitement
+  Validee
+  Rejetee
+  Cloturee
+}
+
+enum enum_statut_demande_club {
+  Soumise
+  En_Revue
+  Approuvee
+  Rejetee
+}
+
+enum enum_statut_employe {
+  Actif
+  Inactif
+  Conge
+}
+
+enum enum_statut_etape {
+  En_Attente
+  En_Cours
+  Validee
+  Rejetee
+}
+
+enum enum_statut_etudiant {
+  Actif
+  Diplome
+  Abandon
+}
+
+enum enum_statut_presence {
+  Present
+  Retard
+  Absent
+  Excuse
+}
+
+enum enum_statut_president {
+  Actif
+  Expire
+}
+
+enum enum_statut_reclamation {
+  Soumise
+  Recue
+  Transmise
+  Acceptee
+  Rejetee
+  Cloturee
+}
+
+enum enum_statut_reservation {
+  Demandee
+  Approuvee
+  Rejetee
+  Annulee
+}
+
+enum enum_statut_salle {
+  Disponible
+  Occupee
+  Maintenance
+}
+
+enum enum_statut_session {
+  Planifiee
+  En_Cours
+  Terminee
+  Annulee
+}
+
+enum enum_statut_verification {
+  Demandee
+  Acceptee
+  Rejetee
+  Planifiee
+  Consultee
+  Cloturee
+}
+
+enum enum_statut_workflow {
+  Actif
+  Inactif
+}
+
+enum enum_type_alerte {
+  Conflit_Planning
+  Salle_Fantome
+  Surcharge
+  Anomalie
+}
+
+enum enum_type_demande_club {
+  Evenement
+  Salle
+  Materiel
+  Budget
+  Communication
+  Sponsoring
+}
+
+enum enum_type_demande_rh {
+  Attestation_Travail
+  Attestation_Salaire
+  Conge_Normal
+  Conge_Exceptionnel
+  Conge_Maladie
+  Heure_Supplementaire
+  Mission
+  Autre
+}
+
+enum enum_type_notification {
+  Email
+  SMS
+  Push
+  Plateforme
+}
+
+enum enum_type_parametre {
+  String
+  Integer
+  Boolean
+  JSON
+}
+
+enum enum_type_salle {
+  Amphitheatre
+  Salle_Cours
+  Laboratoire
+  Salle_Reunion
+}
