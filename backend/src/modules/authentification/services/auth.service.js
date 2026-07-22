@@ -3,7 +3,7 @@ const pool = require("../../../config/database");
 const bcrypt = require("bcrypt");
 const { generateToken } = require("../utils/jwt");
 
-const login = async (email, mot_de_passe) => {
+const login = async (email, password) => {
 
     const query = `
         SELECT
@@ -31,11 +31,13 @@ const login = async (email, mot_de_passe) => {
     if (!user.actif) {
         throw new Error("Votre compte est désactivé.");
     }
+    
 
-    const match = await bcrypt.compare(
-        mot_de_passe,
-        user.mot_de_passe
-    );
+  const match = await bcrypt.compare(password, user.mot_de_passe);
+  
+    console.log("Password match =", match);
+    console.log("Password entered:", password);
+    console.log("Password in DB:", user.mot_de_passe);
 
     if (!match) {
         throw new Error("Email ou mot de passe incorrect.");
@@ -51,87 +53,90 @@ const login = async (email, mot_de_passe) => {
     );
 
     const token = generateToken(user);
+   
 
     delete user.mot_de_passe;
+    
 
     return {
         token,
         user,
     };
 };
+// registre
+
 const register = async (userData) => {
 
     const {
-        role,
         nom,
         prenom,
         email,
-        mot_de_passe,
+        password,
         telephone
     } = userData;
-if (!role || !nom || !prenom || !email || !mot_de_passe) {
-    throw new Error("Tous les champs obligatoires doivent être remplis.");
-}
-   const roleResult = await pool.query(
-    "SELECT id_role FROM role WHERE nom_role = $1",
-    [role]
-);
-//debugging 
-// console.log("Role received:", role);
-// console.log("Role query result:", roleResult.rows); 
 
+    // Required fields
+    if (!nom || !prenom || !email || !password) {
+        throw new Error("Tous les champs obligatoires doivent être remplis.");
+    }
 
-if (roleResult.rows.length === 0) {
-    throw new Error("Rôle introuvable.");
-}
-
-const id_role = roleResult.rows[0].id_role;
-    const emailCheck = await pool.query(
-        "SELECT * FROM utilisateur WHERE email = $1",
+    // Check that the academic email exists
+    const userResult = await pool.query(
+        `SELECT * FROM utilisateur WHERE email = $1`,
         [email]
     );
 
-    if (emailCheck.rows.length > 0) {
-        throw new Error("Cet email existe déjà.");
+    if (userResult.rows.length === 0) {
+        throw new Error("Cet email n'appartient pas à SmartCampus.");
     }
 
-   console.log(userData);
-   console.log("Password =", mot_de_passe);
-    const hashedPassword = await bcrypt.hash(mot_de_passe, 10);
+    const existingUser = userResult.rows[0];
 
-    const query = `
-        INSERT INTO utilisateur(
-            id_role,
+    // Account already activated
+    if (existingUser.mot_de_passe) {
+        throw new Error("Ce compte est déjà activé.");
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Complete the account
+    await pool.query(
+        `
+        UPDATE utilisateur
+        SET
+            nom = $1,
+            prenom = $2,
+            telephone = $3,
+            mot_de_passe = $4
+        WHERE email = $5
+        `,
+        [
             nom,
             prenom,
-            email,
-            mot_de_passe,
-            telephone
-        )
-        VALUES($1,$2,$3,$4,$5,$6)
-        RETURNING
+            telephone,
+            hashedPassword,
+            email
+        ]
+    );
+
+    // Return the completed user
+    const { rows } = await pool.query(
+        `
+        SELECT
             id_utilisateur,
             nom,
             prenom,
             email,
             telephone,
-            actif,
-            date_creation
-    `;
-
-    const values = [
-        id_role,
-        nom,
-        prenom,
-        email,
-        hashedPassword,
-        telephone
-    ];
-
-    const { rows } = await pool.query(query, values);
+            actif
+        FROM utilisateur
+        WHERE email = $1
+        `,
+        [email]
+    );
 
     return rows[0];
-
 };
 
 module.exports = {

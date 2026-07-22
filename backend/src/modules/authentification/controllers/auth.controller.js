@@ -3,16 +3,17 @@ const auditService = require("../services/audit.service");
 
 const login = async (req, res) => {
     try {
-        const { email, mot_de_passe } = req.body;
+       
+        const { email, password  } = req.body;
 
-        if (!email || !mot_de_passe) {
+        if (!email || !password ) {
             return res.status(400).json({
                 success: false,
                 message: "Email et mot de passe sont obligatoires."
             });
         }
 
-        const result = await authService.login(email, mot_de_passe);
+        const result = await authService.login(email, password );
         await auditService.log({
                 id_utilisateur: result.user.id_utilisateur,
                 action: "LOGIN",
@@ -32,7 +33,7 @@ const login = async (req, res) => {
         });
 
     } catch (error) {
-
+        console.error(error);
         res.status(401).json({
             success: false,
             message: error.message
