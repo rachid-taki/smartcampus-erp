@@ -19,6 +19,12 @@ router.get("/me", authMiddleware, (req, res) => {
   });
 });
 
+router.post("/forgot-password", authController.forgotPassword);
+
+router.post("/verify-otp", authController.verifyOtp);
+
+router.post("/reset-password", authController.resetPassword);
+
 router.get("/admin", authMiddleware, authorize("SUPER_ADMIN"), (req, res) => {
   res.json({
     success: true,

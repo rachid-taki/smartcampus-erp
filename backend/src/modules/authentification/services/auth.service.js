@@ -1,6 +1,7 @@
 // const pool = require("../config/database");
 const pool = require("../../../config/database");
 const bcrypt = require("bcrypt");
+const crypto = require("crypto");
 const { generateToken } = require("../utils/jwt");
 
 const login = async (email, password) => {
@@ -139,7 +140,154 @@ const register = async (userData) => {
     return rows[0];
 };
 
+// password recovery 
+
+const generateResetOtp = async (email) => {
+
+    // Verify that the email exists
+    const userResult = await pool.query(
+        `
+        SELECT id_utilisateur, email
+        FROM utilisateur
+        WHERE email = $1
+        `,
+        [email]
+    );
+
+    if (userResult.rows.length === 0) {
+        throw new Error("Aucun compte n'est associé à cet email.");
+    }
+
+    const user = userResult.rows[0];
+
+    // Generate a random 6-digit OTP
+   const otp = crypto.randomInt(100000, 999999).toString();
+
+    const hashedOtp = await bcrypt.hash(otp, 10);
+
+    // Expiration time (10 minutes)
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+
+    // Delete previous unused OTPs
+    await pool.query(
+        `
+        DELETE FROM password_reset_tokens
+        WHERE id_utilisateur = $1
+        `,
+        [user.id_utilisateur]
+    );
+
+    // Save the new OTP
+    await pool.query(
+        `
+        INSERT INTO password_reset_tokens
+        (
+            id_utilisateur,
+            otp,
+            expires_at
+        )
+        VALUES ($1,$2,$3)
+        `,
+        [
+            user.id_utilisateur,
+            hashedOtp,
+            expiresAt
+        ]
+    );
+
+    return otp;
+};
+const verifyOtp = async (email, otp) => {
+
+    const { rows } = await pool.query(
+        `
+        SELECT
+            prt.id,
+            prt.otp,
+            prt.expires_at,
+            u.id_utilisateur
+        FROM password_reset_tokens prt
+        JOIN utilisateur u
+            ON prt.id_utilisateur = u.id_utilisateur
+        WHERE u.email = $1
+        `,
+        [email]
+    );
+
+    if (rows.length === 0) {
+        throw new Error("Code OTP invalide.");
+    }
+
+    const token = rows[0];
+
+    if (new Date() > token.expires_at) {
+        throw new Error("Le code OTP a expiré.");
+    }
+
+    const valid = await bcrypt.compare(
+        otp,
+        token.otp
+    );
+
+    if (!valid) {
+        throw new Error("Code OTP incorrect.");
+    }
+
+    return true;
+};
+const resetPassword = async (
+    email,
+    otp,
+    password
+) => {
+
+    // Verify OTP first
+    await verifyOtp(email, otp);
+
+    const hashedPassword = await bcrypt.hash(
+        password,
+        10
+    );
+
+    const { rows } = await pool.query(
+        `
+        SELECT id_utilisateur
+        FROM utilisateur
+        WHERE email = $1
+        `,
+        [email]
+    );
+
+    const user = rows[0];
+
+    await pool.query(
+        `
+        UPDATE utilisateur
+        SET mot_de_passe = $1
+        WHERE id_utilisateur = $2
+        `,
+        [
+            hashedPassword,
+            user.id_utilisateur
+        ]
+    );
+
+    // Delete OTP after use
+    await pool.query(
+        `
+        DELETE FROM password_reset_tokens
+        WHERE id_utilisateur = $1
+        `,
+        [user.id_utilisateur]
+    );
+
+    return true;
+};
+
 module.exports = {
     login,
-    register
+    register,
+    generateResetOtp,
+    verifyOtp,
+    resetPassword
 };

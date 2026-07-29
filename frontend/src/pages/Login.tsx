@@ -1,7 +1,14 @@
-import { useState, Fragment } from "react";
+import { useState, Fragment,useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import { login, register } from "../services/auth.service";
+// import { login, register,  } from "../services/auth.service";
+import {
+    login,
+    register,
+    forgotPassword,
+    verifyOTP,
+    resetPassword,
+} from "../services/auth.service";
 import type { MouseEvent } from "react";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -21,6 +28,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import {XCircle} from "lucide-react";
+import { RiArrowGoBackFill } from "react-icons/ri";
 
 interface JourneyStage {
   icon: LucideIcon;
@@ -33,7 +41,7 @@ interface Stat {
   label: string;
 }
 
-type Tab = "login" | "signup";
+type Tab = "login" | "signup" | "forgot";
 type Role = "etudiant" | "personnel";
 
 
@@ -90,6 +98,25 @@ export default function Login() {
   const [loginPassword, setLoginPassword] =useState("");
   const [registerEmail, setRegisterEmail] = useState("");
   const [registerPassword, setRegisterPassword] = useState("");
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmNewPassword, setConfirmNewPassword] = useState("");
+  const [resetStep, setResetStep] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState("");
+  const [otpError, setOtpError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [otpVerified, setOtpVerified] = useState(false);
+
+
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+
+  const [countdown, setCountdown] = useState(60);
+  const [canResend, setCanResend] = useState(false);
 
   const passwordChecks = {
     length: registerPassword.length >= 12,
@@ -101,6 +128,17 @@ export default function Login() {
 
 const passwordStrong =
     Object.values(passwordChecks).every(Boolean);
+// reset password strenght 
+const resetPasswordChecks = {
+    length: newPassword.length >= 12,
+    upper: /[A-Z]/.test(newPassword),
+    lower: /[a-z]/.test(newPassword),
+    number: /\d/.test(newPassword),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(newPassword),
+};
+
+const resetPasswordStrong =
+    Object.values(resetPasswordChecks).every(Boolean);
   
  const handleLogin = async () => {
    try {
@@ -126,9 +164,6 @@ const passwordStrong =
 };
 //register 
 const handleRegister = async () => {
-
-     
-
 
     const user = {
             nom,
@@ -161,8 +196,196 @@ const handleRegister = async () => {
             "Une erreur est survenue."
         );
     }
+  };
+const handleForgotPassword = async () => {
 
-}
+    try {
+
+        setLoading(true);
+
+        const res = await forgotPassword(resetEmail);
+
+        setSuccess(res.message);
+        setError("");
+
+        setResetStep(2);
+
+        setCountdown(60);
+        setCanResend(false);
+
+    } catch (err: any) {
+
+        setSuccess("");
+
+       setEmailError(
+          err.response?.data?.message ||
+          "Adresse email introuvable."
+      );
+      setError("");
+
+    } finally {
+
+        setLoading(false);
+
+    }
+
+};
+const handleVerifyOTP = async () => {
+
+    try {
+
+        setLoading(true);
+        const res = await verifyOTP(
+            resetEmail,
+            otp
+        );
+
+        setOtpVerified(true);
+        setSuccess("Code vérifié avec succès.");
+
+        setError("");
+
+        setResetStep(3);
+
+    } catch (err: any) {
+
+        setSuccess("");
+
+        setOtpVerified(false);
+
+        setOtpError(
+            err.response?.data?.message ||
+            "Code OTP incorrect."
+        );
+
+    } finally {
+
+        setLoading(false);
+
+    }
+};
+
+const handleResetPassword = async () => {
+
+    if (newPassword !== confirmNewPassword) {
+
+        setError("Les mots de passe ne correspondent pas.");
+
+        return;
+
+    }
+
+    try {
+
+        setLoading(true);
+
+        const res = await resetPassword(
+            resetEmail,
+            otp,
+            newPassword
+        );
+
+        if (!resetPasswordStrong) {
+
+          setPasswordError(
+              "Le mot de passe ne respecte pas les exigences."
+          );
+
+          return;
+
+      }
+
+        setSuccess(res.message);
+
+        setError("");
+
+        setTimeout(() => {
+
+            setShowForgotPassword(false);
+
+            setTab("login");
+
+        }, 2000);
+
+    } catch (err: any) {
+
+        setSuccess("");
+
+        setError(
+            err.response?.data?.message ||
+            "Erreur."
+        );
+
+    } finally {
+
+        setLoading(false);
+
+    }
+
+};
+
+
+const handleResendOtp = async () => {
+
+    try{
+
+        await forgotPassword(resetEmail);
+
+        setCountdown(60);
+
+        setCanResend(false);
+
+        setOtp("");
+
+        setOtpVerified(false);
+
+        setOtpError("");
+
+        setSuccess("Nouveau code envoyé.");
+
+    }
+
+    catch(err:any){
+
+        setOtpError(
+
+            err.response?.data?.message ||
+
+            "Impossible de renvoyer le code."
+
+        );
+
+    }
+
+}; 
+
+
+//use effect 
+
+useEffect(() => {
+
+    if (resetStep !== 2) return;
+
+    if (countdown === 0) {
+
+        setCanResend(true);
+
+        return;
+
+    }
+
+    const timer = setTimeout(() => {
+
+        setCountdown((prev)=>prev-1);
+
+    },1000);
+
+    return ()=>clearTimeout(timer);
+
+},[countdown,resetStep]);
+
+
+
   return (
     <div
       className="sc-auth min-h-screen flex relative"
@@ -512,7 +735,7 @@ const handleRegister = async () => {
                 Personnel
               </button>
             </div>
-
+            {!showForgotPassword ? (
             <div className="space-y-4">
               {!isLogin && (
                 <div className="grid grid-cols-2 gap-3">
@@ -752,7 +975,16 @@ const handleRegister = async () => {
                   <button
                     type="button"
                     onClick={() => {
-                        // TODO: navigate to forgot password page
+                        setShowForgotPassword(true);
+                        setResetStep(1);
+
+                        setError("");
+                        setSuccess("");
+
+                        setResetEmail("");
+                        setOtp("");
+                        setNewPassword("");
+                        setConfirmNewPassword("");
                     }}
                     className="text-sm font-medium text-[#2451E0] cursor-pointer hover:text-[#16337A] hover:underline transition-all duration-200"
                     >
@@ -792,6 +1024,343 @@ const handleRegister = async () => {
                     </div>
                     )}
             </div>
+                        ) : (
+
+            <div className="space-y-5">
+
+                {/* Step 1 */}
+
+                {resetStep === 1 && (
+
+                    <>
+                        <h2 className="text-2xl font-bold">
+                            Mot de passe oublié
+                        </h2>
+
+                        <p className="text-sm text-gray-500">
+                            Entrez votre adresse email.
+                        </p>
+
+                        <div
+                                className="sc-field flex items-center rounded-xl px-3.5"
+                                style={{
+                                    borderColor: emailError ? "#ef4444" : undefined,
+                                    boxShadow: emailError
+                                        ? "0 0 0 4px rgba(239,68,68,.15)"
+                                        : undefined,
+                                }}
+                            >
+                            <Mail size={16}/>
+                            <input
+                                value={resetEmail}
+                                onChange={(e)=>{
+                                    setResetEmail(e.target.value);
+                                    setEmailError("");
+                                }}
+                                placeholder="Email"
+                                className="w-full bg-transparent p-3 outline-none"
+                            />
+                            {emailError && (
+                                <p className="text-red-500 text-sm mt-2">
+                                    {emailError}
+                                </p>
+                            )}
+                        </div>
+
+                        <button
+                            onClick={handleForgotPassword}
+                            className="sc-btn-primary w-full text-white py-3 rounded-xl"
+                        >
+                            {loading ? "Envoi..." : "Envoyer le code"}
+                        </button>
+
+                    </>
+
+                )}
+
+                {/* Step 2 */}
+
+                {resetStep === 2 && (
+
+                    <>
+
+                        <h2 className="text-2xl font-bold">
+                            Vérification
+                        </h2>
+
+                        <p className="text-sm text-gray-500">
+                            Entrez le code reçu.
+                        </p>
+
+                        <input
+
+                                value={otp}
+                              onChange={(e)=>{
+                                  setOtp(e.target.value);
+                                  setOtpError("");
+                              }}
+                            placeholder="Votre code OTP reçu "
+
+                            className="sc-field w-full rounded-xl p-3"
+                            style={{
+                                borderColor: otpError ? "#ef4444" : undefined,
+                            }}
+
+                        />
+                        {otpError && (
+                            <p className="text-red-500 text-sm mt-2">
+                                {otpError}
+                            </p>
+                        )}
+
+                        {otpVerified && (
+                            <div className="flex items-center gap-2 text-green-600 mt-2">
+                                <CheckCircle2 size={18}/>
+                                Code vérifié
+                            </div>
+                        )}
+
+                        <div className="flex justify-between items-center mt-4">
+
+                          <span className="text-sm text-gray-500">
+
+                              {canResend
+                                  ? "Nouveau code OTP est disponible."
+                                  : `Renvoyer dans ${countdown}s`
+                              }
+
+                          </span>
+
+                          <button
+
+                              disabled={!canResend}
+
+                              onClick={handleResendOtp}
+
+                              className={`text-sm font-medium ${
+                                  canResend
+                                      ? "text-blue-600 hover:underline"
+                                      : "text-gray-400 cursor-not-allowed"
+                              }`}
+
+                          >
+
+                              Renvoyer le code
+
+                          </button>
+
+                        </div>
+                        <button
+
+                            onClick={handleVerifyOTP}
+
+                            className="sc-btn-primary w-full text-white py-3 rounded-xl"
+
+                        >
+
+                            Vérifier
+
+                        </button>
+                        <p className="text-xs text-gray-500 mt-3">
+
+                          Vous n'avez pas reçu le code ?
+
+                          Vérifiez votre dossier Spam ou cliquez sur
+
+                          <strong> Renvoyer le code</strong>
+
+                          
+
+                      </p>
+
+                    </>
+
+                )}
+
+                {/* Step 3 */}
+
+                {resetStep === 3 && (
+
+                    <>
+
+                        <h2 className="text-2xl font-bold">
+                            Nouveau mot de passe
+                        </h2>
+
+                        <div className="sc-field flex items-center rounded-xl px-3.5">
+
+                          <Lock size={16} color="#9AA6C4"/>
+
+                          <input
+                              type={showNewPassword ? "text" : "password"}
+                              value={newPassword}
+                              onChange={(e)=>{
+                                  setNewPassword(e.target.value);
+                                  setPasswordError("");
+                              }}
+                              className="w-full bg-transparent p-2.5 pl-2.5 text-sm outline-none"
+                          />
+
+                          <button
+                              type="button"
+                              onClick={()=>setShowNewPassword(!showNewPassword)}
+                          >
+                              {showNewPassword
+                                  ? <EyeOff size={16}/>
+                                  : <Eye size={16}/>
+                              }
+                          </button>
+
+                      </div>
+
+                        <div className="mt-3 space-y-2">
+
+                            <div
+                                className={`flex items-center gap-2 text-sm ${
+                                    resetPasswordChecks.length
+                                        ? "text-green-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {resetPasswordChecks.length
+                                    ? <CheckCircle2 size={16}/>
+                                    : <XCircle size={16}/>}
+                                Au moins 12 caractères
+                            </div>
+
+                            <div
+                                className={`flex items-center gap-2 text-sm ${
+                                    resetPasswordChecks.upper
+                                        ? "text-green-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {resetPasswordChecks.upper
+                                    ? <CheckCircle2 size={16}/>
+                                    : <XCircle size={16}/>}
+                                Une majuscule
+                            </div>
+
+                            <div
+                                className={`flex items-center gap-2 text-sm ${
+                                    resetPasswordChecks.lower
+                                        ? "text-green-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {resetPasswordChecks.lower
+                                    ? <CheckCircle2 size={16}/>
+                                    : <XCircle size={16}/>}
+                                Une minuscule
+                            </div>
+
+                            <div
+                                className={`flex items-center gap-2 text-sm ${
+                                    resetPasswordChecks.number
+                                        ? "text-green-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {resetPasswordChecks.number
+                                    ? <CheckCircle2 size={16}/>
+                                    : <XCircle size={16}/>}
+                                Un chiffre
+                            </div>
+
+                            <div
+                                className={`flex items-center gap-2 text-sm ${
+                                    resetPasswordChecks.special
+                                        ? "text-green-600"
+                                        : "text-gray-500"
+                                }`}
+                            >
+                                {resetPasswordChecks.special
+                                    ? <CheckCircle2 size={16}/>
+                                    : <XCircle size={16}/>}
+                                Un caractère spécial
+                            </div>
+
+                            <div className="mt-4">
+                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+
+                                    <div
+                                        className={`h-full transition-all duration-300 ${
+                                            resetPasswordStrong
+                                                ? "bg-green-500 w-full"
+                                                : Object.values(resetPasswordChecks).filter(Boolean).length >= 4
+                                                ? "bg-yellow-500 w-4/5"
+                                                : Object.values(resetPasswordChecks).filter(Boolean).length >= 3
+                                                ? "bg-orange-500 w-3/5"
+                                                : Object.values(resetPasswordChecks).filter(Boolean).length >= 2
+                                                ? "bg-red-400 w-2/5"
+                                                : "bg-red-600 w-1/5"
+                                        }`}
+                                    />
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <div className="sc-field flex items-center rounded-xl px-3.5">
+
+                            <Lock size={16} color="#9AA6C4"/>
+
+                            <input
+                                type={showConfirmPassword ? "text" : "password"}
+                                value={confirmNewPassword}
+                                onChange={(e)=>setConfirmNewPassword(e.target.value)}
+                                className="w-full bg-transparent p-2.5 pl-2.5 text-sm outline-none"
+                                 placeholder="Confirmer"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={()=>setShowConfirmPassword(!showConfirmPassword)}
+                            >
+                                {showConfirmPassword
+                                    ? <EyeOff size={16}/>
+                                    : <Eye size={16}/>
+                                }
+                            </button>
+
+                        </div>
+
+                        <button
+
+                            onClick={handleResetPassword}
+
+                            className="sc-btn-primary w-full text-white py-3 rounded-xl"
+
+                        >
+
+                            Réinitialiser
+
+                        </button>
+
+                    </>
+
+                )}
+
+                <button
+
+                    onClick={() => {
+
+                        setShowForgotPassword(false);
+
+                        setError("");
+
+                        setSuccess("");
+
+                    }}
+
+                    className="text-[#2451E0] hover:underline cursor-pointer transition-all duration-200" >
+
+                     Retour à la connexion 
+                </button>
+
+            </div>
+
+            )}
 
             <p className="text-center text-sm mt-6" style={{ color: "#4B5165" }}>
               {isLogin ? "Pas encore de compte ? " : "Déjà inscrit ? "}
