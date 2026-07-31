@@ -1,22 +1,24 @@
-// import { Routes } from "react-router-dom";
-// import { StudentRoutes } from "./routes/student.routes";
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Layout from './components/student/layout/Layout';
+import Dashboard from './pages/StudentPortal/Dashboard/Dashboard';
+import PageComingSoon from './components/student/common/PageComingSoon';
 
-// function App() {
-//   // return <Routes>{StudentRoutes}</Routes>;
-
-// }
-
-// export default App;
-
-import { Routes, Route } from "react-router-dom";
-import {Dashboard} from "./pages/StudentPortal/Dashboard";
-
-function App() {
+export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-    </Routes>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Dashboard />} />
+          <Route path="/profil" element={<PageComingSoon title="Mon Profil" />} />
+          <Route path="/demandes" element={<PageComingSoon title="Mes Demandes" />} />
+          <Route path="/demandes/nouvelle" element={<PageComingSoon title="Nouvelle Demande" />} />
+          <Route path="/documents" element={<PageComingSoon title="Documents" />} />
+          <Route path="/notifications" element={<PageComingSoon title="Notifications" />} />
+          <Route path="/calendrier" element={<PageComingSoon title="Calendrier" />} />
+          <Route path="/historique" element={<PageComingSoon title="Historique" />} />
+          <Route path="/parametres" element={<PageComingSoon title="Paramètres" />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   );
 }
-
-export default App;

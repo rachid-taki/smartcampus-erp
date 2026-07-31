@@ -10,7 +10,9 @@ const permissionRoutes = require("./modules/authentification/routes/permission.r
 const rolePermissionRoutes = require("./modules/authentification/routes/rolePermission.routes");
 const profileRoutes = require("./modules/authentification/routes/profile.routes");
 const auditRoutes = require("./modules/authentification/routes/audit.routes");
+const studentRoutes = require("./src/modules/student/routes/student.routes");
 
+app.use("/api/student", studentRoutes);
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -1,0 +1,90 @@
+import {
+  LayoutDashboard,
+  User,
+  FileText,
+  FilePlus2,
+  FolderOpen,
+  Bell,
+  CalendarDays,
+  History,
+  Settings,
+  LogOut,
+  Search,
+  Moon,
+  Sun,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileCheck2,
+  Download,
+  Upload,
+  Trash2,
+  Plus,
+  GraduationCap,
+  IdCard,
+  Wallet,
+  MessageSquareWarning,
+  MoreHorizontal,
+  X,
+  Menu,
+  Eye,
+  Pencil,
+  KeyRound,
+  Phone,
+  Mail,
+  MapPin,
+  type LucideIcon,
+} from 'lucide-react';
+
+export const iconRegistry: Record<string, LucideIcon> = {
+  LayoutDashboard,
+  User,
+  FileText,
+  FilePlus2,
+  FolderOpen,
+  Bell,
+  CalendarDays,
+  History,
+  Settings,
+  LogOut,
+  Search,
+  Moon,
+  Sun,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  FileCheck2,
+  Download,
+  Upload,
+  Trash2,
+  Plus,
+  GraduationCap,
+  IdCard,
+  Wallet,
+  MessageSquareWarning,
+  MoreHorizontal,
+  X,
+  Menu,
+  Eye,
+  Pencil,
+  KeyRound,
+  Phone,
+  Mail,
+  MapPin,
+};
+
+interface IconProps {
+  name: string;
+  className?: string;
+  strokeWidth?: number;
+}
+
+export default function Icon({ name, className, strokeWidth = 1.8 }: IconProps) {
+  const LucideIconComponent = iconRegistry[name];
+  if (!LucideIconComponent) return null;
+  return <LucideIconComponent className={className} strokeWidth={strokeWidth} />;
+}
