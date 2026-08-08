@@ -29,6 +29,11 @@ const scolariteWorkflowsRoutes = require('./modules/scolarite/routes/scolarite.w
 const scolariteDocumentsRoutes = require('./modules/scolarite/routes/scolarite.documents.routes');
 const scolaritePdfRoutes = require('./modules/scolarite/routes/scolarite.pdf.routes');
 const scolariteSignatureRoutes = require('./modules/scolarite/routes/scolarite.signature.routes');
+const rhEmployesRoutes = require('./modules/rh/routes/rh.employes.routes');
+const rhCongesRoutes = require('./modules/rh/routes/rh.conges.routes');
+const rhAttestationsRoutes = require('./modules/rh/routes/rh.attestations.routes');
+const rhHeuresRoutes = require('./modules/rh/routes/rh.heures.routes');
+const rhDashboardRoutes = require('./modules/rh/routes/rh.dashboard.routes');
 
 
 // 3. Mount the routes to the /api/scolarite path
@@ -38,7 +43,11 @@ app.use('/api/scolarite', scolariteWorkflowsRoutes);
 app.use('/api/scolarite', scolariteDocumentsRoutes);
 app.use('/api/scolarite', scolaritePdfRoutes);
 app.use('/api/scolarite', scolariteSignatureRoutes);
-
+app.use('/api/rh', rhEmployesRoutes);
+app.use('/api/rh', rhCongesRoutes);
+app.use('/api/rh', rhAttestationsRoutes);
+app.use('/api/rh', rhHeuresRoutes);
+app.use('/api/rh', rhDashboardRoutes);
 
 //app.use("/api/permissions", permissionRoutes);
 //app.use("/api/auth", authRoutes);

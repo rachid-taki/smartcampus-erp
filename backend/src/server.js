@@ -6,9 +6,11 @@ const app = require("./app");
 
 // 2. Import your new Module 5 routes
 const scolariteDashboardRoutes = require('./modules/scolarite/routes/scolarite.dashboard.routes');
+const rhEmployesRoutes = require('./modules/rh/routes/rh.employes.routes');
 
 // 3. Mount the Module 5 routes onto the existing 'app'
 app.use('/api/scolarite', scolariteDashboardRoutes);
+app.use('/api/rh', rhEmployesRoutes);
 
 const PORT = process.env.PORT || 3000;
 
