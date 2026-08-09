@@ -23,13 +23,21 @@ export function formatRelative(iso: string): string {
   return formatDate(iso);
 }
 
-export const statusStyles: Record<RequestStatus, string> = {
-  'En attente': 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200',
-  'En cours': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200',
-  Validée: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200',
-  Refusée: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200',
-};
+export const statusStyles: Record<string, string> = {
+  // Old dummy statuses
+  "En attente": "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  "En cours": "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+  "Validée": "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+  "Refusée": "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
 
+  // Database statuses (same colors)
+  Brouillon: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
+  Soumise: "bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200",
+  En_Traitement: "bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200",
+  Validee: "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
+  Rejetee: "bg-red-50 text-red-700 ring-1 ring-inset ring-red-200",
+  Cloturee: "bg-slate-50 text-slate-700 ring-1 ring-inset ring-slate-200",
+};
 export const eventKindStyles: Record<EventKind, { label: string; className: string }> = {
   exam: { label: 'Examen', className: 'bg-red-50 text-red-700 ring-red-200' },
   vacation: { label: 'Vacances', className: 'bg-emerald-50 text-emerald-700 ring-emerald-200' },
@@ -40,3 +48,4 @@ export const eventKindStyles: Record<EventKind, { label: string; className: stri
 export function initials(firstName: string, lastName: string): string {
   return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
 }
+

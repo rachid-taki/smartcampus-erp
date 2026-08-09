@@ -1,5 +1,3 @@
-
-
 const express = require("express");
 const cors = require("cors");
 
@@ -10,9 +8,13 @@ const permissionRoutes = require("./modules/authentification/routes/permission.r
 const rolePermissionRoutes = require("./modules/authentification/routes/rolePermission.routes");
 const profileRoutes = require("./modules/authentification/routes/profile.routes");
 const auditRoutes = require("./modules/authentification/routes/audit.routes");
-const studentRoutes = require("./src/modules/student/routes/student.routes");
+const studentRoutes = require("./modules/student/routes/student.routes");
+const assistantRoutes = require("./modules/assistant/routes/assistant.routes");
 
-app.use("/api/student", studentRoutes);
+const scolariteMessagingRoutes = require("./modules/scolarite/routes/messaging.routes");
+
+const path = require("path");
+
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -24,13 +26,17 @@ app.get("/", (req, res) => {
   });
 });
 
-
-
 app.use("/api/permissions", permissionRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api", rolePermissionRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/audit", auditRoutes);
+app.use("/api/student", studentRoutes);
+app.use("/api/student/assistant", assistantRoutes);
+
+app.use("/api/scolarite/messages", scolariteMessagingRoutes);
+
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 app.use((req, res) => {
   res.status(404).json({
@@ -38,6 +44,5 @@ app.use((req, res) => {
     message: "Route not found",
   });
 });
-
 
 module.exports = app;

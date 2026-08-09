@@ -1,7 +1,25 @@
-import { useState } from 'react';
-import { Bell, Menu, Moon, Search, Sun } from 'lucide-react';
-import { currentStudent, notifications } from '../../../data/dummyData';
-import { initials } from '../../../utils/format';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import {
+  Bell,
+  CalendarDays,
+  Compass,
+  FileText,
+  FolderOpen,
+  Menu,
+  Moon,
+  Search,
+  Settings,
+  Sun,
+} from 'lucide-react';
+import { formatRelative, initials } from '../../../utils/format';
+import {
+  getCurrentStudent,
+  getNotifications,
+  getRecentDocuments,
+  getRecentRequests,
+  markNotificationRead,
+} from '../../../services/student.service';
 
 interface TopbarProps {
   isDark: boolean;
@@ -9,78 +27,424 @@ interface TopbarProps {
   onOpenMobileSidebar: () => void;
 }
 
+const PAGE_TITLES: Record<string, string> = {
+  '/student/dashboard': 'Tableau de bord',
+  '/student/profile': 'Mon Profil',
+  '/student/documents': 'Mes Documents',
+  '/student/requests': 'Mes Demandes',
+  '/student/workflow': 'Suivi des demandes',
+  '/student/notifications': 'Notifications',
+  '/student/document': 'Mes documents',
+  '/student/reclamations': 'Mes Réclamations',
+  '/student/calendrier': 'Calendrier académique',
+  '/student/parametres': 'Paramètres',
+};
+
+const categoryIcon: Record<string, typeof Bell> = {
+  demande: FileText,
+  document: FolderOpen,
+  calendrier: CalendarDays,
+  systeme: Settings,
+  info: Bell,
+  succes: FileText,
+  alerte: CalendarDays,
+  urgent: Settings,
+};
+
 export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: TopbarProps) {
   const [query, setQuery] = useState('');
+  const [showSearch, setShowSearch] = useState(false);
+  const [student, setStudent] = useState<any>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [documents, setDocuments] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const searchRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const pageTitle = PAGE_TITLES[location.pathname] ?? 'SmartCampus ERP';
+  const normalized = query.trim().toLowerCase();
+
+  useEffect(() => {
+    const loadStudent = async () => {
+      try {
+        const data = await getCurrentStudent();
+        setStudent(data.user);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    loadStudent();
+  }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const [notif, req, docs] = await Promise.all([
+          getNotifications(),
+          getRecentRequests(),
+          getRecentDocuments(),
+        ]);
+        setNotifications(notif);
+        setRequests(req);
+        setDocuments(docs);
+      } catch (err) {
+        console.error(err);
+      }
+    };
+    load();
+  }, []);
+
+  useEffect(() => {
+    const onClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setShowNotifications(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowSearch(false);
+      }
+    };
+    document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, []);
+
+  const results = useMemo(() => {
+    if (!normalized) return null;
+    return {
+      pages: Object.entries(PAGE_TITLES)
+        .filter(([, label]) => label.toLowerCase().includes(normalized))
+        .map(([to, label]) => ({ to, label })),
+      requests: requests
+        .filter(
+          (r) =>
+            r.reference?.toLowerCase().includes(normalized) ||
+            r.type?.toLowerCase().includes(normalized) ||
+            r.objet?.toLowerCase().includes(normalized)
+        )
+        .slice(0, 4),
+      documents: documents
+        .filter((d) => d.name?.toLowerCase().includes(normalized))
+        .slice(0, 4),
+      notifications: notifications
+        .filter(
+          (n) =>
+            n.title?.toLowerCase().includes(normalized) ||
+            n.message?.toLowerCase().includes(normalized)
+        )
+        .slice(0, 3),
+    };
+  }, [normalized, requests, documents, notifications]);
+
+  const hasResults =
+    results &&
+    (results.pages.length > 0 ||
+      results.requests.length > 0 ||
+      results.documents.length > 0 ||
+      results.notifications.length > 0);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  const go = (to: string) => {
+    navigate(to);
+    setShowSearch(false);
+    setQuery('');
+  };
+
+  const handleMarkRead = async (item: any) => {
+    if (item.read) return;
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === item.id ? { ...n, read: true } : n))
+    );
+    try {
+      await markNotificationRead(item.id);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const firstName = student?.prenom ?? '';
+  const lastName = student?.nom ?? '';
+  const filiere = student?.filiere ?? '';
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-3 border-b border-slate-200 bg-white/80 px-4 backdrop-blur-md dark:border-slate-800 dark:bg-card-dark/80 sm:px-6">
-      {/* Mobile menu button */}
-      <button
-        onClick={onOpenMobileSidebar}
-        aria-label="Ouvrir le menu"
-        className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 lg:hidden"
-      >
-        <Menu size={20} />
-      </button>
-
-      {/* Search */}
-      <div className="relative hidden max-w-md flex-1 md:block">
-        <Search
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-        />
-        <input
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          type="text"
-          placeholder="Rechercher une demande, un document…"
-          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-[13.5px] text-slate-700 placeholder:text-slate-400 focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-800"
-        />
-      </div>
-
-      <div className="flex flex-1 items-center justify-end gap-2 sm:gap-3">
-        {/* Academic year */}
-        <span className="hidden rounded-full bg-slate-100 px-3 py-1.5 text-[12px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300 md:inline-block">
-          {currentStudent.anneeUniversitaire}
-        </span>
-
-        {/* Dark mode switch */}
+    <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-card-dark/85">
+      <div className="flex h-[70px] items-center gap-3 px-4 sm:px-6">
         <button
-          onClick={onToggleDark}
-          aria-label="Basculer le mode sombre"
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          onClick={onOpenMobileSidebar}
+          aria-label="Ouvrir le menu"
+          className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
         >
-          {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          <Menu size={20} />
         </button>
 
-        {/* Notification bell */}
-        <button
-          aria-label="Notifications"
-          className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-        >
-          <Bell size={18} />
-          {unreadCount > 0 && (
-            <span className="absolute right-1.5 top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-primary-600 text-[9px] font-bold text-white ring-2 ring-white dark:ring-card-dark">
-              {unreadCount}
-            </span>
-          )}
-        </button>
-
-        {/* Divider */}
-        <div className="hidden h-8 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
-
-        {/* Student identity */}
-        <div className="flex items-center gap-2.5 rounded-xl py-1 pl-1 pr-1 hover:bg-slate-50 dark:hover:bg-slate-800/60 sm:pr-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary-100 text-[13px] font-bold text-primary-700 dark:bg-primary-500/20 dark:text-primary-300">
-            {initials(currentStudent.firstName, currentStudent.lastName)}
-          </div>
-          <div className="hidden leading-tight sm:block">
-            <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-100">
-              {currentStudent.firstName} {currentStudent.lastName}
+        <div key={location.pathname} className="flex animate-fade-in items-center gap-3">
+          <span className="h-7 w-1.5 rounded-full bg-gradient-to-b from-primary-400 to-primary-700 shadow-sm shadow-primary-500/40" />
+          <div className="min-w-0">
+            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
+              {pageTitle}
+            </h1>
+            <p className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500">
+              Espace étudiant
             </p>
-            <p className="text-[11.5px] text-slate-400">Étudiant · {currentStudent.filiere.split(' — ')[0]}</p>
           </div>
+        </div>
+
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <div className="relative hidden md:block md:w-52 lg:w-72" ref={searchRef}>
+            <Search
+              size={16}
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+            />
+            <input
+              value={query}
+              onChange={(e) => {
+                setQuery(e.target.value);
+                setShowSearch(true);
+              }}
+              onFocus={() => setShowSearch(true)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') setShowSearch(false);
+              }}
+              type="text"
+              placeholder="Rechercher dans l'application…"
+              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-[13px] text-slate-700 placeholder:text-slate-400 transition focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-800"
+            />
+
+            {showSearch && normalized && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                {hasResults ? (
+                  <div className="max-h-96 overflow-y-auto pb-2">
+                    {results!.pages.length > 0 && (
+                      <>
+                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Pages
+                        </p>
+                        {results!.pages.map((p) => (
+                          <button
+                            key={p.to}
+                            onClick={() => go(p.to)}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                              <Compass size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                                {p.label}
+                              </p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">Page</p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {results!.requests.length > 0 && (
+                      <>
+                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Demandes
+                        </p>
+                        {results!.requests.map((r) => (
+                          <button
+                            key={r.id}
+                            onClick={() => go('/student/requests')}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                              <FileText size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                                {r.objet || r.reference}
+                              </p>
+                              <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                                {r.reference} • {r.type}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {results!.documents.length > 0 && (
+                      <>
+                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Documents
+                        </p>
+                        {results!.documents.map((d) => (
+                          <button
+                            key={d.id}
+                            onClick={() => go('/student/documents')}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              <FolderOpen size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                                {d.name}
+                              </p>
+                              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                                {d.sizeKb} Ko
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+
+                    {results!.notifications.length > 0 && (
+                      <>
+                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                          Notifications
+                        </p>
+                        {results!.notifications.map((n) => (
+                          <button
+                            key={n.id}
+                            onClick={() => go('/student/notifications')}
+                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                          >
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                              <Bell size={15} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                                {n.title}
+                              </p>
+                              <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                                {n.message}
+                              </p>
+                            </div>
+                          </button>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                ) : (
+                  <div className="px-4 py-8 text-center">
+                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                      Aucun résultat
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                      pour « {query} »
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+         
+          <button
+            onClick={onToggleDark}
+            aria-label="Basculer le mode sombre"
+            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+          >
+            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+          </button>
+
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setShowNotifications((v) => !v)}
+              aria-label="Notifications"
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            >
+              <Bell size={18} />
+              {unreadCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-card-dark">
+                  {unreadCount >= 4 ? '+4' : unreadCount}
+                </span>
+              )}
+            </button>
+
+            {showNotifications && (
+              <div className="absolute right-0 top-full z-50 mt-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">Notifications</h3>
+                  <Link
+                    to="/student/notifications"
+                    onClick={() => setShowNotifications(false)}
+                    className="text-xs font-semibold text-primary-600 transition hover:text-primary-700"
+                  >
+                    Voir plus
+                  </Link>
+                </div>
+                <div className="max-h-80 overflow-y-auto">
+                  {notifications.slice(0, 4).map((item) => {
+                    const ItemIcon = categoryIcon[item.category?.toLowerCase()] || Bell;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleMarkRead(item)}
+                        className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                      >
+                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          <ItemIcon size={15} />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`truncate text-[13px] ${
+                                item.read
+                                  ? 'font-semibold text-slate-600 dark:text-slate-300'
+                                  : 'font-bold text-slate-900 dark:text-white'
+                              }`}
+                            >
+                              {item.title}
+                            </p>
+                            {!item.read && (
+                              <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600" />
+                            )}
+                          </div>
+                          <p className="mt-0.5 line-clamp-1 text-xs text-slate-400 dark:text-slate-500">
+                            {item.message}
+                          </p>
+                          <p className="mt-1 text-[10px] font-medium text-slate-400 dark:text-slate-600">
+                            {formatRelative(item.createdAt)}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                  {notifications.length === 0 && (
+                    <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+                      Aucune notification
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="mx-1 hidden h-9 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
+
+          <button
+            onClick={() => navigate('/student/profile')}
+            aria-label="Voir mon profil"
+            className="flex cursor-pointer items-center gap-3 rounded-full py-1.5 pl-1.5 pr-3 transition hover:bg-slate-100/80 dark:hover:bg-slate-800/60"
+          >
+            {student?.photo ? (
+              <img
+                src={student.photo}
+                alt="Photo de profil"
+                className="h-10 w-10 rounded-full object-cover ring-2 ring-primary-100 dark:ring-primary-900/40"
+              />
+            ) : (
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white shadow-sm">
+                {initials(firstName, lastName)}
+              </div>
+            )}
+            <div className="hidden text-left leading-tight sm:block">
+              <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100">
+                {firstName} {lastName}
+              </p>
+              <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
+                Étudiant · {filiere.split(' — ')[0]}
+              </p>
+            </div>
+          </button>
         </div>
       </div>
     </header>

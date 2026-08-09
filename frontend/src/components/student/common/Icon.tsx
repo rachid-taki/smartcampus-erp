@@ -35,6 +35,8 @@ import {
   Phone,
   Mail,
   MapPin,
+   Workflow,
+   Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -75,6 +77,8 @@ export const iconRegistry: Record<string, LucideIcon> = {
   Phone,
   Mail,
   MapPin,
+  Megaphone,
+  Workflow,
 };
 
 interface IconProps {

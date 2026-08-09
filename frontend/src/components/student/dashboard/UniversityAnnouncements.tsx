@@ -41,7 +41,7 @@ export default function UniversityAnnouncements({
         {announcements.slice(0, 3).map((item) => (
           <div
             key={item.id}
-            className="rounded-2xl border border-slate-200 bg-slate-50 p-1 transition-all duration-300 hover:border-primary-300 hover:bg-white hover:shadow-md dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+            className="rounded-2xl border border-slate-200 bg-slate-50 p-1 transition-all duration-300 hover:border-primary-300 hover:bg-white hover:shadow-md dark:hover:bg-slate-800  dark:border-slate-700 dark:bg-slate-800  cursor-pointer"
           >
             <div className="flex gap-2">
               <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary-100 text-primary-600 dark:bg-primary-500/20">

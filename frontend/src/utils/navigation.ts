@@ -1,13 +1,13 @@
 import type { NavItem } from './../types';
 
 export const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', to: '/' },
-  { id: 'profile', label: 'Mon Profil', icon: 'User', to: '/profil' },
-  { id: 'requests', label: 'Mes Demandes', icon: 'FileText', to: '/demandes' },
-  { id: 'new-request', label: 'Nouvelle Demande', icon: 'FilePlus2', to: '/demandes/nouvelle' },
-  { id: 'documents', label: 'Documents', icon: 'FolderOpen', to: '/documents' },
-  { id: 'notifications', label: 'Notifications', icon: 'Bell', to: '/notifications' },
-  { id: 'calendar', label: 'Calendrier', icon: 'CalendarDays', to: '/calendrier' },
-  { id: 'history', label: 'Historique', icon: 'History', to: '/historique' },
-  { id: 'settings', label: 'Paramètres', icon: 'Settings', to: '/parametres' },
+  { id: 'dashboard', label: 'Dashboard', icon: 'LayoutDashboard', to: '/student/dashboard' },
+  { id: 'profile', label: 'Mon Profil', icon: 'User', to: '/student/profile' },
+  { id: 'requests', label: 'Mes Demandes', icon: 'FileText', to: '/student/requests' },
+  { id: 'workflow', label: 'WorkFlow', icon: 'Workflow', to: '/student/workflow' },
+  { id: 'documents', label: 'Documents', icon: 'FolderOpen', to: '/student/documents' },
+  { id: 'notifications', label: 'Notifications', icon: 'Bell', to: '/student/notifications' },
+  { id: 'calendar', label: 'Calendrier', icon: 'CalendarDays', to: '/student/calendrier' },
+  { id: 'reclamations', label: 'Mes Réclamations', icon: 'Megaphone', to: '/student/reclamations' },
+  { id: 'settings', label: 'Paramètres', icon: 'Settings', to: '/student/parametres' },
 ];
