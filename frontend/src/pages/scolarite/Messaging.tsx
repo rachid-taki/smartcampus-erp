@@ -1,5 +1,4 @@
-import { useEffect, useRef, useState } from "react";
-import {
+import { useEffect, useMemo, useRef, useState } from "react";import {
     MessageSquare,
     Send,
     Paperclip,
@@ -21,25 +20,28 @@ import {
     getScolariteConversations,
     getScolariteMessages,
     sendScolariteMessage,
-    markScolariteConversationRead,
 } from "../../services/scolarite.service";
 import type { ScolariteConversation } from "../../services/scolarite.service";
 import { downloadDocument as downloadDocumentService } from "../../services/student.service";
+import { useMessagingSocket } from "../../hooks/useMessagingSocket";
+
+interface Expediteur {
+    id: string;
+    nom: string;
+    role: string;
+}
 
 interface Message {
     id: string;
+    id_conversation?: string;
     contenu: string;
     dateEnvoi: string;
     lu: boolean;
-    expediteur: {
-        id: string;
-        nom: string;
-        role: string;
-    };
+    isMine?: boolean;
+    expediteur: Expediteur;
     piecesJointes: any[];
 }
 
-// Couleurs par code de filière
 const FILIERE_COLORS: Record<string, { bg: string; text: string }> = {
     MGSI: {
         bg: "bg-emerald-100 dark:bg-emerald-900/30",
@@ -72,6 +74,30 @@ const getFilierStyle = (code?: string | null) => {
     };
 };
 
+const normalizeExpediteur = (raw: any): Expediteur => {
+    if (raw && typeof raw === "object" && "nom" in raw && "role" in raw) {
+        return raw as Expediteur;
+    }
+    if (typeof raw === "string") {
+        return { id: "unknown", nom: raw, role: "ETUDIANT" };
+    }
+    return { id: "unknown", nom: "Utilisateur", role: "ETUDIANT" };
+};
+
+const normalizeMessage = (raw: any): Message => {
+    const expediteur = normalizeExpediteur(raw.expediteur);
+    return {
+        id: raw.id ?? raw.id_message,
+        id_conversation: raw.id_conversation,
+        contenu: raw.contenu ?? "",
+        dateEnvoi: raw.dateEnvoi ?? raw.date_envoi ?? new Date().toISOString(),
+        lu: raw.lu ?? false,
+        isMine: raw.isMine ?? expediteur.role === "SCOLARITE",
+        expediteur,
+        piecesJointes: raw.piecesJointes ?? raw.pieces_jointes ?? [],
+    };
+};
+
 export default function ScolariteMessaging() {
     const [conversations, setConversations] = useState<ScolariteConversation[]>([]);
     const [activeConv, setActiveConv] = useState<ScolariteConversation | null>(null);
@@ -80,9 +106,32 @@ export default function ScolariteMessaging() {
     const [attachedFiles, setAttachedFiles] = useState<File[]>([]);
     const [sending, setSending] = useState(false);
     const [loadingMsgs, setLoadingMsgs] = useState(false);
+    const [typingUsers, setTypingUsers] = useState<Map<string, { nom: string; timeout: ReturnType<typeof setTimeout> }>>(new Map());
 
     const scrollRef = useRef<HTMLDivElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const currentUser = useMemo(() => {
+    try {
+        return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+        return {} as any;
+    }
+}, []);
+
+    const {
+        isConnected,
+        sendMessage: socketSendMessage,
+        joinConversation,
+        leaveConversation,
+        markAsRead: socketMarkAsRead,
+        startTyping,
+        stopTyping,
+        onNewMessage,
+        onConversationsRefresh,
+        onTypingUpdate,
+    } = useMessagingSocket();
 
     useEffect(() => {
         const load = async () => {
@@ -97,6 +146,45 @@ export default function ScolariteMessaging() {
     }, []);
 
     useEffect(() => {
+        const unsub = onConversationsRefresh(async () => {
+            const data = await getScolariteConversations();
+            setConversations(data);
+        });
+        return unsub;
+    }, [onConversationsRefresh]);
+
+    useEffect(() => {
+        const unsub = onNewMessage((rawMsg) => {
+            const msg = normalizeMessage(rawMsg);
+            const convId = msg.id_conversation;
+            if (activeConv && convId === activeConv.id) {
+                setMessages((prev) => {
+                    if (prev.some((m) => m.id === msg.id)) return prev;
+                    const filtered = msg.isMine
+                        ? prev.filter(
+                            (m) =>
+                                !(String(m.id).startsWith("temp-") && m.contenu === msg.contenu)
+                        )
+                        : prev;
+                    return [...filtered, msg];
+                });
+                if (!msg.isMine) {
+                    socketMarkAsRead(activeConv.id);
+                }
+            }
+            getScolariteConversations().then(setConversations);
+        });
+        return unsub;
+    }, [onNewMessage, activeConv, socketMarkAsRead]);
+
+    useEffect(() => {
+        if (activeConv) {
+            joinConversation(activeConv.id);
+            return () => leaveConversation(activeConv.id);
+        }
+    }, [activeConv, joinConversation, leaveConversation]);
+
+    useEffect(() => {
         if (!activeConv) {
             setMessages([]);
             return;
@@ -104,10 +192,10 @@ export default function ScolariteMessaging() {
 
         const load = async () => {
             try {
-                setLoadingMsgs(messages.length === 0);
+                setLoadingMsgs(true);
                 const data = await getScolariteMessages(activeConv.id);
-                setMessages(data);
-                await markScolariteConversationRead(activeConv.id);
+                setMessages(data.map(normalizeMessage));
+                socketMarkAsRead(activeConv.id);
             } catch (err) {
                 console.error(err);
             } finally {
@@ -116,9 +204,33 @@ export default function ScolariteMessaging() {
         };
 
         load();
-        const interval = setInterval(load, 5000);
-        return () => clearInterval(interval);
-    }, [activeConv]);
+    }, [activeConv, socketMarkAsRead]);
+
+    useEffect(() => {
+        const unsub = onTypingUpdate((data) => {
+            if (!activeConv || data.conversationId !== activeConv.id) return;
+            setTypingUsers((prev) => {
+                const next = new Map(prev);
+                if (next.has(data.userId)) {
+                    clearTimeout(next.get(data.userId)!.timeout);
+                }
+                if (data.isTyping) {
+                    const timeout = setTimeout(() => {
+                        setTypingUsers((p) => {
+                            const n = new Map(p);
+                            n.delete(data.userId);
+                            return n;
+                        });
+                    }, 3000);
+                    next.set(data.userId, { nom: data.nom || "Étudiant", timeout });
+                } else {
+                    next.delete(data.userId);
+                }
+                return next;
+            });
+        });
+        return unsub;
+    }, [onTypingUpdate, activeConv]);
 
     useEffect(() => {
         scrollRef.current?.scrollTo({
@@ -132,30 +244,35 @@ export default function ScolariteMessaging() {
 
         setSending(true);
         try {
-            const sent = await sendScolariteMessage(activeConv.id, input.trim(), attachedFiles);
-            setMessages((prev) => [
-                ...prev,
-                {
-                    id: sent.id,
-                    contenu: input.trim(),
-                    dateEnvoi: sent.dateEnvoi,
-                    lu: true,
-                    expediteur: {
-                        id: "me",
-                        nom: "Scolarité",
+            if (attachedFiles.length > 0) {
+                const sent = await sendScolariteMessage(activeConv.id, input.trim(), attachedFiles);
+                const normalized = normalizeMessage(sent);
+                setMessages((prev) => [...prev, { ...normalized, isMine: true }]);
+            } else {
+                socketSendMessage(activeConv.id, input.trim());
+                setMessages((prev) => [
+                    ...prev,
+                    {
+                        id: `temp-${Date.now()}`,
+                        id_conversation: activeConv.id,
+                        contenu: input.trim(),
+                        dateEnvoi: new Date().toISOString(),
+                        lu: false,
+                        isMine: true,
+                        expediteur: {
+                        id: currentUser.id_utilisateur ?? currentUser.id ?? "me",
+                        nom:
+                            `${currentUser.prenom ?? ""} ${currentUser.nom ?? ""}`.trim() ||
+                            "Scolarité",
                         role: "SCOLARITE",
                     },
-                    piecesJointes: attachedFiles.map((f) => ({
-                        id_document: `temp-${Date.now()}`,
-                        nom: f.name,
-                        type: f.type,
-                        taille: f.size,
-                        url: "",
-                    })),
-                },
-            ]);
+                        piecesJointes: [],
+                    },
+                ]);
+            }
             setInput("");
             setAttachedFiles([]);
+            if (activeConv) stopTyping(activeConv.id);
         } catch (err) {
             console.error(err);
         } finally {
@@ -163,9 +280,22 @@ export default function ScolariteMessaging() {
         }
     };
 
-    const handleDownloadAttachment = async (documentId: string, fileName: string) => {
-        console.log("🔍 Tentative de téléchargement:", { documentId, fileName });
+    const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        setInput(e.target.value);
+        if (!activeConv) return;
 
+        if (e.target.value.trim()) {
+            startTyping(activeConv.id);
+            if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+            typingTimeoutRef.current = setTimeout(() => {
+                if (activeConv) stopTyping(activeConv.id);
+            }, 2000);
+        } else {
+            stopTyping(activeConv.id);
+        }
+    };
+
+    const handleDownloadAttachment = async (documentId: string, fileName: string) => {
         if (!documentId || documentId.startsWith("temp-")) {
             alert("Ce fichier n'a pas encore été envoyé.");
             return;
@@ -174,11 +304,8 @@ export default function ScolariteMessaging() {
         try {
             const blob = await downloadDocumentService(documentId);
 
-            // Si c'est une erreur JSON déguisée en blob
             if (blob.type === "application/json" || blob.size < 500) {
                 const text = await blob.text();
-                console.error("❌ Erreur du serveur:", text);
-
                 try {
                     const errorData = JSON.parse(text);
                     alert(`Erreur serveur: ${errorData.message || text}`);
@@ -188,7 +315,6 @@ export default function ScolariteMessaging() {
                 return;
             }
 
-            // Téléchargement normal
             const url = window.URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.href = url;
@@ -197,14 +323,9 @@ export default function ScolariteMessaging() {
             link.click();
             document.body.removeChild(link);
             window.URL.revokeObjectURL(url);
-
-            console.log("✅ Téléchargement lancé");
         } catch (err: any) {
-            console.error("❌ Erreur téléchargement:", err);
-
             if (err.response?.data instanceof Blob) {
                 const text = await err.response.data.text();
-                console.error("❌ Contenu erreur:", text);
                 try {
                     const errorData = JSON.parse(text);
                     alert(`Erreur: ${errorData.message || text}`);
@@ -224,6 +345,8 @@ export default function ScolariteMessaging() {
         }
     };
 
+    const typingNames = Array.from(typingUsers.values()).map((t) => t.nom);
+
     return (
         <div className="animate-fade-in space-y-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -238,10 +361,13 @@ export default function ScolariteMessaging() {
                         Communiquez avec les étudiants et répondez à leurs demandes.
                     </p>
                 </div>
+                <div className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+                    <span className={`h-1.5 w-1.5 rounded-full ${isConnected ? "bg-emerald-500" : "bg-amber-500"}`} />
+                    {isConnected ? "Connecté en temps réel" : "Reconnexion..."}
+                </div>
             </div>
 
             <div className="grid grid-cols-1 gap-6 xl:grid-cols-[320px_1fr_300px]">
-                {/* Liste des conversations */}
                 <div className="card overflow-hidden p-0">
                     <div className="border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                         <div className="flex items-center justify-between">
@@ -309,7 +435,6 @@ export default function ScolariteMessaging() {
                     </div>
                 </div>
 
-                {/* Zone de chat */}
                 <div className="card flex flex-col overflow-hidden p-0">
                     {!activeConv ? (
                         <div className="flex h-full min-h-[500px] flex-col items-center justify-center gap-3 text-center">
@@ -327,8 +452,11 @@ export default function ScolariteMessaging() {
                         <>
                             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
                                 <div className="flex items-center gap-3">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                                        <GraduationCap size={18} />
+                                    <div className="relative">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                                            <GraduationCap size={18} />
+                                        </div>
+                                        <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
                                     </div>
                                     <div className="min-w-0 flex-1">
                                         <div className="flex items-center gap-2">
@@ -364,7 +492,7 @@ export default function ScolariteMessaging() {
                                     </p>
                                 ) : (
                                     messages.map((msg) => {
-                                        const isMine = msg.expediteur.role === "SCOLARITE";
+                                        const isMine = msg.isMine ?? msg.expediteur.role === "SCOLARITE";
                                         return (
                                             <div
                                                 key={msg.id}
@@ -383,7 +511,7 @@ export default function ScolariteMessaging() {
                                                     >
                                                         {msg.contenu}
                                                     </div>
-                                                    {msg.piecesJointes.length > 0 && (
+                                                    {msg.piecesJointes && msg.piecesJointes.length > 0 && (
                                                         <div className={`flex flex-wrap gap-1.5 ${isMine ? "justify-end" : ""}`}>
                                                             {msg.piecesJointes.map((pj, i) => (
                                                                 <button
@@ -412,7 +540,24 @@ export default function ScolariteMessaging() {
                                 )}
                             </div>
 
-                            {/* Input fixe */}
+                            {typingNames.length > 0 && (
+                                <div className="flex items-center gap-2 border-t border-slate-100 px-5 py-2 dark:border-slate-800">
+                                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                        <User size={10} />
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                        <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                            {typingNames.join(", ")} tape{typingNames.length > 1 ? "nt" : ""}
+                                        </span>
+                                        <div className="flex gap-0.5">
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "0ms" }} />
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "150ms" }} />
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-slate-400" style={{ animationDelay: "300ms" }} />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="border-t border-slate-100 p-4 dark:border-slate-800">
                                 {attachedFiles.length > 0 && (
                                     <div className="mb-2 flex flex-wrap gap-2">
@@ -453,7 +598,7 @@ export default function ScolariteMessaging() {
                                     />
                                     <textarea
                                         value={input}
-                                        onChange={(e) => setInput(e.target.value)}
+                                        onChange={handleInputChange}
                                         onKeyDown={handleKeyDown}
                                         rows={1}
                                         placeholder="Répondre à l'étudiant..."

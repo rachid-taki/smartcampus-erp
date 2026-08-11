@@ -10,6 +10,9 @@ const profileRoutes = require("./modules/authentification/routes/profile.routes"
 const auditRoutes = require("./modules/authentification/routes/audit.routes");
 const studentRoutes = require("./modules/student/routes/student.routes");
 const assistantRoutes = require("./modules/assistant/routes/assistant.routes");
+const notificationRoutes = require("./modules/notification/routes/notification.routes");
+const superadminRoutes = require("./modules/superadmin/routes/superadmin.routes");
+
 
 const scolariteMessagingRoutes = require("./modules/scolarite/routes/messaging.routes");
 
@@ -33,6 +36,8 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/audit", auditRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/student/assistant", assistantRoutes);
+app.use("/api/notifications", notificationRoutes);
+app.use("/api/superadmin", superadminRoutes);
 
 app.use("/api/scolarite/messages", scolariteMessagingRoutes);
 

@@ -5,7 +5,8 @@ import {
   LogOut,
   PanelLeftClose,
   PanelLeftOpen,
-  X,Megaphone,
+  X,
+  Megaphone,
 } from 'lucide-react';
 
 import Icon from '../../student/common/Icon';
@@ -101,9 +102,12 @@ function SidebarContent({
 
   return (
     <div className="flex h-full flex-col">
-      <div className={`flex items-center py-7 ${
-        collapsed ? "justify-center px-0" : "gap-3 px-6"
-      }`}>
+      {/* Header avec bordure bottom */}
+      <div
+        className={`flex items-center border-b border-slate-200/70 dark:border-slate-800 ${
+          collapsed ? "justify-center px-0 py-6" : "gap-3 px-6 py-7"
+        }`}
+      >
         <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/30 transition-transform hover:scale-105">
           <GraduationCap size={22} strokeWidth={2.2} />
           <span className="absolute inset-0 rounded-2xl ring-2 ring-white/20" />
@@ -122,7 +126,6 @@ function SidebarContent({
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
-        
         {navItems.map((item) => (
           <NavLink
             key={item.id}

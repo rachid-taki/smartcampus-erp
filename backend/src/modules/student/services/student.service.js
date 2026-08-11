@@ -1,4 +1,5 @@
 const pool = require("../../../config/database");
+const notificationService = require("../../notification/services/notification.service");
 
 const getProfile = async (id) => {
     const { rows } = await pool.query(
@@ -320,6 +321,18 @@ const createRequest = async (idEtudiant, body, files = []) => {
     );
 
     const demande = demandeResult.rows[0];
+
+    const typeResult = await pool.query(
+        `SELECT libelle FROM type_demande WHERE id_type = $1`,
+        [body.id_type]
+    );
+
+    // 🔔 Envoyer la notification par email
+    await notificationService.notifyDemandeSoumise(idEtudiant, {
+        numero: demande.numero,
+        type: typeResult.rows[0]?.libelle || "Demande",
+        objet: demande.objet,
+    });
 
     // Save uploaded files
     for (const file of files) {
