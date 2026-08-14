@@ -34,6 +34,19 @@ const rhCongesRoutes = require('./modules/rh/routes/rh.conges.routes');
 const rhAttestationsRoutes = require('./modules/rh/routes/rh.attestations.routes');
 const rhHeuresRoutes = require('./modules/rh/routes/rh.heures.routes');
 const rhDashboardRoutes = require('./modules/rh/routes/rh.dashboard.routes');
+const enseignantReclamationsRoutes = require('./modules/enseignant/routes/enseignant.reclamations.routes');
+const enseignantAbsencesRoutes = require('./modules/enseignant/routes/enseignant.absences.routes');
+const enseignantConsultationsRoutes = require('./modules/enseignant/routes/enseignant.consultations.routes');
+const clubsRoutes = require('./modules/clubs/routes/clubs.routes');
+const presidentsRoutes = require('./modules/clubs/routes/presidents.routes');
+const reservationsRoutes = require('./modules/clubs/routes/reservations.routes');
+const evenementsRoutes = require('./modules/clubs/routes/evenements.routes');
+const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
+const presencesRoutes = require('./modules/clubs/routes/presences.routes');
+const alertesRoutes = require('./modules/clubs/routes/alertes.routes');
+const clubsDashboardRoutes = require('./modules/clubs/routes/dashboard.routes');
+const parametresRoutes = require('./modules/configuration/routes/parametres.routes');
+const calendriersRoutes = require('./modules/configuration/routes/calendriers.routes');
 
 
 // 3. Mount the routes to the /api/scolarite path
@@ -48,6 +61,19 @@ app.use('/api/rh', rhCongesRoutes);
 app.use('/api/rh', rhAttestationsRoutes);
 app.use('/api/rh', rhHeuresRoutes);
 app.use('/api/rh', rhDashboardRoutes);
+app.use('/api/enseignant', enseignantReclamationsRoutes);
+app.use('/api/enseignant', enseignantAbsencesRoutes);
+app.use('/api/enseignant', enseignantConsultationsRoutes);
+app.use('/api/clubs', clubsRoutes);
+app.use('/api/presidents', presidentsRoutes);
+app.use('/api', reservationsRoutes);
+app.use('/api/evenements', evenementsRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/presences', presencesRoutes);
+app.use('/api/alertes', alertesRoutes);
+app.use('/api/clubs-dashboard', clubsDashboardRoutes);
+app.use('/api/parametres', parametresRoutes);
+app.use('/api/calendriers', calendriersRoutes);
 
 //app.use("/api/permissions", permissionRoutes);
 //app.use("/api/auth", authRoutes);
