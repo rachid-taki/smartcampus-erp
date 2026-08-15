@@ -97,12 +97,12 @@ const formatTimeFr = (isoTime: string | null | undefined): string => {
 
 const getStatutBadgeClasses = (statut: StatutSession): string => {
   const map: Record<StatutSession, string> = {
-    Planifiee: 'bg-blue-100 text-blue-700 border border-blue-200',
-    En_Cours: 'bg-amber-100 text-amber-700 border border-amber-200 animate-pulse',
-    Terminee: 'bg-green-100 text-green-700 border border-green-200',
-    Annulee: 'bg-red-100 text-red-700 border border-red-200',
+    Planifiee: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+    En_Cours: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 animate-pulse',
+    Terminee: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+    Annulee: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
   };
-  return map[statut] ?? 'bg-gray-100 text-gray-600';
+  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -116,13 +116,17 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
-            toast.type === 'success' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-red-800'
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
+            toast.type === 'success' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
-          {toast.type === 'success' ? <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" /> : <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />}
+          <div className={`flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${
+            toast.type === 'success' ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+          }`}>
+            {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          </div>
           <p className="text-sm flex-1">{toast.message}</p>
-          <button onClick={() => onDismiss(toast.id)} className="opacity-60 hover:opacity-100"><X className="h-4 w-4" /></button>
+          <button onClick={() => onDismiss(toast.id)} className="opacity-60 hover:opacity-100 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5"><X className="h-4 w-4" /></button>
         </div>
       ))}
     </div>
@@ -194,26 +198,29 @@ function CreateSessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={() => !saving && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg" onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">Planifier une Session</h2>
-          <button onClick={onClose} disabled={saving} className="text-gray-400 hover:text-gray-600"><X className="h-5 w-5" /></button>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
+      <div className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Planifier une Session</h2>
+          <button onClick={onClose} disabled={saving} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" /><span>{formError}</span>
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
+              <span>{formError}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Salle <span className="text-red-500">*</span></label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Salle <span className="text-red-500">*</span></label>
             <select
               value={form.id_salle}
               onChange={e => setForm({ ...form, id_salle: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             >
               <option value="">-- Sélectionner une salle --</option>
               {salles.map(s => <option key={s.id_salle} value={s.id_salle}>{s.numero} {s.nom ? `(${s.nom})` : ''}</option>)}
@@ -222,34 +229,34 @@ function CreateSessionModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">ID Cours (UUID)</label>
-              <input type="text" value={form.id_cours} onChange={e => setForm({ ...form, id_cours: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="UUID du cours" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Cours (UUID)</label>
+              <input type="text" value={form.id_cours} onChange={e => setForm({ ...form, id_cours: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" placeholder="UUID du cours" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">ID Professeur (UUID)</label>
-              <input type="text" value={form.id_professeur} onChange={e => setForm({ ...form, id_professeur: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" placeholder="UUID du prof" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Professeur (UUID)</label>
+              <input type="text" value={form.id_professeur} onChange={e => setForm({ ...form, id_professeur: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" placeholder="UUID du prof" />
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Date</label>
-              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Date</label>
+              <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Début</label>
-              <input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Début</label>
+              <input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Fin</label>
-              <input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Fin</label>
+              <input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
             </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Annuler</button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">Annuler</button>
+          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} Planifier
           </button>
         </div>
@@ -285,7 +292,7 @@ function UpdateSessionModal({
     setError(null);
     setSaving(true);
     try {
-      const payload: any = { statut };
+      const payload: Record<string, any> = { statut };
       if (statut === 'En_Cours' && heureDebutReelle) payload.heure_debut_reelle = heureDebutReelle;
       if (statut === 'Terminee') {
         if (heureFinReelle) payload.heure_fin_reelle = heureFinReelle;
@@ -312,51 +319,59 @@ function UpdateSessionModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={() => !saving && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={e => e.stopPropagation()}>
-        <div className="px-6 py-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Mettre à jour la session</h2>
-          {error && <div className="mb-4 text-sm text-red-700 bg-red-50 p-3 rounded-lg">{error}</div>}
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
+      <div className="card p-0 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="px-6 py-5 space-y-5">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Mettre à jour la session</h2>
+          
+          {error && (
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
+              <span>{error}</span>
+            </div>
+          )}
 
-          <div className="bg-gray-50 rounded-lg p-4 space-y-2 mb-4 text-sm">
-            <p><span className="text-gray-500">Salle:</span> <span className="font-medium">{session.salle?.numero}</span></p>
-            <p><span className="text-gray-500">Cours:</span> <span className="font-medium">{session.cours?.nom}</span></p>
-            <p><span className="text-gray-500">Prévu:</span> <span className="font-medium">{formatTimeFr(session.heure_debut)} - {formatTimeFr(session.heure_fin)}</span></p>
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-2 border border-slate-200/70 dark:border-slate-700 text-sm">
+            <p><span className="text-slate-500 dark:text-slate-400">Salle:</span> <span className="font-medium text-slate-800 dark:text-white">{session.salle?.numero}</span></p>
+            <p><span className="text-slate-500 dark:text-slate-400">Cours:</span> <span className="font-medium text-slate-800 dark:text-white">{session.cours?.nom}</span></p>
+            <p><span className="text-slate-500 dark:text-slate-400">Prévu:</span> <span className="font-medium text-slate-800 dark:text-white tabular-nums">{formatTimeFr(session.heure_debut)} - {formatTimeFr(session.heure_fin)}</span></p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Statut de la session</label>
-              <select value={statut} onChange={e => setStatut(e.target.value as StatutSession)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Statut de la session</label>
+              <select value={statut} onChange={e => setStatut(e.target.value as StatutSession)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent">
                 {STATUT_OPTIONS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
             </div>
 
             {statut === 'En_Cours' && (
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Heure de début réelle</label>
-                <input type="time" value={heureDebutReelle} onChange={e => setHeureDebutReelle(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de début réelle</label>
+                <input type="time" value={heureDebutReelle} onChange={e => setHeureDebutReelle(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
               </div>
             )}
 
             {statut === 'Terminee' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Heure de fin réelle</label>
-                  <input type="time" value={heureFinReelle} onChange={e => setHeureFinReelle(e.target.value)} className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de fin réelle</label>
+                  <input type="time" value={heureFinReelle} onChange={e => setHeureFinReelle(e.target.value)} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Nb. Étudiants (Présence)</label>
-                  <input type="number" min="0" value={nbEtudiants} onChange={e => setNbEtudiants(e.target.value)} placeholder="Ex: 24" className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm" />
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Nb. Étudiants (Présence)</label>
+                  <input type="number" min="0" value={nbEtudiants} onChange={e => setNbEtudiants(e.target.value)} placeholder="Ex: 24" className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Annuler</button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">Annuler</button>
+          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />} Enregistrer
           </button>
         </div>
@@ -416,106 +431,143 @@ export default function GestionSessions() {
   const terminees = sessions.filter(s => s.statut === 'Terminee').length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         <header className="flex items-center gap-3 mb-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-100">
-            <Activity className="h-5 w-5 text-blue-600" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
+            <Activity className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Sessions de Salles (Smart Campus)</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Suivi en temps réel de l'occupation des salles de cours.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Sessions de Salles (Smart Campus)</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Suivi en temps réel de l'occupation des salles de cours.</p>
           </div>
         </header>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Toutes les sessions</p>
-              <Calendar className="h-5 w-5 text-indigo-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Toutes les sessions</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
+                <Calendar className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{sessions.length}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{sessions.length}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">En Cours actuellement</p>
-              <Play className="h-5 w-5 text-amber-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">En Cours actuellement</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                <Play className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{enCours}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{enCours}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Sessions Terminées</p>
-              <CheckSquare className="h-5 w-5 text-green-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Sessions Terminées</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 dark:bg-green-900/30">
+                <CheckSquare className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{terminees}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{terminees}</p>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
+        <div className="card p-4 mb-6 flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Rechercher salle, cours ou prof..." className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
+            <input type="text" value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="Rechercher salle, cours ou prof..." className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" />
           </div>
-          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value)} className="md:w-48 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white">
+          <select value={statutFilter} onChange={e => setStatutFilter(e.target.value)} className="md:w-48 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent">
             <option value="">Tous les statuts</option>
             {STATUT_OPTIONS.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
           </select>
-          <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors">
+          <button onClick={() => setShowCreateModal(true)} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap">
             <Plus className="h-4 w-4" /> Planifier Session
           </button>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+              <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Salle & Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Cours & Professeur</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Horaires Prévus</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Réalité (Smart Tracking)</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Salle & Date</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cours & Professeur</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Horaires Prévus</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Réalité (Smart Tracking)</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {loading ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary-500 dark:text-primary-400" /></td></tr>
                 ) : filteredSessions.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Aucune session trouvée.</td></tr>
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-2">
+                        <Activity className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Aucune session trouvée.</p>
+                    </td>
+                  </tr>
                 ) : (
                   filteredSessions.map((s) => {
                     const prof = s.professeur?.employe?.utilisateur;
                     return (
-                      <tr key={s.id_session} className="hover:bg-gray-50">
+                      <tr key={s.id_session} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800"><MapPin className="h-4 w-4 text-indigo-500" /> {s.salle?.numero}</div>
-                          <div className="text-xs text-gray-500 mt-1">{formatDateFr(s.date)}</div>
+                          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-white">
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400">
+                              <MapPin className="h-3.5 w-3.5" />
+                            </div>
+                            {s.salle?.numero}
+                          </div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400 mt-1 tabular-nums">{formatDateFr(s.date)}</div>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-1.5 text-sm font-medium text-gray-800"><BookOpen className="h-4 w-4 text-emerald-500" /> {s.cours?.nom || 'Inconnu'}</div>
-                          <div className="flex items-center gap-1.5 text-xs text-gray-500 mt-1"><User className="h-3.5 w-3.5" /> {prof ? `${prof.prenom} ${prof.nom}` : 'Non assigné'}</div>
+                          <div className="flex items-center gap-1.5 text-sm font-medium text-slate-800 dark:text-white">
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+                              <BookOpen className="h-3.5 w-3.5" />
+                            </div>
+                            {s.cours?.nom || 'Inconnu'}
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
+                              <User className="h-2.5 w-2.5" />
+                            </div>
+                            {prof ? `${prof.prenom} ${prof.nom}` : 'Non assigné'}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {formatTimeFr(s.heure_debut)} - {formatTimeFr(s.heure_fin)}</div>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                          <div className="flex items-center gap-1.5">
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                              <Clock className="h-3.5 w-3.5" />
+                            </div>
+                            {formatTimeFr(s.heure_debut)} - {formatTimeFr(s.heure_fin)}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
+                        <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 tabular-nums">
                           {s.heure_debut_reelle ? (
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-xs">Début: <span className="font-semibold text-gray-800">{formatTimeFr(s.heure_debut_reelle)}</span></span>
-                              {s.heure_fin_reelle && <span className="text-xs">Fin: <span className="font-semibold text-gray-800">{formatTimeFr(s.heure_fin_reelle)}</span></span>}
-                              {s.nombre_etudiants !== null && <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded-full w-max mt-1">{s.nombre_etudiants} présents</span>}
+                              <span className="text-xs">Début: <span className="font-semibold text-slate-800 dark:text-white">{formatTimeFr(s.heure_debut_reelle)}</span></span>
+                              {s.heure_fin_reelle && <span className="text-xs">Fin: <span className="font-semibold text-slate-800 dark:text-white">{formatTimeFr(s.heure_fin_reelle)}</span></span>}
+                              {s.nombre_etudiants !== null && s.nombre_etudiants !== undefined && (
+                                <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded-full w-max mt-1 border border-slate-200 dark:border-slate-700">
+                                  {s.nombre_etudiants} présents
+                                </span>
+                              )}
                             </div>
-                          ) : <span className="text-gray-400 italic">En attente...</span>}
+                          ) : <span className="text-slate-400 dark:text-slate-500 italic">En attente...</span>}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatutBadgeClasses(s.statut)}`}>
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatutBadgeClasses(s.statut)}`}>
                             {s.statut.replace('_', ' ')}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <button onClick={() => setSessionToUpdate(s)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                          <button onClick={() => setSessionToUpdate(s)} className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors">
                             Mettre à jour
                           </button>
                         </td>

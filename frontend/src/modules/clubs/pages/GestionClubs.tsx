@@ -29,7 +29,7 @@ interface Utilisateur {
 }
 
 interface Etudiant {
-  id_etudiant: string; // Ajout de l'ID étudiant
+  id_etudiant: string;
   utilisateur: Utilisateur;
 }
 
@@ -77,11 +77,10 @@ interface ClubFormState {
   description: string;
   budget: string;
   statut: StatutClub;
-  id_etudiant: string; // NOUVEAU: Pour assigner le président
+  id_etudiant: string;
 }
 
 const API_BASE = 'http://localhost:3000/api/clubs';
-// Assumons qu'une route permet de récupérer les étudiants pour le menu déroulant
 const API_ETUDIANTS = 'http://localhost:3000/api/scolarite/etudiants'; 
 
 const STATUT_OPTIONS: StatutClub[] = ['Actif', 'Inactif', 'Suspendu'];
@@ -123,11 +122,11 @@ const formatCurrencyMAD = (value: string | number | null | undefined): string =>
 
 const getStatutBadgeClasses = (statut: StatutClub): string => {
   const map: Record<StatutClub, string> = {
-    Actif: 'bg-green-100 text-green-700 border border-green-200',
-    Inactif: 'bg-gray-100 text-gray-600 border border-gray-200',
-    Suspendu: 'bg-red-100 text-red-700 border border-red-200',
+    Actif: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+    Inactif: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
+    Suspendu: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
   };
-  return map[statut] ?? 'bg-gray-100 text-gray-600 border border-gray-200';
+  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
 };
 
 const getPresidentName = (club: Club): string => {
@@ -138,12 +137,12 @@ const getPresidentName = (club: Club): string => {
 };
 
 const avatarPalette = [
-  'bg-indigo-100 text-indigo-700',
-  'bg-teal-100 text-teal-700',
-  'bg-rose-100 text-rose-700',
-  'bg-amber-100 text-amber-700',
-  'bg-violet-100 text-violet-700',
-  'bg-sky-100 text-sky-700',
+  'bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300',
+  'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300',
+  'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300',
+  'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',
+  'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',
+  'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300',
 ];
 
 const getAvatarColor = (seed: string): string => {
@@ -170,21 +169,27 @@ function ToastContainer({
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
             toast.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
-          {toast.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-          ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-          )}
+          <div className={`flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${
+            toast.type === 'success' 
+              ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' 
+              : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+          }`}>
+            {toast.type === 'success' ? (
+              <CheckCircle className="h-4 w-4" />
+            ) : (
+              <AlertTriangle className="h-4 w-4" />
+            )}
+          </div>
           <p className="text-sm flex-1">{toast.message}</p>
           <button
             onClick={() => onDismiss(toast.id)}
-            className="text-current opacity-60 hover:opacity-100 transition-opacity"
+            className="text-current opacity-60 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
           >
             <X className="h-4 w-4" />
           </button>
@@ -212,16 +217,16 @@ function KpiCard({
   iconColor: string;
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition-shadow duration-200">
+    <div className="card p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
           {label}
         </p>
         <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${iconBg}`}>
           <span className={iconColor}>{icon}</span>
         </div>
       </div>
-      <p className="text-2xl font-bold text-gray-800">{value}</p>
+      <p className="text-2xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{value}</p>
     </div>
   );
 }
@@ -261,7 +266,6 @@ function ClubFormModal({
   const [etudiants, setEtudiants] = useState<Etudiant[]>([]);
   const [loadingEtudiants, setLoadingEtudiants] = useState(false);
 
-  // Charger la liste des étudiants pour le selecteur de président
   useEffect(() => {
     setLoadingEtudiants(true);
     fetch(API_ETUDIANTS)
@@ -301,7 +305,7 @@ function ClubFormModal({
         description: form.description.trim() || undefined,
         budget: budgetNum,
         statut: form.statut,
-        id_etudiant: form.id_etudiant || undefined, // Envoi de l'ID du président
+        id_etudiant: form.id_etudiant || undefined,
       };
 
       const url = mode === 'create' ? API_BASE : `${API_BASE}/${initialData?.id_club}`;
@@ -340,20 +344,20 @@ function ClubFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
               {mode === 'create' ? 'Nouveau Club' : 'Modifier le Club'}
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               {mode === 'create'
                 ? 'Renseignez les informations pour créer un nouveau club.'
                 : 'Mettez à jour les informations du club.'}
@@ -362,7 +366,7 @@ function ClubFormModal({
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
@@ -371,14 +375,16 @@ function ClubFormModal({
         {/* Modal Body */}
         <div className="px-6 py-5 space-y-4">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{formError}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               Nom du club <span className="text-red-500">*</span>
             </label>
             <input
@@ -386,12 +392,12 @@ function ClubFormModal({
               value={form.nom}
               onChange={(e) => updateField('nom', e.target.value)}
               placeholder="Ex: Club Robotique"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               Description
             </label>
             <textarea
@@ -399,13 +405,13 @@ function ClubFormModal({
               onChange={(e) => updateField('description', e.target.value)}
               rows={3}
               placeholder="Décrivez la mission et les activités du club..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Budget (DH) <span className="text-red-500">*</span>
               </label>
               <input
@@ -415,17 +421,17 @@ function ClubFormModal({
                 value={form.budget}
                 onChange={(e) => updateField('budget', e.target.value)}
                 placeholder="Ex: 5000"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Statut
               </label>
               <select
                 value={form.statut}
                 onChange={(e) => updateField('statut', e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 {STATUT_OPTIONS.map((s) => (
                   <option key={s} value={s}>
@@ -436,20 +442,19 @@ function ClubFormModal({
             </div>
           </div>
 
-          {/* SÉLECTEUR DE PRÉSIDENT */}
-          <div className="pt-2 border-t border-gray-100">
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+          <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               Président du Club (Optionnel)
             </label>
             {loadingEtudiants ? (
-              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-2">
                 <Loader2 className="h-4 w-4 animate-spin" /> Chargement des étudiants...
               </div>
             ) : (
               <select
                 value={form.id_etudiant}
                 onChange={(e) => updateField('id_etudiant', e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 <option value="">-- Aucun président assigné --</option>
                 {etudiants.map((etu) => (
@@ -459,7 +464,7 @@ function ClubFormModal({
                 ))}
               </select>
             )}
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
               Sélectionnez un étudiant pour lui attribuer le rôle de président.
             </p>
           </div>
@@ -467,18 +472,18 @@ function ClubFormModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-xl">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === 'create' ? 'Créer le club' : 'Enregistrer les modifications'}
@@ -538,48 +543,50 @@ function DeleteConfirmModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={() => !deleting && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-md"
+        className="card p-0 w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-6 py-6 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-            <Trash2 className="h-7 w-7 text-red-600" />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+            <Trash2 className="h-7 w-7" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-2 tracking-tight">
             Supprimer le club ?
           </h2>
-          <p className="text-sm text-gray-500 mb-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-1">
             Vous êtes sur le point de supprimer définitivement :
           </p>
-          <p className="text-sm font-semibold text-gray-800 mb-4">"{club.nom}"</p>
-          <p className="text-xs text-gray-400">
+          <p className="text-sm font-semibold text-slate-800 dark:text-white mb-4">"{club.nom}"</p>
+          <p className="text-xs text-slate-400 dark:text-slate-500">
             Cette action est irréversible et ne peut pas être annulée.
           </p>
 
           {deleteError && (
-            <div className="mt-4 flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700 text-left">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="mt-4 flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400 text-left">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{deleteError}</span>
             </div>
           )}
         </div>
 
-        <div className="flex justify-center gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex justify-center gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 bg-surface dark:bg-surface-dark/50 rounded-b-card">
           <button
             onClick={onClose}
             disabled={deleting}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleDelete}
             disabled={deleting}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg shadow-soft transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {deleting && <Loader2 className="h-4 w-4 animate-spin" />}
             Supprimer
@@ -680,29 +687,29 @@ export default function GestionClubs() {
     return matchesSearch && matchesStatut;
   });
 
-  // ── KPI calculations (based on the full unfiltered list) ──
+  // ── KPI calculations ──
   const totalClubs = clubs.length;
   const clubsActifs = clubs.filter((c) => c.statut === 'Actif').length;
   const budgetTotal = clubs.reduce((sum, c) => sum + toNumber(c.budget), 0);
 
   // ───────────────────────────────────────────────────────────
-  // Error State (full page, only when nothing has loaded yet)
+  // Error State
   // ───────────────────────────────────────────────────────────
 
   if (error && !loading && clubs.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-md border border-red-100 p-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-            <AlertTriangle className="h-7 w-7 text-red-600" />
+      <div className="sc-portal min-h-screen flex items-center justify-center p-6 animate-fade-in">
+        <div className="max-w-md w-full card p-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-7 w-7" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-2 tracking-tight">
             Erreur de chargement
           </h2>
-          <p className="text-sm text-gray-500 mb-6">{error}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{error}</p>
           <button
             onClick={() => fetchClubs()}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all"
           >
             <RefreshCw className="h-4 w-4" />
             Réessayer
@@ -713,18 +720,18 @@ export default function GestionClubs() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex items-center gap-3 mb-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100">
-            <Building2 className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
+            <Building2 className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
               Gestion des Clubs
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Créez, gérez et suivez les clubs étudiants du campus.
             </p>
           </div>
@@ -736,42 +743,42 @@ export default function GestionClubs() {
             label="Total Clubs"
             value={String(totalClubs)}
             icon={<Users className="h-5 w-5" />}
-            iconBg="bg-indigo-100"
-            iconColor="text-indigo-600"
+            iconBg="bg-primary-50 dark:bg-primary-900/30"
+            iconColor="text-primary-600 dark:text-primary-400"
           />
           <KpiCard
             label="Clubs Actifs"
             value={String(clubsActifs)}
             icon={<Activity className="h-5 w-5" />}
-            iconBg="bg-emerald-100"
-            iconColor="text-emerald-600"
+            iconBg="bg-emerald-50 dark:bg-emerald-900/30"
+            iconColor="text-emerald-600 dark:text-emerald-400"
           />
           <KpiCard
             label="Budget Total Alloué"
             value={formatCurrencyMAD(budgetTotal)}
             icon={<DollarSign className="h-5 w-5" />}
-            iconBg="bg-amber-100"
-            iconColor="text-amber-600"
+            iconBg="bg-amber-50 dark:bg-amber-900/30"
+            iconColor="text-amber-600 dark:text-amber-400"
           />
         </div>
 
         {/* Filter bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
+        <div className="card p-4 mb-6 flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Rechercher par nom de club..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
 
           <select
             value={statutFilter}
             onChange={(e) => setStatutFilter(e.target.value)}
-            className="md:w-56 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+            className="md:w-56 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
           >
             <option value="">Tous les statuts</option>
             {STATUT_OPTIONS.map((s) => (
@@ -783,21 +790,23 @@ export default function GestionClubs() {
 
           <button
             onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
             Nouveau Club
           </button>
         </div>
 
-        {/* Inline error banner (shown if a retry fails but stale data remains) */}
+        {/* Inline error banner */}
         {error && !loading && clubs.length > 0 && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-4 mb-6 flex items-center gap-3">
-            <AlertTriangle className="h-5 w-5 text-red-500 flex-shrink-0" />
-            <p className="text-sm text-red-700 flex-1">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
+            <p className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</p>
             <button
               onClick={() => fetchClubs()}
-              className="text-sm font-medium text-red-700 hover:text-red-800 underline flex-shrink-0"
+              className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline flex-shrink-0"
             >
               Réessayer
             </button>
@@ -805,63 +814,65 @@ export default function GestionClubs() {
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+              <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Nom du Club
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Président
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Date de création
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Budget
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 bg-gray-100 rounded-full animate-pulse" />
-                          <div className="h-4 w-32 bg-gray-100 rounded animate-pulse" />
+                          <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+                          <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-28 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 w-28 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse" />
+                        <div className="h-6 w-16 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-16 bg-gray-100 rounded animate-pulse ml-auto" />
+                        <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" />
                       </td>
                     </tr>
                   ))
                 ) : filteredClubs.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
-                      <Building2 className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-2">
+                        <Building2 className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
                         Aucun club ne correspond aux critères sélectionnés.
                       </p>
                     </td>
@@ -872,7 +883,7 @@ export default function GestionClubs() {
                     const hasPresident = presidentName !== 'Non assigné';
 
                     return (
-                      <tr key={club.id_club} className="hover:bg-gray-50 transition-colors">
+                      <tr key={club.id_club} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-2.5">
                             <div
@@ -882,28 +893,32 @@ export default function GestionClubs() {
                             >
                               {club.nom?.[0]?.toUpperCase() || '?'}
                             </div>
-                            <span className="text-sm font-medium text-gray-800">
+                            <span className="text-sm font-medium text-slate-800 dark:text-white">
                               {club.nom}
                             </span>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {hasPresident ? (
-                            <span className="inline-flex items-center gap-1.5 text-sm text-gray-600">
-                              <UserCircle2 className="h-3.5 w-3.5 text-gray-400" />
+                            <span className="inline-flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-300">
+                              <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                                <UserCircle2 className="h-3.5 w-3.5" />
+                              </div>
                               {presidentName}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400 italic">Non assigné</span>
+                            <span className="text-sm text-slate-500 dark:text-slate-400 italic">Non assigné</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
                           <span className="inline-flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5 text-gray-400" />
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                              <Calendar className="h-3.5 w-3.5" />
+                            </div>
                             {formatDateFr(club.date_creation)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-700">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-700 dark:text-slate-200 tabular-nums tracking-tight">
                           {formatCurrencyMAD(club.budget)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -921,7 +936,7 @@ export default function GestionClubs() {
                               onClick={() => handleOpenEdit(club)}
                               title="Modifier le club"
                               aria-label="Modifier le club"
-                              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                             >
                               <Pencil className="h-4 w-4" />
                             </button>
@@ -929,7 +944,7 @@ export default function GestionClubs() {
                               onClick={() => setClubToDelete(club)}
                               title="Supprimer le club"
                               aria-label="Supprimer le club"
-                              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>

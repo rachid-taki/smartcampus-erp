@@ -82,11 +82,10 @@ const formatDateFr = (isoDate: string): string => {
 const formatTimeFr = (isoTime: string): string => {
   if (!isoTime) return 'N/A';
   try {
-    // Prisma renvoie les TIME sous forme de date complète (ex: 1970-01-01T14:30:00Z)
     return new Date(isoTime).toLocaleTimeString('fr-FR', {
       hour: '2-digit',
       minute: '2-digit',
-      timeZone: 'UTC' // Assure qu'on lit l'heure exacte stockée sans décalage local
+      timeZone: 'UTC'
     });
   } catch {
     return isoTime;
@@ -95,12 +94,12 @@ const formatTimeFr = (isoTime: string): string => {
 
 const getStatutBadgeClasses = (statut: StatutReservation): string => {
   const map: Record<StatutReservation, string> = {
-    Demandee: 'bg-blue-100 text-blue-700 border border-blue-200',
-    Approuvee: 'bg-green-100 text-green-700 border border-green-200',
-    Rejetee: 'bg-red-100 text-red-700 border border-red-200',
-    Annulee: 'bg-gray-100 text-gray-600 border border-gray-200',
+    Demandee: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+    Approuvee: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+    Rejetee: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
+    Annulee: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
   };
-  return map[statut] ?? 'bg-gray-100 text-gray-600 border border-gray-200';
+  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -114,19 +113,21 @@ function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
             toast.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
-          {toast.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-          ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-          )}
+          <div className={`flex h-6 w-6 items-center justify-center rounded-full flex-shrink-0 mt-0.5 ${
+            toast.type === 'success' 
+              ? 'bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400' 
+              : 'bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400'
+          }`}>
+            {toast.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+          </div>
           <p className="text-sm flex-1">{toast.message}</p>
-          <button onClick={() => onDismiss(toast.id)} className="opacity-60 hover:opacity-100">
+          <button onClick={() => onDismiss(toast.id)} className="opacity-60 hover:opacity-100 p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5">
             <X className="h-4 w-4" />
           </button>
         </div>
@@ -155,7 +156,7 @@ function CreateReservationModal({
 
   const [form, setForm] = useState({
     id_salle: '',
-    id_demandeur: '', // Idéalement, cela vient du contexte utilisateur connecté
+    id_demandeur: '',
     date: '',
     heure_debut: '',
     heure_fin: '',
@@ -199,29 +200,31 @@ function CreateReservationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={() => !saving && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">Nouvelle Réservation</h2>
-          <button onClick={onClose} disabled={saving} className="text-gray-400 hover:text-gray-600">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
+      <div className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Nouvelle Réservation</h2>
+          <button onClick={onClose} disabled={saving} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         <div className="px-6 py-5 space-y-4">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{formError}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Salle</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Salle</label>
             <select
               value={form.id_salle}
               onChange={(e) => setForm({ ...form, id_salle: e.target.value })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             >
               <option value="">-- Sélectionner une salle --</option>
               {salles.map((s) => (
@@ -233,64 +236,64 @@ function CreateReservationModal({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">ID Demandeur (UUID temporaire)</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Demandeur (UUID temporaire)</label>
             <input
               type="text"
               value={form.id_demandeur}
               onChange={(e) => setForm({ ...form, id_demandeur: e.target.value })}
               placeholder="Ex: 123e4567-e89b-12d3-a456-426614174000"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
-            <p className="text-xs text-gray-400 mt-1">À remplacer plus tard par l'ID de l'utilisateur connecté.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">À remplacer plus tard par l'ID de l'utilisateur connecté.</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Date</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Date</label>
               <input
                 type="date"
                 value={form.date}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Heure de début</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de début</label>
               <input
                 type="time"
                 value={form.heure_debut}
                 onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Heure de fin</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de fin</label>
               <input
                 type="time"
                 value={form.heure_fin}
                 onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Motif</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Motif</label>
             <textarea
               value={form.motif}
               onChange={(e) => setForm({ ...form, motif: e.target.value })}
               rows={3}
               placeholder="Ex: Réunion du club d'informatique..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm resize-none"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
             Annuler
           </button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
+          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Créer
           </button>
@@ -343,43 +346,48 @@ function ProcessReservationModal({
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4" onClick={() => !saving && onClose()}>
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5">
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Traiter la demande</h2>
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
+      <div className="card p-0 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        <div className="px-6 py-5 space-y-5">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Traiter la demande</h2>
           
           {error && (
-            <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{error}</span>
             </div>
           )}
 
-          <div className="bg-gray-50 rounded-lg p-4 space-y-3 mb-5">
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3 border border-slate-200/70 dark:border-slate-700">
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Salle:</span>
-              <span className="font-medium text-gray-800">{reservation.salle?.numero} {reservation.salle?.nom ? `(${reservation.salle.nom})` : ''}</span>
+              <span className="text-slate-500 dark:text-slate-400">Salle:</span>
+              <span className="font-medium text-slate-800 dark:text-white text-right ml-4">{reservation.salle?.numero} {reservation.salle?.nom ? `(${reservation.salle.nom})` : ''}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Demandeur:</span>
-              <span className="font-medium text-gray-800">{reservation.demandeur?.prenom} {reservation.demandeur?.nom}</span>
+              <span className="text-slate-500 dark:text-slate-400">Demandeur:</span>
+              <span className="font-medium text-slate-800 dark:text-white">{reservation.demandeur?.prenom} {reservation.demandeur?.nom}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-gray-500">Créneau:</span>
-              <span className="font-medium text-gray-800">{formatDateFr(reservation.date)} de {formatTimeFr(reservation.heure_debut)} à {formatTimeFr(reservation.heure_fin)}</span>
+              <span className="text-slate-500 dark:text-slate-400">Créneau:</span>
+              <span className="font-medium text-slate-800 dark:text-white text-right ml-4 tabular-nums">
+                {formatDateFr(reservation.date)} <br className="sm:hidden" />
+                <span className="text-slate-500 dark:text-slate-400 font-normal">de</span> {formatTimeFr(reservation.heure_debut)} <span className="text-slate-500 dark:text-slate-400 font-normal">à</span> {formatTimeFr(reservation.heure_fin)}
+              </span>
             </div>
-            <div className="flex flex-col text-sm pt-2 border-t border-gray-200">
-              <span className="text-gray-500 mb-1">Motif:</span>
-              <p className="text-gray-800 italic">"{reservation.motif}"</p>
+            <div className="flex flex-col text-sm pt-3 border-t border-slate-200 dark:border-slate-700">
+              <span className="text-slate-500 dark:text-slate-400 mb-1.5 text-xs font-semibold uppercase tracking-wide">Motif:</span>
+              <p className="text-slate-800 dark:text-white italic leading-relaxed">"{reservation.motif}"</p>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase mb-2">Décision</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Décision</label>
             <select
               value={statut}
               onChange={(e) => setStatut(e.target.value as StatutReservation)}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm bg-white"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             >
               {STATUT_OPTIONS.map((s) => (
                 <option key={s} value={s}>{s}</option>
@@ -388,9 +396,9 @@ function ProcessReservationModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg">Annuler</button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">Annuler</button>
+          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Enregistrer
           </button>
@@ -453,134 +461,162 @@ export default function ReservationSalles() {
     fetchData();
   }, [fetchData]);
 
-  // Client filtering
   const filteredReservations = reservations.filter((r) => {
-    const salleName = `${r.salle?.numero} ${r.salle?.nom}`.toLowerCase();
-    const demandeurName = `${r.demandeur?.prenom} ${r.demandeur?.nom}`.toLowerCase();
+    const salleName = `${r.salle?.numero} ${r.salle?.nom || ''}`.toLowerCase();
+    const demandeurName = `${r.demandeur?.prenom || ''} ${r.demandeur?.nom || ''}`.toLowerCase();
     const matchesSearch = !searchInput.trim() || salleName.includes(searchInput.toLowerCase()) || demandeurName.includes(searchInput.toLowerCase());
     const matchesStatut = !statutFilter || r.statut === statutFilter;
     return matchesSearch && matchesStatut;
   });
 
-  // KPIs
   const demandesEnAttente = reservations.filter(r => r.statut === 'Demandee').length;
   const approuvees = reservations.filter(r => r.statut === 'Approuvee').length;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
         <header className="flex items-center gap-3 mb-6">
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100">
-            <MapPin className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
+            <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Réservation de Salles</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Gérez l'attribution des espaces du campus.</p>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">Réservation de Salles</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Gérez l'attribution des espaces du campus.</p>
           </div>
         </header>
 
         {/* KPIs */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Demandes en attente</p>
-              <Clock className="h-5 w-5 text-blue-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Demandes en attente</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-900/30">
+                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{demandesEnAttente}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{demandesEnAttente}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Réservations Approuvées</p>
-              <CheckCircle className="h-5 w-5 text-green-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Réservations Approuvées</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-50 dark:bg-green-900/30">
+                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{approuvees}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{approuvees}</p>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-5">
-            <div className="flex justify-between items-center mb-2">
-              <p className="text-xs font-semibold text-gray-500 uppercase">Salles enregistrées</p>
-              <MapPin className="h-5 w-5 text-indigo-500" />
+          <div className="card p-5">
+            <div className="flex justify-between items-center mb-3">
+              <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Salles enregistrées</p>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
+                <MapPin className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+              </div>
             </div>
-            <p className="text-2xl font-bold text-gray-800">{salles.length}</p>
+            <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{salles.length}</p>
           </div>
         </div>
 
         {/* Filters */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
+        <div className="card p-4 mb-6 flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Rechercher salle ou demandeur..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
           <select
             value={statutFilter}
             onChange={(e) => setStatutFilter(e.target.value)}
-            className="md:w-48 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+            className="md:w-48 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
           >
             <option value="">Tous les statuts</option>
             {STATUT_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
           >
             <Plus className="h-4 w-4" /> Nouvelle Réservation
           </button>
         </div>
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+              <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Salle</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Demandeur</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Créneau</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Motif</th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Statut</th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Salle</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Demandeur</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Créneau</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Motif</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {loading ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></td></tr>
+                  <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500"><Loader2 className="h-6 w-6 animate-spin mx-auto text-primary-500 dark:text-primary-400" /></td></tr>
                 ) : filteredReservations.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-12 text-center text-gray-400">Aucune réservation trouvée.</td></tr>
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-2">
+                        <MapPin className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Aucune réservation trouvée.</p>
+                    </td>
+                  </tr>
                 ) : (
                   filteredReservations.map((r) => (
-                    <tr key={r.id_reservation} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                    <tr key={r.id_reservation} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-white">
                         {r.salle?.numero} {r.salle?.nom ? `(${r.salle.nom})` : ''}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-sm text-gray-700">
-                          <User className="h-4 w-4 text-gray-400" />
+                        <div className="flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200">
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            <User className="h-3.5 w-3.5" />
+                          </div>
                           {r.demandeur?.prenom} {r.demandeur?.nom}
                         </div>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <div className="flex items-center gap-1.5"><Calendar className="h-3.5 w-3.5" /> {formatDateFr(r.date)}</div>
-                        <div className="flex items-center gap-1.5 mt-1 text-xs"><Clock className="h-3.5 w-3.5" /> {formatTimeFr(r.heure_debut)} - {formatTimeFr(r.heure_fin)}</div>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            <Calendar className="h-3.5 w-3.5" />
+                          </div>
+                          {formatDateFr(r.date)}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-1 text-xs">
+                          <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                            <Clock className="h-3 w-3" />
+                          </div>
+                          {formatTimeFr(r.heure_debut)} - {formatTimeFr(r.heure_fin)}
+                        </div>
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-500 truncate max-w-[200px]" title={r.motif}>
-                        <div className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5 flex-shrink-0" /> <span className="truncate">{r.motif}</span></div>
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-[200px]" title={r.motif}>
+                        <div className="flex items-center gap-1.5">
+                          <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex-shrink-0">
+                            <FileText className="h-3.5 w-3.5" />
+                          </div> 
+                          <span className="truncate">{r.motif}</span>
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatutBadgeClasses(r.statut)}`}>
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${getStatutBadgeClasses(r.statut)}`}>
                           {r.statut}
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right">
                         <button
                           onClick={() => setReservationToProcess(r)}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
                         >
                           <Shield className="h-4 w-4" /> Traiter
                         </button>

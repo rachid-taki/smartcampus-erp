@@ -1,64 +1,64 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Users,
-  Plus,
-  Search,
-  Pencil,
-  Trash2,
-  X,
-  Loader2,
-  CheckCircle,
-  AlertTriangle,
-  Briefcase,
-  Mail,
-  Phone,
-  Building2,
-  BadgeCheck,
   Calendar,
-  UserCircle2,
+  CheckCircle,
+  XCircle,
+  Search,
+  Clock,
+  FileText,
+  Loader2,
+  Plus,
+  X,
+  AlertTriangle,
+  ArrowRight,
+  Palmtree,
+  User,
+  MessageSquare,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // TypeScript Interfaces
 // ─────────────────────────────────────────────────────────────
 
-type StatutEmploye = 'Actif' | 'Inactif' | 'Conge';
+type TypeConge = 'Conge_Normal' | 'Conge_Exceptionnel' | 'Conge_Maladie';
+type StatutConge = 'Soumise' | 'En_Traitement' | 'Validee' | 'Rejetee';
 
 interface Utilisateur {
   id_utilisateur: string;
   nom: string;
   prenom: string;
-  email: string;
-  telephone: string | null;
-  actif: boolean;
+  email?: string;
 }
 
 interface Employe {
   id_employe: string;
-  matricule: string;
-  fonction: string;
-  departement: string;
-  date_embauche: string;
-  statut: StatutEmploye;
-  grade: string | null;
   utilisateur: Utilisateur;
+}
+
+interface Conge {
+  id_demande_rh: string;
+  type: TypeConge;
+  statut: StatutConge;
+  date_demande: string;
+  date_debut: string;
+  date_fin: string;
+  duree: number;
+  motif: string;
+  commentaires_rh: string | null;
+  justificatif?: string | null;
+  employe: Employe;
 }
 
 interface ApiListResponse {
   success: boolean;
   count: number;
-  data: Employe[];
+  data: Conge[];
 }
 
 interface ApiSingleResponse {
   success: boolean;
   message?: string;
-  data: Employe;
-}
-
-interface ApiDeleteResponse {
-  success: boolean;
-  message: string;
+  data: Conge;
 }
 
 interface Toast {
@@ -67,35 +67,10 @@ interface Toast {
   message: string;
 }
 
-interface EmployeFormState {
-  nom: string;
-  prenom: string;
-  email: string;
-  telephone: string;
-  matricule: string;
-  fonction: string;
-  departement: string;
-  grade: string;
-  date_embauche: string;
-  statut: StatutEmploye;
-}
-
 const API_BASE = 'http://localhost:3000/api/rh';
 
-const STATUT_OPTIONS: StatutEmploye[] = ['Actif', 'Inactif', 'Conge'];
-
-const emptyForm = (): EmployeFormState => ({
-  nom: '',
-  prenom: '',
-  email: '',
-  telephone: '',
-  matricule: '',
-  fonction: '',
-  departement: '',
-  grade: '',
-  date_embauche: '',
-  statut: 'Actif',
-});
+const STATUT_OPTIONS: StatutConge[] = ['Soumise', 'En_Traitement', 'Validee', 'Rejetee'];
+const TYPE_OPTIONS: TypeConge[] = ['Conge_Normal', 'Conge_Exceptionnel', 'Conge_Maladie'];
 
 // ─────────────────────────────────────────────────────────────
 // Helpers
@@ -113,40 +88,42 @@ const formatDateFr = (isoDate: string): string => {
   }
 };
 
-const getInitials = (nom: string, prenom: string): string =>
-  `${prenom?.[0] || ''}${nom?.[0] || ''}`.toUpperCase();
-
-const getStatutBadgeClasses = (statut: StatutEmploye): string => {
-  const map: Record<StatutEmploye, string> = {
-    Actif: 'bg-green-100 text-green-700 border border-green-200',
-    Conge: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-    Inactif: 'bg-gray-100 text-gray-600 border border-gray-200',
+const formatTypeLabel = (type: TypeConge): string => {
+  const map: Record<TypeConge, string> = {
+    Conge_Normal: 'Congé Normal',
+    Conge_Exceptionnel: 'Congé Exceptionnel',
+    Conge_Maladie: 'Congé Maladie',
   };
-  return map[statut] ?? 'bg-gray-100 text-gray-600 border border-gray-200';
+  return map[type] ?? type.replace(/_/g, ' ');
 };
 
-const getStatutLabel = (statut: StatutEmploye): string => {
-  const map: Record<StatutEmploye, string> = {
-    Actif: 'Actif',
-    Conge: 'En congé',
-    Inactif: 'Inactif',
+const formatStatutLabel = (statut: StatutConge): string => {
+  const map: Record<StatutConge, string> = {
+    Soumise: 'Soumise',
+    En_Traitement: 'En traitement',
+    Validee: 'Validée',
+    Rejetee: 'Rejetée',
   };
-  return map[statut] ?? statut;
+  return map[statut] ?? statut.replace(/_/g, ' ');
 };
 
-const avatarPalette = [
-  'bg-indigo-100 text-indigo-700',
-  'bg-teal-100 text-teal-700',
-  'bg-rose-100 text-rose-700',
-  'bg-amber-100 text-amber-700',
-  'bg-violet-100 text-violet-700',
-  'bg-sky-100 text-sky-700',
-];
+const getStatutBadgeClasses = (statut: StatutConge): string => {
+  const map: Record<StatutConge, string> = {
+    Soumise: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+    En_Traitement: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+    Validee: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+    Rejetee: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
+  };
+  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
+};
 
-const getAvatarColor = (seed: string): string => {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = seed.charCodeAt(i) + ((hash << 5) - hash);
-  return avatarPalette[Math.abs(hash) % avatarPalette.length];
+const getTypeBadgeClasses = (type: TypeConge): string => {
+  const map: Record<TypeConge, string> = {
+    Conge_Normal: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+    Conge_Exceptionnel: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800',
+    Conge_Maladie: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
+  };
+  return map[type] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -167,21 +144,25 @@ function ToastContainer({
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
             toast.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+              <CheckCircle className="h-4 w-4" />
+            </div>
           ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
           )}
           <p className="text-sm flex-1">{toast.message}</p>
           <button
             onClick={() => onDismiss(toast.id)}
-            className="text-current opacity-60 hover:opacity-100 transition-opacity"
+            className="text-current opacity-60 hover:opacity-100 transition-opacity p-1 rounded-md hover:bg-black/5 dark:hover:bg-white/5"
           >
             <X className="h-4 w-4" />
           </button>
@@ -192,132 +173,60 @@ function ToastContainer({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Employe Form Modal (used for both Create and Edit)
+// Processing Modal ("Traiter la demande")
 // ─────────────────────────────────────────────────────────────
 
-function EmployeFormModal({
-  mode,
-  initialData,
+function ProcessCongeModal({
+  conge,
   onClose,
   onSaved,
   pushToast,
 }: {
-  mode: 'create' | 'edit';
-  initialData: Employe | null;
+  conge: Conge;
   onClose: () => void;
   onSaved: () => Promise<void>;
   pushToast: (type: Toast['type'], message: string) => void;
 }) {
-  const [form, setForm] = useState<EmployeFormState>(() => {
-    if (mode === 'edit' && initialData) {
-      return {
-        nom: initialData.utilisateur.nom,
-        prenom: initialData.utilisateur.prenom,
-        email: initialData.utilisateur.email,
-        telephone: initialData.utilisateur.telephone || '',
-        matricule: initialData.matricule,
-        fonction: initialData.fonction,
-        departement: initialData.departement,
-        grade: initialData.grade || '',
-        date_embauche: initialData.date_embauche
-          ? new Date(initialData.date_embauche).toISOString().slice(0, 10)
-          : '',
-        statut: initialData.statut,
-      };
-    }
-    return emptyForm();
-  });
-
+  const [selectedStatut, setSelectedStatut] = useState<StatutConge>(conge.statut);
+  const [commentairesRh, setCommentairesRh] = useState<string>(conge.commentaires_rh || '');
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const updateField = (field: keyof EmployeFormState, value: string) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  };
+  const { nom, prenom } = conge.employe.utilisateur;
 
   const handleSubmit = async () => {
     setFormError(null);
-
-    // --- Client-side validation ---
-    if (!form.nom.trim()) return setFormError('Le nom est requis.');
-    if (!form.prenom.trim()) return setFormError('Le prénom est requis.');
-    if (!form.email.trim()) return setFormError("L'email est requis.");
-    if (mode === 'create' && !form.matricule.trim())
-      return setFormError('Le matricule est requis.');
-    if (!form.fonction.trim()) return setFormError('La fonction est requise.');
-    if (!form.departement.trim()) return setFormError('Le département est requis.');
-
     setSaving(true);
 
     try {
-      if (mode === 'create') {
-        const payload = {
-          nom: form.nom.trim(),
-          prenom: form.prenom.trim(),
-          email: form.email.trim(),
-          telephone: form.telephone.trim() || undefined,
-          matricule: form.matricule.trim(),
-          fonction: form.fonction.trim(),
-          departement: form.departement.trim(),
-          grade: form.grade.trim() || undefined,
-          date_embauche: form.date_embauche || undefined,
-          statut: form.statut,
-          // NOTE: id_role is required by the backend but not collected in
-          // this form. Adjust once role assignment UI/logic is defined —
-          // hardcoding a placeholder here so the request has a shape.
-          id_role: (initialData as any)?.utilisateur?.id_role || undefined,
-        };
-
-        const response = await fetch(`${API_BASE}/employes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const json: ApiSingleResponse = await response.json();
-
-        if (!response.ok || !json.success) {
-          throw new Error(
-            (json as any).message || `Erreur serveur (code ${response.status})`
-          );
-        }
-
-        pushToast('success', 'Employé créé avec succès.');
-      } else if (initialData) {
-        const payload = {
-          nom: form.nom.trim(),
-          prenom: form.prenom.trim(),
-          telephone: form.telephone.trim() || null,
-          fonction: form.fonction.trim(),
-          departement: form.departement.trim(),
-          grade: form.grade.trim() || null,
-          statut: form.statut,
-        };
-
-        const response = await fetch(`${API_BASE}/employes/${initialData.id_employe}`, {
+      const response = await fetch(
+        `${API_BASE}/conges/${conge.id_demande_rh}/statut`,
+        {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-
-        const json: ApiSingleResponse = await response.json();
-
-        if (!response.ok || !json.success) {
-          throw new Error(
-            (json as any).message || `Erreur serveur (code ${response.status})`
-          );
+          body: JSON.stringify({
+            statut: selectedStatut,
+            commentaires_rh: commentairesRh || undefined,
+          }),
         }
+      );
 
-        pushToast('success', 'Employé mis à jour avec succès.');
+      const json: ApiSingleResponse = await response.json();
+
+      if (!response.ok || !json.success) {
+        throw new Error(
+          (json as any).message || `Erreur serveur (code ${response.status})`
+        );
       }
 
+      pushToast('success', json.message || 'Statut mis à jour avec succès.');
       await onSaved();
       onClose();
     } catch (err) {
       const message =
         err instanceof Error
           ? err.message
-          : "Une erreur est survenue lors de l'enregistrement.";
+          : 'Une erreur est survenue lors de la mise à jour du statut.';
       setFormError(message);
     } finally {
       setSaving(false);
@@ -326,211 +235,162 @@ function EmployeFormModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              {mode === 'create' ? 'Ajouter un employé' : "Modifier l'employé"}
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
+              Traiter la demande de congé
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
-              {mode === 'create'
-                ? 'Renseignez les informations pour onboarder un nouvel employé.'
-                : "Mettez à jour les informations de l'employé."}
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              {prenom} {nom}
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="px-6 py-5 space-y-6">
+        <div className="px-6 py-5 space-y-5">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{formError}</span>
             </div>
           )}
 
-          {/* Section: Informations Personnelles */}
-          <div>
-            <div className="flex items-center gap-2 mb-3">
-              <UserCircle2 className="h-4 w-4 text-indigo-600" />
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Informations Personnelles
-              </h3>
+          {/* Request details */}
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Type
+              </span>
+              <span
+                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeBadgeClasses(
+                  conge.type
+                )}`}
+              >
+                {formatTypeLabel(conge.type)}
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Nom <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.nom}
-                  onChange={(e) => updateField('nom', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Prénom <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.prenom}
-                  onChange={(e) => updateField('prenom', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Email <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  value={form.email}
-                  disabled={mode === 'edit'}
-                  onChange={(e) => updateField('email', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Téléphone
-                </label>
-                <input
-                  type="tel"
-                  value={form.telephone}
-                  onChange={(e) => updateField('telephone', e.target.value)}
-                  placeholder="+212 6XX XXX XXX"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Période
+              </span>
+              <span className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5 tabular-nums">
+                {formatDateFr(conge.date_debut)}
+                <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
+                  <ArrowRight className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                </div>
+                {formatDateFr(conge.date_fin)}
+              </span>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
+                Durée
+              </span>
+              <span className="text-sm text-slate-700 dark:text-slate-300 tabular-nums">
+                {conge.duree} jour{conge.duree > 1 ? 's' : ''}
+              </span>
+            </div>
+
+            <div>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide block mb-1">
+                Motif
+              </span>
+              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{conge.motif}</p>
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-slate-200/70 dark:border-slate-800" />
 
-          {/* Section: Informations Professionnelles */}
+          {/* New status selector */}
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <Briefcase className="h-4 w-4 text-indigo-600" />
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-                Informations Professionnelles
-              </h3>
-            </div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Nouveau statut
+            </label>
+            <select
+              value={selectedStatut}
+              onChange={(e) => setSelectedStatut(e.target.value as StatutConge)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            >
+              {STATUT_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {formatStatutLabel(s)}
+                </option>
+              ))}
+            </select>
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Matricule {mode === 'create' && <span className="text-red-500">*</span>}
-                </label>
-                <input
-                  type="text"
-                  value={form.matricule}
-                  disabled={mode === 'edit'}
-                  onChange={(e) => updateField('matricule', e.target.value)}
-                  placeholder="Ex: EMP-2026-001"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Fonction <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.fonction}
-                  onChange={(e) => updateField('fonction', e.target.value)}
-                  placeholder="Ex: Chargé de scolarité"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Département <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={form.departement}
-                  onChange={(e) => updateField('departement', e.target.value)}
-                  placeholder="Ex: Scolarité"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Grade
-                </label>
-                <input
-                  type="text"
-                  value={form.grade}
-                  onChange={(e) => updateField('grade', e.target.value)}
-                  placeholder="Ex: Cadre"
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Date d'embauche
-                </label>
-                <input
-                  type="date"
-                  value={form.date_embauche}
-                  disabled={mode === 'edit'}
-                  onChange={(e) => updateField('date_embauche', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1.5">
-                  Statut
-                </label>
-                <select
-                  value={form.statut}
-                  onChange={(e) => updateField('statut', e.target.value)}
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
-                >
-                  {STATUT_OPTIONS.map((s) => (
-                    <option key={s} value={s}>
-                      {getStatutLabel(s)}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+          {/* Quick action buttons */}
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedStatut('Validee')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-2 text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+            >
+              <CheckCircle className="h-4 w-4" />
+              Valider
+            </button>
+            <button
+              type="button"
+              onClick={() => setSelectedStatut('Rejetee')}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
+            >
+              <XCircle className="h-4 w-4" />
+              Rejeter
+            </button>
+          </div>
+
+          {/* Comments */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+              Commentaires RH{' '}
+              <span className="normal-case font-normal text-slate-400 dark:text-slate-500">
+                (motif de refus ou commentaire d'approbation)
+              </span>
+            </label>
+            <textarea
+              value={commentairesRh}
+              onChange={(e) => setCommentairesRh(e.target.value)}
+              rows={4}
+              placeholder="Ajouter un commentaire..."
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+            />
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-xl">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {mode === 'create' ? 'Créer' : 'Enregistrer'}
+            Sauvegarder
           </button>
         </div>
       </div>
@@ -539,115 +399,211 @@ function EmployeFormModal({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Employee Table Row
+// Simulation Modal ("Simuler une demande")
 // ─────────────────────────────────────────────────────────────
 
-function EmployeRow({
-  employe,
-  onEdit,
-  onRequestDelete,
-  onCancelDelete,
-  onDelete,
-  confirmingId,
-  deletingId,
+function SimulateCongeModal({
+  onClose,
+  onCreated,
+  pushToast,
 }: {
-  employe: Employe;
-  onEdit: (employe: Employe) => void;
-  onRequestDelete: (id: string) => void;
-  onCancelDelete: () => void;
-  onDelete: (id: string) => void;
-  confirmingId: string | null;
-  deletingId: string | null;
+  onClose: () => void;
+  onCreated: () => Promise<void>;
+  pushToast: (type: Toast['type'], message: string) => void;
 }) {
-  const isConfirming = confirmingId === employe.id_employe;
-  const isDeleting = deletingId === employe.id_employe;
-  const { nom, prenom, email } = employe.utilisateur;
+  const [idEmploye, setIdEmploye] = useState('');
+  const [type, setType] = useState<TypeConge>('Conge_Normal');
+  const [dateDebut, setDateDebut] = useState('');
+  const [dateFin, setDateFin] = useState('');
+  const [motif, setMotif] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    setFormError(null);
+
+    if (!idEmploye.trim()) {
+      setFormError("L'ID de l'employé est requis (UUID).");
+      return;
+    }
+    if (!dateDebut || !dateFin) {
+      setFormError('Les dates de début et de fin sont requises.');
+      return;
+    }
+    if (new Date(dateFin) < new Date(dateDebut)) {
+      setFormError('La date de fin ne peut pas être antérieure à la date de début.');
+      return;
+    }
+    if (!motif.trim()) {
+      setFormError('Le motif est requis.');
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/conges`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id_employe: idEmploye.trim(),
+          type,
+          date_debut: dateDebut,
+          date_fin: dateFin,
+          motif: motif.trim(),
+        }),
+      });
+
+      const json: ApiSingleResponse = await response.json();
+
+      if (!response.ok || !json.success) {
+        throw new Error(
+          (json as any).message || `Erreur serveur (code ${response.status})`
+        );
+      }
+
+      pushToast('success', 'Demande de congé simulée avec succès.');
+      await onCreated();
+      onClose();
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Une erreur est survenue lors de la création de la demande.';
+      setFormError(message);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
-      <td className="px-6 py-4">
-        <div className="flex items-center gap-3">
-          <div
-            className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-xs font-bold ${getAvatarColor(
-              employe.id_employe
-            )}`}
-          >
-            {getInitials(nom, prenom)}
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
+      onClick={() => !saving && onClose()}
+    >
+      <div
+        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Modal Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
+              Simuler une demande de congé
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+              Utile pour tester le flux de validation RH.
+            </p>
           </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate">
-              {prenom} {nom}
-            </p>
-            <p className="text-xs text-gray-400 flex items-center gap-1 truncate">
-              <Mail className="h-3 w-3 flex-shrink-0" />
-              {email}
-            </p>
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        {/* Modal Body */}
+        <div className="px-6 py-5 space-y-4">
+          {formError && (
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
+              <span>{formError}</span>
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+              ID de l'employé (UUID) <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              value={idEmploye}
+              onChange={(e) => setIdEmploye(e.target.value)}
+              placeholder="Ex: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+              Type de congé
+            </label>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as TypeConge)}
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+            >
+              {TYPE_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {formatTypeLabel(t)}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                Date de début <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={dateDebut}
+                onChange={(e) => setDateDebut(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+                Date de fin <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="date"
+                value={dateFin}
+                onChange={(e) => setDateFin(e.target.value)}
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
+              Motif <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              value={motif}
+              onChange={(e) => setMotif(e.target.value)}
+              rows={3}
+              placeholder="Ex: Congé annuel, visite médicale, événement familial..."
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+            />
           </div>
         </div>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span className="inline-flex items-center gap-1 text-sm font-medium text-gray-700">
-          <BadgeCheck className="h-3.5 w-3.5 text-gray-400" />
-          {employe.matricule}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <p className="text-sm text-gray-700">{employe.fonction}</p>
-        <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-          <Building2 className="h-3 w-3" />
-          {employe.departement}
-        </p>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap">
-        <span
-          className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatutBadgeClasses(
-            employe.statut
-          )}`}
-        >
-          {getStatutLabel(employe.statut)}
-        </span>
-      </td>
-      <td className="px-6 py-4 whitespace-nowrap text-right">
-        {isConfirming ? (
-          <div className="flex items-center justify-end gap-2">
-            <span className="text-xs text-gray-500">Confirmer ?</span>
-            <button
-              onClick={() => onDelete(employe.id_employe)}
-              disabled={isDeleting}
-              className="px-2.5 py-1 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors disabled:opacity-60"
-            >
-              {isDeleting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Oui'}
-            </button>
-            <button
-              onClick={onCancelDelete}
-              disabled={isDeleting}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
-            >
-              Non
-            </button>
-          </div>
-        ) : (
-          <div className="flex items-center justify-end gap-1">
-            <button
-              onClick={() => onEdit(employe)}
-              title="Modifier l'employé"
-              aria-label="Modifier l'employé"
-              className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => onRequestDelete(employe.id_employe)}
-              title="Désactiver l'employé"
-              aria-label="Désactiver l'employé"
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        )}
-      </td>
-    </tr>
+
+        {/* Modal Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
+          <button
+            onClick={onClose}
+            disabled={saving}
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+            Créer la demande
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -655,20 +611,17 @@ function EmployeRow({
 // Main Page Component
 // ─────────────────────────────────────────────────────────────
 
-export default function GestionEmployes() {
-  const [employes, setEmployes] = useState<Employe[]>([]);
+export default function GestionConges() {
+  const [conges, setConges] = useState<Conge[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchInput, setSearchInput] = useState('');
   const [statutFilter, setStatutFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('');
 
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<'create' | 'edit'>('create');
-  const [selectedEmploye, setSelectedEmploye] = useState<Employe | null>(null);
-
-  const [confirmingId, setConfirmingId] = useState<string | null>(null);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selectedConge, setSelectedConge] = useState<Conge | null>(null);
+  const [showSimulateModal, setShowSimulateModal] = useState(false);
 
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
@@ -685,13 +638,13 @@ export default function GestionEmployes() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // ── Fetch employees ──
-  const fetchEmployes = useCallback(async (signal?: AbortSignal) => {
+  // ── Fetch leave requests ──
+  const fetchConges = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/employes`, { signal });
+      const response = await fetch(`${API_BASE}/conges`, { signal });
 
       if (!response.ok) {
         throw new Error(`Erreur serveur (code ${response.status})`);
@@ -703,7 +656,7 @@ export default function GestionEmployes() {
         throw new Error('La requête a échoué côté serveur.');
       }
 
-      setEmployes(json.data);
+      setConges(json.data);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
       const message =
@@ -718,120 +671,82 @@ export default function GestionEmployes() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchEmployes(controller.signal);
+    fetchConges(controller.signal);
     return () => controller.abort();
-  }, [fetchEmployes]);
-
-  // ── Modal open helpers ──
-  const handleOpenCreate = () => {
-    setModalMode('create');
-    setSelectedEmploye(null);
-    setShowModal(true);
-  };
-
-  const handleOpenEdit = (employe: Employe) => {
-    setModalMode('edit');
-    setSelectedEmploye(employe);
-    setShowModal(true);
-  };
-
-  // ── Delete flow ──
-  const handleRequestDelete = (id: string) => setConfirmingId(id);
-  const handleCancelDelete = () => setConfirmingId(null);
-
-  const handleDelete = async (id: string) => {
-    setDeletingId(id);
-
-    try {
-      const response = await fetch(`${API_BASE}/employes/${id}`, {
-        method: 'DELETE',
-      });
-
-      const json: ApiDeleteResponse = await response.json();
-
-      if (!response.ok || !json.success) {
-        throw new Error(json.message || `Erreur serveur (code ${response.status})`);
-      }
-
-      // Reflect the soft-delete locally rather than removing the row,
-      // since the employee record still exists (statut -> Inactif).
-      await fetchEmployes();
-      pushToast('success', json.message || 'Employé désactivé avec succès.');
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Une erreur est survenue lors de la désactivation.';
-      pushToast('error', message);
-    } finally {
-      setDeletingId(null);
-      setConfirmingId(null);
-    }
-  };
+  }, [fetchConges]);
 
   // ── Client-side filtering ──
-  const filteredEmployes = employes.filter((emp) => {
-    const fullName = `${emp.utilisateur.prenom} ${emp.utilisateur.nom}`.toLowerCase();
-    const matchesSearch =
-      !searchInput.trim() ||
-      fullName.includes(searchInput.trim().toLowerCase()) ||
-      emp.matricule.toLowerCase().includes(searchInput.trim().toLowerCase());
-
-    const matchesStatut = !statutFilter || emp.statut === statutFilter;
-
-    return matchesSearch && matchesStatut;
+  const filteredConges = conges.filter((conge) => {
+    const fullName = `${conge.employe.utilisateur.prenom} ${conge.employe.utilisateur.nom}`.toLowerCase();
+    const matchesSearch = !searchInput.trim() || fullName.includes(searchInput.trim().toLowerCase());
+    const matchesStatut = !statutFilter || conge.statut === statutFilter;
+    const matchesType = !typeFilter || conge.type === typeFilter;
+    return matchesSearch && matchesStatut && matchesType;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-100">
-              <Users className="h-5 w-5 text-indigo-600" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
+              <Palmtree className="h-5 w-5 text-primary-600 dark:text-primary-400" />
             </div>
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-                Gestion des Employés
+              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
+                Gestion des Congés
               </h1>
-              <p className="text-sm text-gray-500 mt-0.5">
-                Gérez les profils, fonctions et statuts du personnel.
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+                Consultez, filtrez et traitez les demandes de congé des employés.
               </p>
             </div>
           </div>
 
           <button
-            onClick={handleOpenCreate}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+            onClick={() => setShowSimulateModal(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
-            Ajouter un employé
+            Simuler une demande
           </button>
         </header>
 
         {/* Filter bar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
+        <div className="card p-4 mb-6 flex flex-col md:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
             <input
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Rechercher par nom ou matricule..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              placeholder="Rechercher par nom d'employé..."
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
 
           <select
             value={statutFilter}
             onChange={(e) => setStatutFilter(e.target.value)}
-            className="md:w-56 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+            className="md:w-52 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
           >
             <option value="">Tous les statuts</option>
             {STATUT_OPTIONS.map((s) => (
               <option key={s} value={s}>
-                {getStatutLabel(s)}
+                {formatStatutLabel(s)}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="md:w-56 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+          >
+            <option value="">Tous les types</option>
+            {TYPE_OPTIONS.map((t) => (
+              <option key={t} value={t}>
+                {formatTypeLabel(t)}
               </option>
             ))}
           </select>
@@ -839,85 +754,141 @@ export default function GestionEmployes() {
 
         {/* Error state */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-6 text-center">
-            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mx-auto mb-2">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>
           </div>
         )}
 
         {/* Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+              <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Employé
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Matricule
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Type de congé
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Fonction &amp; Département
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Période
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    Durée
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {loading ? (
                   Array.from({ length: 6 }).map((_, i) => (
                     <tr key={i}>
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 bg-gray-100 rounded-full animate-pulse" />
-                          <div className="space-y-1.5">
-                            <div className="h-3.5 w-32 bg-gray-100 rounded animate-pulse" />
-                            <div className="h-3 w-40 bg-gray-100 rounded animate-pulse" />
-                          </div>
+                          <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+                          <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-6 w-28 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-3.5 w-28 bg-gray-100 rounded animate-pulse mb-1.5" />
-                        <div className="h-3 w-20 bg-gray-100 rounded animate-pulse" />
+                        <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-6 w-16 bg-gray-100 rounded-full animate-pulse" />
+                        <div className="h-4 w-14 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                       </td>
                       <td className="px-6 py-4">
-                        <div className="h-4 w-16 bg-gray-100 rounded animate-pulse ml-auto" />
+                        <div className="h-6 w-20 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" />
                       </td>
                     </tr>
                   ))
-                ) : filteredEmployes.length === 0 ? (
+                ) : filteredConges.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-12 text-center">
-                      <Users className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                      <p className="text-sm text-gray-400">
-                        Aucun employé ne correspond aux critères sélectionnés.
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-2">
+                        <Calendar className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      </div>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">
+                        Aucune demande de congé ne correspond aux critères sélectionnés.
                       </p>
                     </td>
                   </tr>
                 ) : (
-                  filteredEmployes.map((employe) => (
-                    <EmployeRow
-                      key={employe.id_employe}
-                      employe={employe}
-                      onEdit={handleOpenEdit}
-                      onRequestDelete={handleRequestDelete}
-                      onCancelDelete={handleCancelDelete}
-                      onDelete={handleDelete}
-                      confirmingId={confirmingId}
-                      deletingId={deletingId}
-                    />
-                  ))
+                  filteredConges.map((conge) => {
+                    const { nom, prenom } = conge.employe.utilisateur;
+                    return (
+                      <tr key={conge.id_demande_rh} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-bold">
+                              {prenom?.[0]}
+                              {nom?.[0]}
+                            </div>
+                            <span className="text-sm font-medium text-slate-800 dark:text-white">
+                              {prenom} {nom}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeBadgeClasses(
+                              conge.type
+                            )}`}
+                          >
+                            {formatTypeLabel(conge.type)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums">
+                          <span className="flex items-center gap-1.5">
+                            {formatDateFr(conge.date_debut)}
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
+                              <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            {formatDateFr(conge.date_fin)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums">
+                          <span className="flex items-center gap-1.5">
+                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
+                              <Clock className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
+                            </div>
+                            {conge.duree} j
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatutBadgeClasses(
+                              conge.statut
+                            )}`}
+                          >
+                            {formatStatutLabel(conge.statut)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-right">
+                          <button
+                            onClick={() => setSelectedConge(conge)}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                            Traiter
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>
@@ -925,13 +896,21 @@ export default function GestionEmployes() {
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <EmployeFormModal
-          mode={modalMode}
-          initialData={selectedEmploye}
-          onClose={() => setShowModal(false)}
-          onSaved={() => fetchEmployes()}
+      {/* Processing Modal */}
+      {selectedConge && (
+        <ProcessCongeModal
+          conge={selectedConge}
+          onClose={() => setSelectedConge(null)}
+          onSaved={() => fetchConges()}
+          pushToast={pushToast}
+        />
+      )}
+
+      {/* Simulation Modal */}
+      {showSimulateModal && (
+        <SimulateCongeModal
+          onClose={() => setShowSimulateModal(false)}
+          onCreated={() => fetchConges()}
           pushToast={pushToast}
         />
       )}

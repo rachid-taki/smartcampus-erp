@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { FileText, AlertCircle, FileCheck, AlertTriangle } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // TypeScript Interfaces (Strict typing for the API payload)
@@ -54,20 +55,20 @@ const formatDateFr = (isoDate: string): string => {
 };
 
 // ─────────────────────────────────────────────────────────────
-// Helper: map statut string -> Tailwind badge classes
+// Helper: map statut string -> Tailwind badge classes (with Dark Mode)
 // ─────────────────────────────────────────────────────────────
 
 const getStatutBadgeClasses = (statut: string): string => {
   const map: Record<string, string> = {
-    Brouillon: 'bg-gray-100 text-gray-700 border border-gray-200',
-    Soumise: 'bg-blue-100 text-blue-700 border border-blue-200',
-    En_Traitement: 'bg-yellow-100 text-yellow-800 border border-yellow-200',
-    Validee: 'bg-green-100 text-green-700 border border-green-200',
-    Rejetee: 'bg-red-100 text-red-700 border border-red-200',
-    Cloturee: 'bg-slate-200 text-slate-700 border border-slate-300',
+    Brouillon: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
+    Soumise: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
+    En_Traitement: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
+    Validee: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
+    Rejetee: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
+    Cloturee: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700',
   };
 
-  return map[statut] ?? 'bg-gray-100 text-gray-700 border border-gray-200';
+  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
 };
 
 // Convert enum-style statut (e.g. "En_Traitement") to readable label ("En Traitement")
@@ -132,11 +133,11 @@ export default function ScolariteDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+      <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">
-            <div className="h-8 w-64 bg-gray-200 rounded-md animate-pulse mb-2" />
-            <div className="h-4 w-96 bg-gray-200 rounded-md animate-pulse" />
+            <div className="h-8 w-64 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse mb-2" />
+            <div className="h-4 w-96 bg-slate-200 dark:bg-slate-800 rounded-md animate-pulse" />
           </div>
 
           {/* KPI skeleton cards */}
@@ -144,21 +145,21 @@ export default function ScolariteDashboard() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse"
+                className="card p-6 animate-pulse"
               >
-                <div className="h-4 w-32 bg-gray-200 rounded mb-4" />
-                <div className="h-10 w-20 bg-gray-200 rounded mb-2" />
-                <div className="h-3 w-24 bg-gray-200 rounded" />
+                <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded mb-4" />
+                <div className="h-10 w-20 bg-slate-200 dark:bg-slate-800 rounded mb-2" />
+                <div className="h-3 w-24 bg-slate-200 dark:bg-slate-800 rounded" />
               </div>
             ))}
           </div>
 
           {/* Table skeleton */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-            <div className="h-6 w-48 bg-gray-200 rounded mb-6 animate-pulse" />
+          <div className="card p-6">
+            <div className="h-6 w-48 bg-slate-200 dark:bg-slate-800 rounded mb-6 animate-pulse" />
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="h-10 w-full bg-gray-100 rounded animate-pulse" />
+                <div key={i} className="h-10 w-full bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
               ))}
             </div>
           </div>
@@ -173,27 +174,15 @@ export default function ScolariteDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="max-w-md w-full bg-white rounded-xl shadow-md border border-red-100 p-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-100">
-            <svg
-              className="h-7 w-7 text-red-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-              />
-            </svg>
+      <div className="sc-portal min-h-screen flex items-center justify-center p-6 animate-fade-in">
+        <div className="max-w-md w-full card p-8 text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400">
+            <AlertTriangle className="h-7 w-7" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-2 tracking-tight">
             Erreur de chargement
           </h2>
-          <p className="text-sm text-gray-500">{error}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">{error}</p>
         </div>
       </div>
     );
@@ -210,137 +199,116 @@ export default function ScolariteDashboard() {
   const { demandesStats, reclamationsStats, certificatsStats, recentActivity } = data;
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="mb-8">
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
             Tableau de bord — Scolarité
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Vue d'ensemble des demandes, réclamations et certificats médicaux en attente de traitement.
           </p>
         </header>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Card 1 — Demandes Administratives (Blue theme) */}
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-blue-100 p-6">
+          {/* Card 1 — Demandes Administratives (Primary theme) */}
+          <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-blue-600 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-primary-600 dark:text-primary-400 uppercase tracking-wide">
                 Demandes Administratives
               </h3>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100">
-                <svg className="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
+                <FileText className="h-5 w-5 text-primary-600 dark:text-primary-400" />
               </div>
             </div>
             <div className="flex items-end gap-6">
               <div>
-                <p className="text-3xl font-bold text-gray-800">{demandesStats.soumises}</p>
-                <p className="text-xs text-gray-500 mt-1">Nouvelles (soumises)</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{demandesStats.soumises}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Nouvelles (soumises)</p>
               </div>
               <div>
-                <p className="text-3xl font-bold text-blue-500">{demandesStats.enTraitement}</p>
-                <p className="text-xs text-gray-500 mt-1">En traitement</p>
+                <p className="text-3xl font-bold text-primary-500 dark:text-primary-400 tabular-nums tracking-tight">{demandesStats.enTraitement}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">En traitement</p>
               </div>
             </div>
           </div>
 
-          {/* Card 2 — Réclamations (Red/Orange theme) */}
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-red-100 p-6">
+          {/* Card 2 — Réclamations (Red/Semantic theme) */}
+          <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-red-600 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-red-600 dark:text-red-400 uppercase tracking-wide">
                 Réclamations
               </h3>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-100">
-                <svg className="h-5 w-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-50 dark:bg-red-900/30">
+                <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400" />
               </div>
             </div>
             <div>
-              <p className="text-3xl font-bold text-gray-800">{reclamationsStats.ouvertes}</p>
-              <p className="text-xs text-gray-500 mt-1">Réclamations ouvertes</p>
+              <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{reclamationsStats.ouvertes}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Réclamations ouvertes</p>
             </div>
           </div>
 
-          {/* Card 3 — Certificats Médicaux (Teal/Green theme) */}
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 border border-teal-100 p-6">
+          {/* Card 3 — Certificats Médicaux (Emerald/Semantic theme) */}
+          <div className="card p-6">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-semibold text-teal-600 uppercase tracking-wide">
+              <h3 className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">
                 Certificats Médicaux
               </h3>
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-100">
-                <svg className="h-5 w-5 text-teal-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-900/30">
+                <FileCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               </div>
             </div>
             <div>
-              <p className="text-3xl font-bold text-gray-800">{certificatsStats.enAttente}</p>
-              <p className="text-xs text-gray-500 mt-1">En attente de validation</p>
+              <p className="text-3xl font-bold text-slate-800 dark:text-white tabular-nums tracking-tight">{certificatsStats.enAttente}</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">En attente de validation</p>
             </div>
           </div>
         </div>
 
         {/* Recent Activity Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100">
-            <h2 className="text-lg font-semibold text-gray-800">Activité Récente</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+        <div className="card overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200/70 dark:border-slate-800">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Activité Récente</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Les 5 dernières demandes administratives soumises
             </p>
           </div>
 
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-100">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+              <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Numéro
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Objet
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Statut
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     Date de Création
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {recentActivity.length === 0 ? (
                   <tr>
-                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-gray-400">
+                    <td colSpan={4} className="px-6 py-8 text-center text-sm text-slate-500 dark:text-slate-400">
                       Aucune activité récente à afficher.
                     </td>
                   </tr>
                 ) : (
                   recentActivity.map((item) => (
-                    <tr key={item.idDemande} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-800">
+                    <tr key={item.idDemande} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-slate-800 dark:text-white tabular-nums">
                         {item.numero}
                       </td>
-                      <td className="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">
+                      <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300 max-w-xs truncate">
                         {item.objet}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -352,7 +320,7 @@ export default function ScolariteDashboard() {
                           {formatStatutLabel(item.statut)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
                         {formatDateFr(item.dateCreation)}
                       </td>
                     </tr>

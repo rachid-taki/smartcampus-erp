@@ -9,20 +9,20 @@ export default function ConfigLayout() {
   const [activeTab, setActiveTab] = useState<ConfigTab>('parametres');
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="sc-portal min-h-screen flex flex-col">
       {/* Topbar de Navigation (Module Configuration) */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-card dark:bg-card-dark border-b border-slate-200/70 dark:border-slate-800 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between items-center">
             
             {/* Logo / Titre du module */}
             <div className="flex items-center gap-3">
-              <div className="bg-slate-900 p-2 rounded-xl">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary-600 shadow-lg shadow-primary-900/20">
                 <Settings className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-slate-900 leading-tight">Configuration</h1>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Super Admin</p>
+                <h1 className="text-lg font-bold text-slate-800 dark:text-white leading-tight tracking-tight">Configuration</h1>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Super Admin</p>
               </div>
             </div>
 
@@ -32,8 +32,8 @@ export default function ConfigLayout() {
                 onClick={() => setActiveTab('parametres')}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === 'parametres'
-                    ? 'bg-slate-100 text-slate-900'
-                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <Settings className="h-4 w-4" />
@@ -44,8 +44,8 @@ export default function ConfigLayout() {
                 onClick={() => setActiveTab('calendrier')}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
                   activeTab === 'calendrier'
-                    ? 'bg-indigo-50 text-indigo-700'
-                    : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'
+                    ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
                 <CalendarDays className="h-4 w-4" />
@@ -58,7 +58,7 @@ export default function ConfigLayout() {
       </header>
 
       {/* Contenu principal */}
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto animate-fade-in">
         {activeTab === 'parametres' ? <ParametresSysteme /> : <CalendrierAcademique />}
       </div>
     </div>

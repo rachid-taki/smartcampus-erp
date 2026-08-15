@@ -95,16 +95,20 @@ function ToastContainer({
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
             toast.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+              <CheckCircle className="h-4 w-4" />
+            </div>
           ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
           )}
           <p className="text-sm flex-1">{toast.message}</p>
           <button
@@ -137,18 +141,18 @@ function WorkflowCard({
   const sortedEtapes = [...workflow.etapes].sort((a, b) => a.ordre - b.ordre);
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col hover:shadow-md transition-shadow duration-200">
+    <div className="card p-6 flex flex-col transition-shadow duration-200">
       {/* Card header */}
       <div className="flex items-start justify-between mb-3 gap-3">
         <div className="flex items-start gap-3 min-w-0">
-          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-100">
-            <WorkflowIcon className="h-5 w-5 text-indigo-600" />
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30">
+            <WorkflowIcon className="h-5 w-5 text-primary-600 dark:text-primary-400" />
           </div>
           <div className="min-w-0">
-            <h3 className="text-base font-semibold text-gray-800 truncate">
+            <h3 className="text-base font-semibold text-slate-800 dark:text-white truncate tracking-tight">
               {workflow.nom}
             </h3>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 tabular-nums">
               Créé le {formatDateFr(workflow.date_creation)}
             </p>
           </div>
@@ -157,8 +161,8 @@ function WorkflowCard({
         <span
           className={`flex-shrink-0 inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
             isActive
-              ? 'bg-green-100 text-green-700 border border-green-200'
-              : 'bg-gray-100 text-gray-600 border border-gray-200'
+              ? 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800'
+              : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
           }`}
         >
           {workflow.statut}
@@ -167,37 +171,41 @@ function WorkflowCard({
 
       {/* Description */}
       {workflow.description && (
-        <p className="text-sm text-gray-500 mb-4 line-clamp-2">
+        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">
           {workflow.description}
         </p>
       )}
 
       {/* Etapes timeline */}
       <div className="flex-1 mb-4">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-          Étapes ({sortedEtapes.length})
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+          Étapes (<span className="tabular-nums">{sortedEtapes.length}</span>)
         </p>
 
         {sortedEtapes.length === 0 ? (
-          <p className="text-sm text-gray-400 italic">Aucune étape définie.</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 italic">Aucune étape définie.</p>
         ) : (
           <ol className="space-y-2">
             {sortedEtapes.map((etape, idx) => (
               <li key={etape.id_etape} className="flex items-start gap-2.5">
-                <div className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-[11px] font-semibold text-indigo-600">
+                <div className="flex-shrink-0 flex h-6 w-6 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 text-[11px] font-semibold text-primary-600 dark:text-primary-400 tabular-nums">
                   {etape.ordre}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm text-gray-700 leading-tight">{etape.nom}</p>
+                  <p className="text-sm text-slate-700 dark:text-slate-200 leading-tight">{etape.nom}</p>
                   {etape.role_responsable && (
-                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
-                      <User className="h-3 w-3" />
+                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                      <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
+                        <User className="h-2.5 w-2.5 text-slate-500 dark:text-slate-400" />
+                      </div>
                       {etape.role_responsable}
                     </p>
                   )}
                 </div>
                 {idx < sortedEtapes.length - 1 && (
-                  <ArrowRight className="h-3.5 w-3.5 text-gray-300 mt-1.5 flex-shrink-0" />
+                  <div className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 mt-1.5 flex-shrink-0">
+                    <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500" />
+                  </div>
                 )}
               </li>
             ))}
@@ -206,22 +214,22 @@ function WorkflowCard({
       </div>
 
       {/* Toggle status */}
-      <div className="pt-4 border-t border-gray-100 flex items-center justify-between">
-        <span className="text-sm text-gray-500">
+      <div className="pt-4 border-t border-slate-200/70 dark:border-slate-800 flex items-center justify-between">
+        <span className="text-sm text-slate-500 dark:text-slate-400">
           {isActive ? 'Workflow actif' : 'Workflow inactif'}
         </span>
         <button
           onClick={() => onToggleStatus(workflow)}
           disabled={isToggling}
-          className="disabled:opacity-50 transition-colors"
+          className="disabled:opacity-50 transition-colors p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
           aria-label="Changer le statut du workflow"
         >
           {isToggling ? (
-            <Loader2 className="h-6 w-6 text-gray-400 animate-spin" />
+            <Loader2 className="h-6 w-6 text-slate-400 dark:text-slate-500 animate-spin" />
           ) : isActive ? (
-            <ToggleRight className="h-7 w-7 text-green-500" />
+            <ToggleRight className="h-7 w-7 text-green-500 dark:text-green-400" />
           ) : (
-            <ToggleLeft className="h-7 w-7 text-gray-300" />
+            <ToggleLeft className="h-7 w-7 text-slate-300 dark:text-slate-600" />
           )}
         </button>
       </div>
@@ -327,27 +335,27 @@ function CreateWorkflowModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+        className="card p-0 w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
               Créer un Workflow
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Définissez un modèle de workflow et ses étapes de validation.
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
@@ -356,8 +364,10 @@ function CreateWorkflowModal({
         {/* Modal Body */}
         <div className="px-6 py-5 space-y-6">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{formError}</span>
             </div>
           )}
@@ -365,7 +375,7 @@ function CreateWorkflowModal({
           {/* Basic info */}
           <div className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Nom du workflow <span className="text-red-500">*</span>
               </label>
               <input
@@ -373,12 +383,12 @@ function CreateWorkflowModal({
                 value={nom}
                 onChange={(e) => setNom(e.target.value)}
                 placeholder="Ex: Validation attestation de réussite"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Description
               </label>
               <textarea
@@ -386,23 +396,23 @@ function CreateWorkflowModal({
                 onChange={(e) => setDescription(e.target.value)}
                 rows={3}
                 placeholder="Décrivez le but de ce workflow..."
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent resize-none"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
               />
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-slate-200/70 dark:border-slate-800" />
 
           {/* Dynamic steps builder */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
                 Étapes du workflow
               </label>
               <button
                 type="button"
                 onClick={handleAddEtape}
-                className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-700 transition-colors"
+                className="inline-flex items-center gap-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Ajouter une étape
@@ -413,9 +423,9 @@ function CreateWorkflowModal({
               {etapes.map((etape, index) => (
                 <div
                   key={index}
-                  className="flex items-start gap-3 bg-gray-50 border border-gray-100 rounded-lg p-3"
+                  className="flex items-start gap-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200/70 dark:border-slate-700 rounded-lg p-3"
                 >
-                  <div className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-600 mt-1">
+                  <div className="flex-shrink-0 flex h-8 w-8 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 text-sm font-semibold text-primary-600 dark:text-primary-400 mt-1 tabular-nums">
                     {index + 1}
                   </div>
 
@@ -427,7 +437,7 @@ function CreateWorkflowModal({
                         handleEtapeChange(index, 'nom', e.target.value)
                       }
                       placeholder="Nom de l'étape"
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                     />
                     <input
                       type="text"
@@ -436,7 +446,7 @@ function CreateWorkflowModal({
                         handleEtapeChange(index, 'role_responsable', e.target.value)
                       }
                       placeholder="Rôle responsable (ex: Scolarité)"
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                      className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                     />
                   </div>
 
@@ -444,7 +454,7 @@ function CreateWorkflowModal({
                     type="button"
                     onClick={() => handleRemoveEtape(index)}
                     disabled={etapes.length === 1}
-                    className="flex-shrink-0 mt-1 p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-400"
+                    className="flex-shrink-0 mt-1 p-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
                     aria-label="Supprimer l'étape"
                     title={
                       etapes.length === 1
@@ -461,18 +471,18 @@ function CreateWorkflowModal({
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-xl">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Enregistrer
@@ -592,22 +602,22 @@ export default function GestionWorkflows() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
               Gestion des Workflows
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Définissez et gérez les modèles de workflow utilisés pour le traitement des demandes.
             </p>
           </div>
 
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
             Créer un Workflow
@@ -616,9 +626,11 @@ export default function GestionWorkflows() {
 
         {/* Error state */}
         {error && !loading && (
-          <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-6 text-center">
-            <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-            <p className="text-sm font-medium text-red-700">{error}</p>
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mx-auto mb-2">
+              <AlertTriangle className="h-6 w-6" />
+            </div>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">{error}</p>
           </div>
         )}
 
@@ -628,31 +640,33 @@ export default function GestionWorkflows() {
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 animate-pulse"
+                className="card p-6 animate-pulse"
               >
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="h-10 w-10 bg-gray-200 rounded-lg" />
+                  <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-lg" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 w-32 bg-gray-200 rounded" />
-                    <div className="h-3 w-20 bg-gray-100 rounded" />
+                    <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded" />
+                    <div className="h-3 w-20 bg-slate-100 dark:bg-slate-800 rounded" />
                   </div>
                 </div>
-                <div className="h-3 w-full bg-gray-100 rounded mb-2" />
-                <div className="h-3 w-2/3 bg-gray-100 rounded mb-4" />
+                <div className="h-3 w-full bg-slate-100 dark:bg-slate-800 rounded mb-2" />
+                <div className="h-3 w-2/3 bg-slate-100 dark:bg-slate-800 rounded mb-4" />
                 <div className="space-y-2">
-                  <div className="h-4 w-full bg-gray-100 rounded" />
-                  <div className="h-4 w-4/5 bg-gray-100 rounded" />
+                  <div className="h-4 w-full bg-slate-100 dark:bg-slate-800 rounded" />
+                  <div className="h-4 w-4/5 bg-slate-100 dark:bg-slate-800 rounded" />
                 </div>
               </div>
             ))}
           </div>
         ) : workflows.length === 0 && !error ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <WorkflowIcon className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm font-medium text-gray-600 mb-1">
+          <div className="card p-12 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-3">
+              <WorkflowIcon className="h-7 w-7 text-primary-600 dark:text-primary-400" />
+            </div>
+            <p className="text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">
               Aucun workflow n'a encore été créé.
             </p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
               Cliquez sur "Créer un Workflow" pour commencer.
             </p>
           </div>

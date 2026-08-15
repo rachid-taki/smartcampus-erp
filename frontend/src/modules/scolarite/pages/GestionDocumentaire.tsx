@@ -129,13 +129,28 @@ const truncateId = (id: string): string =>
   id.length > 10 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
 
 const getFileIcon = (type: string) => {
-  if (type.includes('pdf')) return <FileText className="h-5 w-5 text-red-500" />;
-  if (type.includes('image')) return <ImageIcon className="h-5 w-5 text-purple-500" />;
-  if (type.includes('excel') || type.includes('spreadsheet'))
-    return <FileSpreadsheet className="h-5 w-5 text-green-600" />;
-  if (type.includes('word') || type.includes('document'))
-    return <FileText className="h-5 w-5 text-blue-500" />;
-  return <FileIcon className="h-5 w-5 text-gray-400" />;
+  let icon = <FileIcon className="h-5 w-5" />;
+  let colorClasses = "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400";
+
+  if (type.includes('pdf')) {
+    icon = <FileText className="h-5 w-5" />;
+    colorClasses = "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400";
+  } else if (type.includes('image')) {
+    icon = <ImageIcon className="h-5 w-5" />;
+    colorClasses = "bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400";
+  } else if (type.includes('excel') || type.includes('spreadsheet')) {
+    icon = <FileSpreadsheet className="h-5 w-5" />;
+    colorClasses = "bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400";
+  } else if (type.includes('word') || type.includes('document')) {
+    icon = <FileText className="h-5 w-5" />;
+    colorClasses = "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400";
+  }
+
+  return (
+    <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${colorClasses}`}>
+      {icon}
+    </div>
+  );
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -156,16 +171,20 @@ function ToastContainer({
       {toasts.map((toast) => (
         <div
           key={toast.id}
-          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 ${
+          className={`flex items-start gap-3 rounded-lg shadow-lg border p-4 animate-fade-in ${
             toast.type === 'success'
-              ? 'bg-green-50 border-green-200 text-green-800'
-              : 'bg-red-50 border-red-200 text-red-800'
+              ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
+              <CheckCircle className="h-4 w-4" />
+            </div>
           ) : (
-            <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+              <AlertTriangle className="h-4 w-4" />
+            </div>
           )}
           <p className="text-sm flex-1">{toast.message}</p>
           <button
@@ -273,27 +292,27 @@ function UploadDocumentModal({
 
   return (
     <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
       onClick={() => !saving && onClose()}
     >
       <div
-        className="bg-white rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
+        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white rounded-t-xl z-10">
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
           <div>
-            <h2 className="text-lg font-semibold text-gray-800">
+            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
               Ajouter un document
             </h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
               Enregistrez les métadonnées d'un fichier déjà téléversé.
             </p>
           </div>
           <button
             onClick={onClose}
             disabled={saving}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
           >
             <X className="h-5 w-5" />
           </button>
@@ -302,14 +321,16 @@ function UploadDocumentModal({
         {/* Modal Body */}
         <div className="px-6 py-5 space-y-5">
           {formError && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-100 rounded-lg p-3 text-sm text-red-700">
-              <AlertTriangle className="h-4 w-4 flex-shrink-0 mt-0.5" />
+            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
+                <AlertTriangle className="h-3 w-3" />
+              </div>
               <span>{formError}</span>
             </div>
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               Nom du fichier <span className="text-red-500">*</span>
             </label>
             <input
@@ -317,12 +338,12 @@ function UploadDocumentModal({
               value={nom}
               onChange={(e) => setNom(e.target.value)}
               placeholder="Ex: certificat_medical_janvier.pdf"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               URL du fichier <span className="text-red-500">*</span>
             </label>
             <input
@@ -330,19 +351,19 @@ function UploadDocumentModal({
               value={url}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="https://storage.smartcampus.ma/docs/..."
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Type
               </label>
               <select
                 value={type}
                 onChange={(e) => setType(e.target.value)}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 {TYPE_OPTIONS.map((t) => (
                   <option key={t} value={t}>
@@ -352,7 +373,7 @@ function UploadDocumentModal({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
                 Taille (octets) <span className="text-red-500">*</span>
               </label>
               <input
@@ -361,15 +382,15 @@ function UploadDocumentModal({
                 value={taille}
                 onChange={(e) => setTaille(e.target.value)}
                 placeholder="Ex: 204800"
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
               />
             </div>
           </div>
 
-          <hr className="border-gray-100" />
+          <hr className="border-slate-200/70 dark:border-slate-800" />
 
           <div>
-            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
               Lier le document à <span className="text-red-500">*</span>
             </label>
 
@@ -377,8 +398,8 @@ function UploadDocumentModal({
               <label
                 className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                   linkage === 'demande'
-                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <input
@@ -390,7 +411,7 @@ function UploadDocumentModal({
                     setLinkage('demande');
                     setLinkedId('');
                   }}
-                  className="accent-indigo-600"
+                  className="accent-primary-600"
                 />
                 <ClipboardList className="h-4 w-4" />
                 <span className="text-sm font-medium">Une Demande</span>
@@ -399,8 +420,8 @@ function UploadDocumentModal({
               <label
                 className={`flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-colors ${
                   linkage === 'reclamation'
-                    ? 'border-indigo-400 bg-indigo-50 text-indigo-700'
-                    : 'border-gray-200 text-gray-600 hover:bg-gray-50'
+                    ? 'border-primary-400 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
+                    : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                 }`}
               >
                 <input
@@ -412,7 +433,7 @@ function UploadDocumentModal({
                     setLinkage('reclamation');
                     setLinkedId('');
                   }}
-                  className="accent-indigo-600"
+                  className="accent-primary-600"
                 />
                 <MessageSquareWarning className="h-4 w-4" />
                 <span className="text-sm font-medium">Une Réclamation</span>
@@ -428,24 +449,24 @@ function UploadDocumentModal({
                   ? 'ID de la demande (UUID)'
                   : 'ID de la réclamation (UUID)'
               }
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100 sticky bottom-0 bg-white rounded-b-xl">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
           <button
             onClick={onClose}
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
           >
             Annuler
           </button>
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft transition-all disabled:opacity-60 disabled:cursor-not-allowed"
           >
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Enregistrer
@@ -485,43 +506,43 @@ function DocumentRow({
   const isSigned = Boolean(document.hash);
 
   const linkage = document.id_demande
-    ? { label: 'Demande', id: document.id_demande, classes: 'bg-blue-100 text-blue-700 border-blue-200' }
+    ? { label: 'Demande', id: document.id_demande, classes: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border-primary-200 dark:border-primary-800' }
     : document.id_reclamation
     ? {
         label: 'Réclamation',
         id: document.id_reclamation,
-        classes: 'bg-orange-100 text-orange-700 border-orange-200',
+        classes: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 border-orange-200 dark:border-orange-800',
       }
     : null;
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
+    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-3">
           {getFileIcon(document.type)}
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <p className="text-sm font-medium text-gray-800 truncate max-w-xs">
+              <p className="text-sm font-medium text-slate-800 dark:text-white truncate max-w-xs">
                 {document.nom}
               </p>
               {isSigned && (
                 <span
                   title={`Hash: ${document.hash}`}
-                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-100 text-green-700 border border-green-200 flex-shrink-0"
+                  className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800 flex-shrink-0"
                 >
                   <ShieldCheck className="h-3 w-3" />
                   Signé
                 </span>
               )}
             </div>
-            <p className="text-xs text-gray-400">{document.type}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{document.type}</p>
           </div>
         </div>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums tracking-tight">
         {formatFileSize(document.taille)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
         {formatDateFr(document.date_upload)}
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
@@ -530,16 +551,16 @@ function DocumentRow({
             className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border ${linkage.classes}`}
             title={linkage.id}
           >
-            {linkage.label}: {truncateId(linkage.id)}
+            {linkage.label}: <span className="ml-1 tabular-nums">{truncateId(linkage.id)}</span>
           </span>
         ) : (
-          <span className="text-xs text-gray-400 italic">Non lié</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400 italic">Non lié</span>
         )}
       </td>
       <td className="px-6 py-4 whitespace-nowrap text-right">
         {isConfirming ? (
           <div className="flex items-center justify-end gap-2">
-            <span className="text-xs text-gray-500">Confirmer ?</span>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Confirmer ?</span>
             <button
               onClick={() => onDelete(document.id_document)}
               disabled={isDeleting}
@@ -550,7 +571,7 @@ function DocumentRow({
             <button
               onClick={onCancelDelete}
               disabled={isDeleting}
-              className="px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-md transition-colors"
+              className="px-2.5 py-1 text-xs font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-md transition-colors"
             >
               Non
             </button>
@@ -561,7 +582,7 @@ function DocumentRow({
               href={document.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
               Voir
@@ -573,7 +594,7 @@ function DocumentRow({
                 disabled={isSigning}
                 title="Signer électroniquement le document"
                 aria-label="Signer électroniquement le document"
-                className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="inline-flex items-center justify-center p-2 text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isSigning ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -585,7 +606,7 @@ function DocumentRow({
 
             <button
               onClick={() => onRequestDelete(document.id_document)}
-              className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              className="p-2 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
               aria-label="Supprimer le document"
             >
               <Trash2 className="h-4 w-4" />
@@ -619,33 +640,35 @@ function DocumentOfficielRow({
   const isSigned = Boolean(document.hash);
 
   return (
-    <tr className="hover:bg-gray-50 transition-colors">
+    <tr className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex items-center gap-3">
           {getFileIcon(document.type)}
           <div className="min-w-0">
-            <p className="text-sm font-medium text-gray-800 truncate max-w-xs">
+            <p className="text-sm font-medium text-slate-800 dark:text-white truncate max-w-xs">
               {document.nom}
             </p>
-            <p className="text-xs text-gray-400">{document.type}</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400">{document.type}</p>
           </div>
         </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-violet-100 text-violet-700 border border-violet-200">
+        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
           <Tag className="h-3 w-3" />
           {document.categorie}
         </span>
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums tracking-tight">
         {formatFileSize(document.taille)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
         {formatDateFr(document.date_generation)}
       </td>
-      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+      <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums tracking-tight">
         <span className="inline-flex items-center gap-1.5">
-          <Download className="h-3.5 w-3.5 text-gray-400" />
+          <div className="flex h-5 w-5 items-center justify-center rounded-md bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+            <Download className="h-3.5 w-3.5" />
+          </div>
           {document.nombre_telechargements}
         </span>
       </td>
@@ -656,7 +679,7 @@ function DocumentOfficielRow({
             disabled={isDownloading}
             title="Télécharger le document"
             aria-label="Télécharger le document"
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isDownloading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -669,7 +692,7 @@ function DocumentOfficielRow({
           {isSigned ? (
             <span
               title={`Hash: ${document.hash}`}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 border border-green-200"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-400 border border-green-200 dark:border-green-800"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
               Signé
@@ -680,7 +703,7 @@ function DocumentOfficielRow({
               disabled={isSigning}
               title="Signer électroniquement le document"
               aria-label="Signer électroniquement le document"
-              className="inline-flex items-center justify-center p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex items-center justify-center p-2 text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSigning ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -988,15 +1011,15 @@ export default function GestionDocumentaire() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6 md:p-8">
+    <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
               Gestion Documentaire
             </h1>
-            <p className="text-sm text-gray-500 mt-1">
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Consultez, filtrez et gérez les documents soumis et les documents officiels.
             </p>
           </div>
@@ -1004,7 +1027,7 @@ export default function GestionDocumentaire() {
           {activeTab === 'soumis' && (
             <button
               onClick={() => setShowUploadModal(true)}
-              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-sm transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
             >
               <Plus className="h-4 w-4" />
               Ajouter un document
@@ -1013,13 +1036,13 @@ export default function GestionDocumentaire() {
         </header>
 
         {/* ── Tab menu ── */}
-        <div className="inline-flex items-center gap-1 bg-gray-100 rounded-xl p-1 mb-6">
+        <div className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800/50 rounded-xl p-1 mb-6">
           <button
             onClick={() => setActiveTab('soumis')}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeTab === 'soumis'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-card dark:bg-card-dark text-primary-600 dark:text-primary-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
             }`}
           >
             <FolderOpen className="h-4 w-4" />
@@ -1029,8 +1052,8 @@ export default function GestionDocumentaire() {
             onClick={() => setActiveTab('officiels')}
             className={`inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
               activeTab === 'officiels'
-                ? 'bg-white text-indigo-700 shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-card dark:bg-card-dark text-primary-600 dark:text-primary-400 shadow-sm'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white'
             }`}
           >
             <Landmark className="h-4 w-4" />
@@ -1044,22 +1067,22 @@ export default function GestionDocumentaire() {
         {activeTab === 'soumis' && (
           <>
             {/* Filter bar */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4 mb-6 flex flex-col md:flex-row gap-3">
+            <div className="card p-4 mb-6 flex flex-col md:flex-row gap-3">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
                   placeholder="Rechercher par nom de fichier..."
-                  className="w-full pl-9 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
+                  className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
                 />
               </div>
 
               <select
                 value={linkageFilter}
                 onChange={(e) => setLinkageFilter(e.target.value as LinkageFilter)}
-                className="md:w-64 px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent bg-white"
+                className="md:w-64 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 <option value="all">Tous</option>
                 <option value="demande">Liés aux Demandes</option>
@@ -1068,61 +1091,63 @@ export default function GestionDocumentaire() {
             </div>
 
             {errorDocs && !loadingDocs && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-6 text-center">
-                <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-red-700">{errorDocs}</p>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mx-auto mb-2">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">{errorDocs}</p>
               </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-100">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+                  <thead className="bg-surface dark:bg-surface-dark/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Document
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Taille
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Date d'upload
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Lié à
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                     {loadingDocs ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 bg-gray-100 rounded animate-pulse" />
-                              <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+                              <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                              <div className="h-4 w-40 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-6 w-28 bg-gray-100 rounded-full animate-pulse" />
+                            <div className="h-6 w-28 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-20 bg-gray-100 rounded animate-pulse ml-auto" />
+                            <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" />
                           </td>
                         </tr>
                       ))
                     ) : filteredDocuments.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
+                        <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                           Aucun document ne correspond aux critères sélectionnés.
                         </td>
                       </tr>
@@ -1154,67 +1179,69 @@ export default function GestionDocumentaire() {
         {activeTab === 'officiels' && (
           <>
             {errorOfficiels && !loadingOfficiels && (
-              <div className="bg-red-50 border border-red-100 rounded-xl p-6 mb-6 text-center">
-                <AlertTriangle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                <p className="text-sm font-medium text-red-700">{errorOfficiels}</p>
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 mb-6 text-center">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 mx-auto mb-2">
+                  <AlertTriangle className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">{errorOfficiels}</p>
               </div>
             )}
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="card overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-100">
-                  <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
+                  <thead className="bg-surface dark:bg-surface-dark/50">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Fichier
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Catégorie
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Taille
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Date Génération
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Téléchargements
                       </th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Actions
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-50">
+                  <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                     {loadingOfficiels ? (
                       Array.from({ length: 5 }).map((_, i) => (
                         <tr key={i}>
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-8 w-8 bg-gray-100 rounded animate-pulse" />
-                              <div className="h-4 w-40 bg-gray-100 rounded animate-pulse" />
+                              <div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-lg animate-pulse" />
+                              <div className="h-4 w-40 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                             </div>
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-6 w-24 bg-gray-100 rounded-full animate-pulse" />
+                            <div className="h-6 w-24 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-16 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-20 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-10 bg-gray-100 rounded animate-pulse" />
+                            <div className="h-4 w-10 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
                           </td>
                           <td className="px-6 py-4">
-                            <div className="h-4 w-32 bg-gray-100 rounded animate-pulse ml-auto" />
+                            <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" />
                           </td>
                         </tr>
                       ))
                     ) : documentsOfficiels.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-400">
+                        <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                           Aucun document officiel disponible pour le moment.
                         </td>
                       </tr>
