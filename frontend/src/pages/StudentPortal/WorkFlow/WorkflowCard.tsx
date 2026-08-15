@@ -24,49 +24,39 @@ export default function WorkflowCard({ request }: Props) {
 
   const currentIndex = (() => {
     switch (request.status) {
-      case "Soumise":
-        return 0;
-      case "En_Traitement":
-        return 2;
-      case "Validee":
-        return 4;
-      case "Rejetee":
-        return 3;
-      default:
-        return 0;
+      case "Soumise": return 0;
+      case "En_Traitement": return 2;
+      case "Validee": return 4;
+      case "Rejetee": return 3;
+      default: return 0;
     }
   })();
 
   const progressPercent = (() => {
     switch (request.status) {
-      case "Soumise":
-        return 20;
-      case "En_Traitement":
-        return 60;
-      case "Validee":
-        return 100;
-      case "Rejetee":
-        return 60;
-      default:
-        return 0;
+      case "Soumise": return 20;
+      case "En_Traitement": return 60;
+      case "Validee": return 100;
+      case "Rejetee": return 60;
+      default: return 0;
     }
   })();
 
   return (
     <div className="card-hover card group flex h-full flex-col overflow-hidden transition-all duration-200">
-      <div className="flex items-start gap-3 border-b border-slate-200/70 p-5 dark:border-slate-800">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-sm transition-transform duration-200 group-hover:scale-105">
-          <LuWorkflow size={20} />
+      <div className="flex items-start gap-2.5 border-b border-slate-200/70 p-4 dark:border-slate-800">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary-500 to-primary-600 text-white shadow-sm transition-transform duration-200 group-hover:scale-105">
+          <LuWorkflow size={16} />
         </div>
 
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[15px] font-bold text-slate-900 dark:text-white">
+          <h3 className="truncate text-[13px] font-bold text-slate-900 dark:text-white">
             {request.type}
           </h3>
-          <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+          <p className="mt-0.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
             {request.reference}
           </p>
-          <p className="mt-0.5 text-[11px] text-slate-400 dark:text-slate-500">
+          <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">
             {new Date(request.createdAt).toLocaleDateString("fr-FR", {
               day: "numeric",
               month: "long",
@@ -76,7 +66,7 @@ export default function WorkflowCard({ request }: Props) {
         </div>
 
         <span
-          className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-bold ${
+          className={`shrink-0 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-bold ${
             STATUS_BADGE[request.status] ?? "bg-slate-100 text-slate-700"
           }`}
         >
@@ -84,13 +74,13 @@ export default function WorkflowCard({ request }: Props) {
         </span>
       </div>
 
-      <div className="px-5 pt-4">
-        <div className="mb-4">
-          <div className="mb-2 flex items-center justify-between text-xs">
+      <div className="px-4 pt-3">
+        <div className="mb-3">
+          <div className="mb-1.5 flex items-center justify-between text-[11px]">
             <span className="font-semibold text-slate-600 dark:text-slate-400">Progression</span>
             <span className="font-bold text-primary-600 dark:text-primary-400">{progressPercent}%</span>
           </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+          <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 request.status === "Rejetee"
@@ -113,29 +103,29 @@ export default function WorkflowCard({ request }: Props) {
             const isLast = index === steps.length - 1;
 
             return (
-              <div key={step} className="relative flex gap-3 pb-4 last:pb-0">
+              <div key={step} className="relative flex gap-2.5 pb-3 last:pb-0">
                 {!isLast && (
                   <span
-                    className={`absolute left-[9px] top-[22px] h-[calc(100%-22px)] w-0.5 transition-colors ${
+                    className={`absolute left-[7px] top-[18px] h-[calc(100%-18px)] w-0.5 transition-colors ${
                       done ? "bg-emerald-400 dark:bg-emerald-600" : "bg-slate-200 dark:bg-slate-800"
                     }`}
                   />
                 )}
 
-                <span className="relative z-10 flex h-5 w-5 shrink-0 items-center justify-center">
+                <span className="relative z-10 flex h-4 w-4 shrink-0 items-center justify-center">
                   {done ? (
-                    <CheckCircle2 size={20} className="text-emerald-600 dark:text-emerald-400" />
+                    <CheckCircle2 size={16} className="text-emerald-600 dark:text-emerald-400" />
                   ) : rejectedStep ? (
-                    <XCircle size={20} className="text-red-600 dark:text-red-400" />
+                    <XCircle size={16} className="text-red-600 dark:text-red-400" />
                   ) : current ? (
-                    <Loader2 size={20} className="animate-spin text-primary-600 dark:text-primary-400" />
+                    <Loader2 size={16} className="animate-spin text-primary-600 dark:text-primary-400" />
                   ) : (
-                    <Circle size={20} className="text-slate-300 dark:text-slate-700" />
+                    <Circle size={16} className="text-slate-300 dark:text-slate-700" />
                   )}
                 </span>
 
                 <span
-                  className={`flex-1 text-[13px] leading-5 ${
+                  className={`flex-1 text-[12px] leading-4 ${
                     rejectedStep
                       ? "font-bold text-red-600 dark:text-red-400"
                       : current
@@ -154,10 +144,10 @@ export default function WorkflowCard({ request }: Props) {
       </div>
 
       {request.objet && (
-        <div className="mt-auto border-t border-slate-200/70 px-5 py-3 dark:border-slate-800">
-          <div className="flex items-start gap-2">
-            <FileText size={14} className="mt-0.5 shrink-0 text-slate-400" />
-            <p className="text-xs text-slate-600 dark:text-slate-400 line-clamp-2">
+        <div className="mt-auto border-t border-slate-200/70 px-4 py-2.5 dark:border-slate-800">
+          <div className="flex items-start gap-1.5">
+            <FileText size={12} className="mt-0.5 shrink-0 text-slate-400" />
+            <p className="text-[11px] text-slate-600 dark:text-slate-400 line-clamp-2">
               {request.objet}
             </p>
           </div>

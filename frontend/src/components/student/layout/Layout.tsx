@@ -20,22 +20,20 @@ export default function Layout() {
         onToggleCollapse={() => setCollapsed(!collapsed)}
       />
 
-      <div className="flex h-screen flex-1 flex-col">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-x-hidden">
         <Topbar
           isDark={isDark}
           onToggleDark={toggleDark}
           onOpenMobileSidebar={() => setMobileSidebarOpen(true)}
         />
 
-        <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="mx-auto w-full max-w-[1400px] animate-fade-in">
+        <main className="min-w-0 flex-1 overflow-y-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mx-auto w-full max-w-[1400px] min-w-0 animate-fade-in">
             <Outlet />
           </div>
           
           <AssistantWidget />
         </main>
-        
-        
 
         <Footer />
       </div>

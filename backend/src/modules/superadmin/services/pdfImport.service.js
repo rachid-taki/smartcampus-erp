@@ -27,54 +27,52 @@ const capitalize = (str) => {
     return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
 };
 
-// ============ EXTRACTION DEPUIS TEXTE LIBRE ============
 
 function extractFromText(text) {
     const emails = [...new Set(text.match(EMAIL_REGEX) || [])];
     const users = [];
+    const upperWords = text.match(/[A-ZÀ-Ý]{2,}/g) || [];
+    const clean = (s) => (s || "").toUpperCase().replace(/[^A-ZÀ-Ý]/g, "");
 
     for (const email of emails) {
-        const emailIndex = text.indexOf(email);
-        const beforeText = text.substring(Math.max(0, emailIndex - 150), emailIndex).replace(/\s+/g, " ").trim();
-        const afterText = text.substring(emailIndex + email.length, emailIndex + email.length + 150).replace(/\s+/g, " ").trim();
-        const context = `${beforeText} ${afterText}`;
+        const local = email.split("@")[0];
+        const parts = local.split(/[._-]/).filter((p) => p && !/^\d+$/.test(p));
+        const prenomLow = parts[0] || "";
+        const nomLow = parts[1] || "";
 
-        const namePattern = /\b([A-ZÀ-Ý][a-zà-ÿA-ZÀ-Ý\-]{1,29}(?:\s[A-ZÀ-Ý][a-zà-ÿA-ZÀ-Ý\-]{1,29})?)\b/g;
-        const matches = [...context.matchAll(namePattern)];
+        const prenomUp = clean(prenomLow);
+        const targetNom = clean(nomLow);
 
-        const names = matches
-            .map((m) => m[1].trim())
-            .filter((n) => n.length >= 3 && n.length <= 40 && !STOP_WORDS.has(n))
-            .slice(0, 4);
-
-        let prenom = "";
-        let nom = "";
-
-        if (names.length >= 2) {
-            prenom = names[0];
-            nom = names.slice(1).join(" ");
-        } else if (names.length === 1) {
-            const parts = email.split("@")[0].split(/[._-]/).filter((p) => p.length > 2);
-            if (parts.length >= 2) {
-                prenom = capitalize(parts[0]);
-                nom = capitalize(parts[1]);
-            } else {
-                prenom = names[0];
-                nom = "—";
+        let bestNom = "";
+        for (const w of upperWords) {
+            let n = w;
+            if (prenomUp && n.endsWith(prenomUp) && n.length > prenomUp.length + 1) {
+                n = n.slice(0, -prenomUp.length);
             }
-        } else {
-            const parts = email.split("@")[0].split(/[._-]/).filter((p) => p.length > 2);
-            prenom = parts[0] ? capitalize(parts[0]) : "Utilisateur";
-            nom = parts[1] ? capitalize(parts[1]) : "Inconnu";
+            const nw = clean(n);
+            if (targetNom && nw.startsWith(targetNom) && nw.length >= targetNom.length && nw.length > bestNom.length) {
+                bestNom = nw;
+            }
         }
 
-        users.push({ email: email.toLowerCase(), prenom, nom, telephone: null, roleName: "ETUDIANT" });
+        let prenom = capitalize(prenomLow);
+        let nom = bestNom ? capitalize(bestNom) : capitalize(nomLow);
+
+        if (!prenom) prenom = "Utilisateur";
+        if (!nom) nom = "Inconnu";
+
+        users.push({
+            email: email.toLowerCase(),
+            prenom,
+            nom,
+            telephone: null,
+            roleName: "ETUDIANT",
+        });
     }
 
     return users;
 }
 
-// ============ EXTRACTION STRUCTURÉE EXCEL ============
 
 function extractFromExcel(buffer) {
     const wb = XLSX.read(buffer, { type: "buffer" });
@@ -120,7 +118,6 @@ function extractFromExcel(buffer) {
     return result;
 }
 
-// ============ TRAITEMENT RÉCURSIF (ZIP imbriqués) ============
 
 async function processBuffer(buffer, filename, depth = 0, counter = { count: 0 }) {
     const ext = (filename.split(".").pop() || "").toLowerCase();
@@ -161,7 +158,6 @@ async function processBuffer(buffer, filename, depth = 0, counter = { count: 0 }
     return result;
 }
 
-// ============ POINT D'ENTRÉE ============
 
 const extractUsersFromFile = async (buffer, filename) => {
     const { texts, users } = await processBuffer(buffer, filename);
@@ -175,7 +171,6 @@ const extractUsersFromFile = async (buffer, filename) => {
     return Array.from(map.values());
 };
 
-// ============ CRÉATION EN MASSE (tous rôles) ============
 
 const bulkCreateUsers = async (usersList) => {
     const roleCache = {};

@@ -8,7 +8,6 @@ import {
   ChevronRight,
   FileText,
   GraduationCap,
-  List,
   MoonStar,
   PenLine,
   Presentation,
@@ -144,26 +143,26 @@ export default function AcademicCalendar() {
   };
 
   return (
-    <div className="animate-fade-in space-y-5">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+    <div className="animate-fade-in space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
             <span />
-            <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-[18px] font-semibold tracking-tight text-slate-900 dark:text-white">
               Calendrier universitaire
             </h1>
           </div>
-          <p className="mt-2 text-[13px] text-slate-500 dark:text-slate-400">
+          <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
             Dates clés de l'année académique.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-1 self-start rounded-lg bg-slate-100 p-1 dark:bg-slate-800/60 sm:self-auto">
+        <div className="inline-flex items-center gap-0.5 self-start rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800/60 sm:self-auto">
           {ACADEMIC_YEARS.map((y) => (
             <button
               key={y}
               onClick={() => changeYear(y)}
-              className={`relative rounded-md px-4 py-1.5 text-xs font-semibold transition ${
+              className={`relative rounded-md px-3 py-1 text-[11px] font-semibold transition ${
                 year === y
                   ? "text-primary-700 dark:text-primary-300"
                   : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -184,75 +183,75 @@ export default function AcademicCalendar() {
 
       <div className="card overflow-hidden p-0">
         <div className="grid grid-cols-1 gap-px bg-slate-200 sm:grid-cols-3 dark:bg-slate-800">
-          <div className="flex items-center justify-between gap-4 bg-white px-6 py-5 dark:bg-slate-900">
+          <div className="flex items-center justify-between gap-3 bg-white px-5 py-4 dark:bg-slate-900">
             <div className="min-w-0">
-              <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Phase actuelle
               </p>
-              <p className="mt-1 flex items-center gap-2 text-[15px] font-semibold text-slate-900 dark:text-white">
-                <span className="h-2 w-2 shrink-0 animate-pulse rounded-full bg-emerald-500" />
+              <p className="mt-1 flex items-center gap-1.5 text-[13px] font-semibold text-slate-900 dark:text-white">
+                <span className="h-1.5 w-1.5 shrink-0 animate-pulse rounded-full bg-emerald-500" />
                 <span className="truncate">{phase}</span>
               </p>
-              <p className="mt-0.5 text-[11.5px] text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400">
                 Année {year}
               </p>
             </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
-              <GraduationCap size={18} strokeWidth={1.8} />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400">
+              <GraduationCap size={16} strokeWidth={1.8} />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 bg-white px-6 py-5 dark:bg-slate-900">
+          <div className="flex items-center justify-between gap-3 bg-white px-5 py-4 dark:bg-slate-900">
             <div className="min-w-0">
-              <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Prochain événement
               </p>
               {next ? (
                 <>
-                  <p className="mt-1 truncate text-[15px] font-semibold text-slate-900 dark:text-white">
+                  <p className="mt-1 truncate text-[13px] font-semibold text-slate-900 dark:text-white">
                     {next.title}
                   </p>
-                  <p className="mt-0.5 flex items-center gap-1.5 text-[11.5px] tabular-nums text-slate-500 dark:text-slate-400">
+                  <p className="mt-0.5 flex items-center gap-1 text-[10.5px] tabular-nums text-slate-500 dark:text-slate-400">
                     {formatShort(next.start)}
-                    <span className="rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                    <span className="rounded-full bg-primary-50 px-1.5 py-0.5 text-[9px] font-bold text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       {isOngoing(next, today) ? "En cours" : `J-${daysUntil(next, today)}`}
                     </span>
                   </p>
                 </>
               ) : (
-                <p className="mt-1 text-[15px] font-semibold text-slate-400 dark:text-slate-500">
+                <p className="mt-1 text-[13px] font-semibold text-slate-400 dark:text-slate-500">
                   Aucun à venir
                 </p>
               )}
             </div>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400">
-              <CalendarDays size={18} strokeWidth={1.8} />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary-50 text-primary-600 dark:bg-primary-900/20 dark:text-primary-400">
+              <CalendarDays size={16} strokeWidth={1.8} />
             </div>
           </div>
 
-          <div className="flex items-center justify-between gap-4 bg-white px-6 py-5 dark:bg-slate-900">
+          <div className="flex items-center justify-between gap-3 bg-white px-5 py-4 dark:bg-slate-900">
             <div className="min-w-0">
-              <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Événements
               </p>
-              <p className="mt-1 text-[28px] font-semibold leading-none tracking-tight tabular-nums text-slate-900 dark:text-white">
+              <p className="mt-1 text-2xl font-semibold leading-none tracking-tight tabular-nums text-slate-900 dark:text-white">
                 {EVENTS[year].length}
               </p>
-              <p className="mt-1 text-[11.5px] text-slate-500 dark:text-slate-400">
+              <p className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400">
                 {events.length} affichés
               </p>
             </div>
-            <div className="flex h-10 items-end gap-1">
+            <div className="flex h-9 items-end gap-0.5">
               <span
-                className="w-2 rounded-sm bg-blue-400"
+                className="w-1.5 rounded-sm bg-blue-400"
                 style={{ height: `${Math.max(20, (s1Count / maxSem) * 100)}%` }}
               />
               <span
-                className="w-2 rounded-sm bg-emerald-400"
+                className="w-1.5 rounded-sm bg-emerald-400"
                 style={{ height: `${Math.max(20, (s2Count / maxSem) * 100)}%` }}
               />
               <span
-                className="w-2 rounded-sm bg-slate-300 dark:bg-slate-600"
+                className="w-1.5 rounded-sm bg-slate-300 dark:bg-slate-600"
                 style={{ height: `${Math.max(20, (otherCount / maxSem) * 100)}%` }}
               />
             </div>
@@ -260,15 +259,15 @@ export default function AcademicCalendar() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="card p-5 xl:col-span-2">
-          <div className="mb-4 flex items-center justify-between gap-3">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="card p-4 xl:col-span-2">
+          <div className="mb-3 flex items-center justify-between gap-2.5">
             <div className="flex items-center gap-0.5 rounded-lg bg-slate-100 p-0.5 dark:bg-slate-800/60">
               {(["all", "S1", "S2"] as const).map((s) => (
                 <button
                   key={s}
                   onClick={() => setSemester(s)}
-                  className={`rounded-md px-3 py-1.5 text-[11px] font-semibold transition ${
+                  className={`rounded-md px-2.5 py-1 text-[10px] font-semibold transition ${
                     semester === s
                       ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                       : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
@@ -279,25 +278,25 @@ export default function AcademicCalendar() {
               ))}
             </div>
 
-            <p className="text-[15px] font-bold capitalize tracking-tight text-slate-800 dark:text-white">
+            <p className="text-[13px] font-bold capitalize tracking-tight text-slate-800 dark:text-white">
               {cursor.toLocaleDateString("fr-FR", { month: "long", year: "numeric" })}
             </p>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1">
               <button
                 onClick={() =>
                   setCursor(new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1))
                 }
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
               >
-                <ChevronLeft size={15} />
+                <ChevronLeft size={13} />
               </button>
               <button
                 onClick={() => {
                   setCursor(new Date(today.getFullYear(), today.getMonth(), 1));
                   setSelectedDay(today);
                 }}
-                className="rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-semibold text-primary-600 transition hover:bg-primary-50 dark:border-slate-700 dark:bg-slate-800 dark:text-primary-400 dark:hover:bg-primary-900/20"
+                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-primary-600 transition hover:bg-primary-50 dark:border-slate-700 dark:bg-slate-800 dark:text-primary-400 dark:hover:bg-primary-900/20"
               >
                 Aujourd'hui
               </button>
@@ -305,22 +304,22 @@ export default function AcademicCalendar() {
                 onClick={() =>
                   setCursor(new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1))
                 }
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 dark:hover:text-slate-200"
               >
-                <ChevronRight size={15} />
+                <ChevronRight size={13} />
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+          <div className="grid grid-cols-7 text-center text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
             {WEEKDAYS.map((d) => (
-              <span key={d} className="py-2">
+              <span key={d} className="py-1.5">
                 {d}
               </span>
             ))}
           </div>
 
-          <div className="grid grid-cols-7 gap-1">
+          <div className="grid grid-cols-7 gap-0.5">
             {weeks.flat().map((day) => {
               const inMonth = day.getMonth() === cursor.getMonth();
               const isToday = day.getTime() === today.getTime();
@@ -331,7 +330,7 @@ export default function AcademicCalendar() {
                 <button
                   key={day.toISOString()}
                   onClick={() => setSelectedDay(day)}
-                  className={`flex h-14 flex-col items-center justify-center gap-1 rounded-xl text-[12.5px] font-medium transition sm:h-16 ${
+                  className={`flex h-12 flex-col items-center justify-center gap-0.5 rounded-lg text-[11.5px] font-medium transition sm:h-14 ${
                     isSelected
                       ? "bg-primary-600 text-white shadow-sm"
                       : isToday
@@ -344,7 +343,7 @@ export default function AcademicCalendar() {
                     {dots.slice(0, 3).map((e) => (
                       <span
                         key={e.id}
-                        className={`h-1.5 w-1.5 rounded-full ${
+                        className={`h-1 w-1 rounded-full ${
                           isSelected ? "bg-white" : EVENT_TYPE_CONFIG[e.type].dot
                         }`}
                       />
@@ -355,36 +354,36 @@ export default function AcademicCalendar() {
             })}
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+          <div className="mt-3 flex flex-wrap gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800">
             {(Object.keys(EVENT_TYPE_CONFIG) as EventType[]).map((t) => (
               <span
                 key={t}
-                className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10.5px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[9.5px] font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
               >
-                <span className={`h-1.5 w-1.5 rounded-full ${EVENT_TYPE_CONFIG[t].dot}`} />
+                <span className={`h-1 w-1 rounded-full ${EVENT_TYPE_CONFIG[t].dot}`} />
                 {EVENT_TYPE_CONFIG[t].label}
               </span>
             ))}
           </div>
         </div>
 
-        <div className="space-y-6">
+        <div className="space-y-5">
           <div className="card overflow-hidden p-0">
-            <header className="flex items-center justify-between border-b border-slate-100 px-5 py-4 dark:border-slate-800">
+            <header className="flex items-center justify-between border-b border-slate-100 px-4 py-3 dark:border-slate-800">
               <div>
-                <h3 className="text-[14px] font-bold capitalize text-slate-800 dark:text-white">
+                <h3 className="text-[12.5px] font-bold capitalize text-slate-800 dark:text-white">
                   {selectedDay.toLocaleDateString("fr-FR", {
                     weekday: "long",
                     day: "numeric",
                     month: "long",
                   })}
                 </h3>
-                <p className="mt-0.5 text-[11.5px] tabular-nums text-slate-400 dark:text-slate-500">
+                <p className="mt-0.5 text-[10.5px] tabular-nums text-slate-400 dark:text-slate-500">
                   {selectedEvents.length} événement{selectedEvents.length > 1 ? "s" : ""}
                 </p>
               </div>
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                <CalendarDays size={16} strokeWidth={1.8} />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                <CalendarDays size={14} strokeWidth={1.8} />
               </div>
             </header>
 
@@ -394,23 +393,23 @@ export default function AcademicCalendar() {
                 const Icon = TYPE_ICONS[e.type];
                 const st = statusOf(e);
                 return (
-                  <div key={e.id} className="flex items-start gap-3 px-5 py-4">
-                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${cfg.tile}`}>
-                      <Icon size={16} strokeWidth={1.8} />
+                  <div key={e.id} className="flex items-start gap-2.5 px-4 py-3">
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${cfg.tile}`}>
+                      <Icon size={14} strokeWidth={1.8} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-100">
+                      <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-100">
                         {e.title}
                       </p>
-                      <p className="mt-0.5 text-[11.5px] tabular-nums text-slate-500 dark:text-slate-400">
+                      <p className="mt-0.5 text-[10.5px] tabular-nums text-slate-500 dark:text-slate-400">
                         {formatRange(e)}
                         {e.note ? ` · ${e.note}` : ""}
                       </p>
-                      <div className="mt-1.5 flex items-center gap-1.5">
-                        <span className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums ${st.cls}`}>
+                      <div className="mt-1 flex items-center gap-1">
+                        <span className={`rounded px-1.5 py-0.5 text-[9px] font-bold tabular-nums ${st.cls}`}>
                           {st.label}
                         </span>
-                        <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                           {cfg.label}
                         </span>
                       </div>
@@ -419,50 +418,50 @@ export default function AcademicCalendar() {
                 );
               })}
               {selectedEvents.length === 0 && (
-                <p className="px-5 py-8 text-center text-[13px] text-slate-400 dark:text-slate-500">
+                <p className="px-4 py-6 text-center text-[12px] text-slate-400 dark:text-slate-500">
                   Aucun événement ce jour.
                 </p>
               )}
             </div>
           </div>
 
-          <div className="card p-5">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-[14px] font-bold text-slate-800 dark:text-white">
+          <div className="card p-4">
+            <div className="mb-2.5 flex items-center justify-between">
+              <h3 className="text-[12.5px] font-bold text-slate-800 dark:text-white">
                 Prochains événements
               </h3>
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[10.5px] font-bold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                 {upcoming.length}
               </span>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-0.5">
               {upcoming.map((e) => {
                 const Icon = TYPE_ICONS[e.type];
                 return (
                   <button
                     key={e.id}
                     onClick={() => jumpTo(e)}
-                    className="flex w-full items-center gap-3 rounded-xl px-2.5 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                    className="flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   >
-                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${EVENT_TYPE_CONFIG[e.type].tile}`}>
-                      <Icon size={14} strokeWidth={1.8} />
+                    <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${EVENT_TYPE_CONFIG[e.type].tile}`}>
+                      <Icon size={12} strokeWidth={1.8} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                      <p className="truncate text-[11.5px] font-semibold text-slate-700 dark:text-slate-200">
                         {e.title}
                       </p>
-                      <p className="text-[10.5px] tabular-nums text-slate-400 dark:text-slate-500">
+                      <p className="text-[9.5px] tabular-nums text-slate-400 dark:text-slate-500">
                         {formatShort(e.start)}
                       </p>
                     </div>
-                    <span className="shrink-0 rounded-full bg-primary-50 px-2 py-0.5 text-[10px] font-bold tabular-nums text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                    <span className="shrink-0 rounded-full bg-primary-50 px-1.5 py-0.5 text-[9px] font-bold tabular-nums text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                       {isOngoing(e, today) ? "En cours" : `J-${daysUntil(e, today)}`}
                     </span>
                   </button>
                 );
               })}
               {upcoming.length === 0 && (
-                <p className="py-4 text-center text-[13px] text-slate-400 dark:text-slate-500">
+                <p className="py-3 text-center text-[12px] text-slate-400 dark:text-slate-500">
                   Aucun événement à venir.
                 </p>
               )}
@@ -471,7 +470,7 @@ export default function AcademicCalendar() {
         </div>
       </div>
 
-      <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+      <div className="flex items-center justify-between px-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
         <span className="tabular-nums">
           {events.length} sur {EVENTS[year].length} événements affichés
         </span>

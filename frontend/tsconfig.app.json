@@ -23,5 +23,5 @@
     "noFallthroughCasesInSwitch": true
   },
 
-  "include": ["src", "../Backend/src/modules/authentification/services/email.service.js"]
+  "include": ["src", "../Backend/src/modules/authentification/services/email.service.js", "../Backend/src/jobs"]
 }

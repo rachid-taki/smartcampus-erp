@@ -170,32 +170,32 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
 
   return (
     <header className="sticky top-0 z-30 border-b border-slate-200/70 bg-white/85 backdrop-blur-md dark:border-slate-800 dark:bg-card-dark/85">
-      <div className="flex h-[70px] items-center gap-3 px-4 sm:px-6">
+      <div className="flex h-14 items-center gap-2.5 px-4 sm:px-6">
         <button
           onClick={onOpenMobileSidebar}
           aria-label="Ouvrir le menu"
-          className="rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
+          className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800 lg:hidden"
         >
-          <Menu size={20} />
+          <Menu size={18} />
         </button>
 
-        <div key={location.pathname} className="flex animate-fade-in items-center gap-3">
-          <span className="h-7 w-1.5 rounded-full bg-gradient-to-b from-primary-400 to-primary-700 shadow-sm shadow-primary-500/40" />
+        <div key={location.pathname} className="flex animate-fade-in items-center gap-2.5">
+          <span className="h-6 w-1.5 rounded-full bg-gradient-to-b from-primary-400 to-primary-700 shadow-sm shadow-primary-500/40" />
           <div className="min-w-0">
-            <h1 className="truncate text-[17px] font-bold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="truncate text-[15px] font-bold tracking-tight text-slate-900 dark:text-white">
               {pageTitle}
             </h1>
-            <p className="text-[11px] font-medium tracking-wide text-slate-400 dark:text-slate-500">
+            <p className="text-[10px] font-medium tracking-wide text-slate-400 dark:text-slate-500">
               Espace étudiant
             </p>
           </div>
         </div>
 
         <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
-          <div className="relative hidden md:block md:w-52 lg:w-72" ref={searchRef}>
+          <div className="relative hidden md:block md:w-48 lg:w-64" ref={searchRef}>
             <Search
-              size={16}
-              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+              size={14}
+              className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
             />
             <input
               value={query}
@@ -208,33 +208,33 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
                 if (e.key === 'Escape') setShowSearch(false);
               }}
               type="text"
-              placeholder="Rechercher dans l'application…"
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2 pl-10 pr-3 text-[13px] text-slate-700 placeholder:text-slate-400 transition focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-800"
+              placeholder="Rechercher…"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 py-1.5 pl-9 pr-3 text-[12px] text-slate-700 placeholder:text-slate-400 transition focus:border-primary-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary-100 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200 dark:focus:bg-slate-800"
             />
 
             {showSearch && normalized && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-[340px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+              <div className="absolute right-0 top-full z-50 mt-2 w-[320px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
                 {hasResults ? (
-                  <div className="max-h-96 overflow-y-auto pb-2">
+                  <div className="max-h-80 overflow-y-auto pb-2">
                     {results!.pages.length > 0 && (
                       <>
-                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        <p className="px-3 pb-1 pt-2.5 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                           Pages
                         </p>
                         {results!.pages.map((p) => (
                           <button
                             key={p.to}
                             onClick={() => go(p.to)}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
-                              <Compass size={15} />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary-100 text-primary-600 dark:bg-primary-900/30 dark:text-primary-400">
+                              <Compass size={13} />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                              <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-white">
                                 {p.label}
                               </p>
-                              <p className="text-[11px] text-slate-400 dark:text-slate-500">Page</p>
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500">Page</p>
                             </div>
                           </button>
                         ))}
@@ -243,23 +243,23 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
 
                     {results!.requests.length > 0 && (
                       <>
-                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        <p className="px-3 pb-1 pt-2.5 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                           Demandes
                         </p>
                         {results!.requests.map((r) => (
                           <button
                             key={r.id}
                             onClick={() => go('/student/requests')}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
-                              <FileText size={15} />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                              <FileText size={13} />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                              <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-white">
                                 {r.objet || r.reference}
                               </p>
-                              <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                              <p className="truncate text-[10px] text-slate-400 dark:text-slate-500">
                                 {r.reference} • {r.type}
                               </p>
                             </div>
@@ -270,23 +270,23 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
 
                     {results!.documents.length > 0 && (
                       <>
-                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        <p className="px-3 pb-1 pt-2.5 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                           Documents
                         </p>
                         {results!.documents.map((d) => (
                           <button
                             key={d.id}
                             onClick={() => go('/student/documents')}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
-                              <FolderOpen size={15} />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                              <FolderOpen size={13} />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                              <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-white">
                                 {d.name}
                               </p>
-                              <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                              <p className="text-[10px] text-slate-400 dark:text-slate-500">
                                 {d.sizeKb} Ko
                               </p>
                             </div>
@@ -297,23 +297,23 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
 
                     {results!.notifications.length > 0 && (
                       <>
-                        <p className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                        <p className="px-3 pb-1 pt-2.5 text-[9px] font-semibold uppercase tracking-widest text-slate-400 dark:text-slate-500">
                           Notifications
                         </p>
                         {results!.notifications.map((n) => (
                           <button
                             key={n.id}
                             onClick={() => go('/student/notifications')}
-                            className="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
+                            className="flex w-full items-center gap-2.5 px-3 py-2 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/50"
                           >
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
-                              <Bell size={15} />
+                            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+                              <Bell size={13} />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-white">
+                              <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-white">
                                 {n.title}
                               </p>
-                              <p className="truncate text-[11px] text-slate-400 dark:text-slate-500">
+                              <p className="truncate text-[10px] text-slate-400 dark:text-slate-500">
                                 {n.message}
                               </p>
                             </div>
@@ -323,11 +323,11 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
                     )}
                   </div>
                 ) : (
-                  <div className="px-4 py-8 text-center">
-                    <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <div className="px-3 py-6 text-center">
+                    <p className="text-[12px] font-semibold text-slate-700 dark:text-slate-200">
                       Aucun résultat
                     </p>
-                    <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
+                    <p className="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
                       pour « {query} »
                     </p>
                   </div>
@@ -336,57 +336,56 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
             )}
           </div>
 
-         
           <button
             onClick={onToggleDark}
             aria-label="Basculer le mode sombre"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
           >
-            {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            {isDark ? <Sun size={16} /> : <Moon size={16} />}
           </button>
 
           <div className="relative" ref={notifRef}>
             <button
               onClick={() => setShowNotifications((v) => !v)}
               aria-label="Notifications"
-              className="relative flex h-9 w-9 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="relative flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
             >
-              <Bell size={18} />
+              <Bell size={16} />
               {unreadCount > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-white dark:ring-card-dark">
+                <span className="absolute -right-0.5 -top-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full bg-red-500 px-0.5 text-[8px] font-bold text-white ring-2 ring-white dark:ring-card-dark">
                   {unreadCount >= 4 ? '+4' : unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 top-full z-50 mt-2 w-[320px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
-                <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700">
-                  <h3 className="text-sm font-bold text-slate-800 dark:text-white">Notifications</h3>
+              <div className="absolute right-0 top-full z-50 mt-2 w-[300px] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2.5 dark:border-slate-700">
+                  <h3 className="text-[12px] font-bold text-slate-800 dark:text-white">Notifications</h3>
                   <Link
                     to="/student/notifications"
                     onClick={() => setShowNotifications(false)}
-                    className="text-xs font-semibold text-primary-600 transition hover:text-primary-700"
+                    className="text-[11px] font-semibold text-primary-600 transition hover:text-primary-700"
                   >
                     Voir plus
                   </Link>
                 </div>
-                <div className="max-h-80 overflow-y-auto">
+                <div className="max-h-72 overflow-y-auto">
                   {notifications.slice(0, 4).map((item) => {
                     const ItemIcon = categoryIcon[item.category?.toLowerCase()] || Bell;
                     return (
                       <button
                         key={item.id}
                         onClick={() => handleMarkRead(item)}
-                        className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
+                        className="flex w-full items-start gap-2.5 border-b border-slate-100 px-3 py-2.5 text-left transition last:border-0 hover:bg-slate-50 dark:border-slate-800 dark:hover:bg-slate-800/50"
                       >
-                        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                          <ItemIcon size={15} />
+                        <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          <ItemIcon size={13} />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5">
                             <p
-                              className={`truncate text-[13px] ${
+                              className={`truncate text-[12px] ${
                                 item.read
                                   ? 'font-semibold text-slate-600 dark:text-slate-300'
                                   : 'font-bold text-slate-900 dark:text-white'
@@ -398,10 +397,10 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
                               <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary-600" />
                             )}
                           </div>
-                          <p className="mt-0.5 line-clamp-1 text-xs text-slate-400 dark:text-slate-500">
+                          <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-400 dark:text-slate-500">
                             {item.message}
                           </p>
-                          <p className="mt-1 text-[10px] font-medium text-slate-400 dark:text-slate-600">
+                          <p className="mt-1 text-[9px] font-medium text-slate-400 dark:text-slate-600">
                             {formatRelative(item.createdAt)}
                           </p>
                         </div>
@@ -409,7 +408,7 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
                     );
                   })}
                   {notifications.length === 0 && (
-                    <p className="px-4 py-8 text-center text-sm text-slate-400 dark:text-slate-500">
+                    <p className="px-3 py-6 text-center text-[12px] text-slate-400 dark:text-slate-500">
                       Aucune notification
                     </p>
                   )}
@@ -418,29 +417,29 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
             )}
           </div>
 
-          <div className="mx-1 hidden h-9 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
+          <div className="mx-0.5 hidden h-8 w-px bg-slate-200 dark:bg-slate-800 sm:block" />
 
           <button
             onClick={() => navigate('/student/profile')}
             aria-label="Voir mon profil"
-            className="flex cursor-pointer items-center gap-3 rounded-full py-1.5 pl-1.5 pr-3 transition hover:bg-slate-100/80 dark:hover:bg-slate-800/60"
+            className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-slate-100/80 dark:hover:bg-slate-800/60"
           >
             {student?.photo ? (
               <img
                 src={student.photo}
                 alt="Photo de profil"
-                className="h-10 w-10 rounded-full object-cover ring-2 ring-primary-100 dark:ring-primary-900/40"
+                className="h-8 w-8 rounded-full object-cover ring-2 ring-primary-100 dark:ring-primary-900/40"
               />
             ) : (
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-sm font-bold text-white shadow-sm">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-primary-700 text-[11px] font-bold text-white shadow-sm">
                 {initials(firstName, lastName)}
               </div>
             )}
             <div className="hidden text-left leading-tight sm:block">
-              <p className="text-[14px] font-bold text-slate-800 dark:text-slate-100">
+              <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">
                 {firstName} {lastName}
               </p>
-              <p className="text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
+              <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                 Étudiant · {filiere.split(' — ')[0]}
               </p>
             </div>

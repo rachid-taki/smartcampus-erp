@@ -69,7 +69,7 @@ function StatusStepper({ status }: { status: string }) {
                             )}
                             <div
                                 title={step}
-                                className={`h-3 w-3 shrink-0 rounded-full ${dotColor} ${
+                                className={`h-2.5 w-2.5 shrink-0 rounded-full ${dotColor} ${
                                     i === idx
                                         ? "ring-2 ring-primary-300 ring-offset-1 dark:ring-primary-700 dark:ring-offset-slate-900"
                                         : ""
@@ -79,7 +79,7 @@ function StatusStepper({ status }: { status: string }) {
                     );
                 })}
             </div>
-            <div className="mt-1.5 flex justify-between text-[9px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+            <div className="mt-1 flex justify-between text-[8px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
                 <span>Soumise</span>
                 <span>Reçue</span>
                 <span>Transmise</span>
@@ -104,8 +104,8 @@ function CategoryDonut({ reclamations }: { reclamations: any[] }) {
     let acc = 0;
 
     return (
-        <div className="flex items-center gap-5">
-            <div className="relative h-[110px] w-[110px] shrink-0">
+        <div className="flex items-center gap-4">
+            <div className="relative h-[90px] w-[90px] shrink-0">
                 <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
                     <circle
                         cx="50" cy="50" r={radius} fill="none" strokeWidth="12"
@@ -127,28 +127,28 @@ function CategoryDonut({ reclamations }: { reclamations: any[] }) {
                     })}
                 </svg>
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="text-xl font-bold tabular-nums text-slate-900 dark:text-white">
+                    <span className="text-lg font-bold tabular-nums text-slate-900 dark:text-white">
                         {total}
                     </span>
-                    <span className="text-[9px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span className="text-[8px] font-semibold uppercase tracking-wider text-slate-400">
                         Total
                     </span>
                 </div>
             </div>
-            <div className="flex-1 space-y-2">
+            <div className="flex-1 space-y-1.5">
                 {data.map((d) => (
-                    <div key={d.key} className="flex items-center gap-2">
-                        <span className={`h-2 w-2 shrink-0 rounded-full ${d.cfg.dot}`} />
-                        <span className="flex-1 truncate text-[12px] font-medium text-slate-600 dark:text-slate-300">
+                    <div key={d.key} className="flex items-center gap-1.5">
+                        <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${d.cfg.dot}`} />
+                        <span className="flex-1 truncate text-[11px] font-medium text-slate-600 dark:text-slate-300">
                             {d.cfg.label}
                         </span>
-                        <span className="text-[12px] font-bold tabular-nums text-slate-800 dark:text-white">
+                        <span className="text-[11px] font-bold tabular-nums text-slate-800 dark:text-white">
                             {d.count}
                         </span>
                     </div>
                 ))}
                 {data.length === 0 && (
-                    <p className="text-[12px] text-slate-400 dark:text-slate-500">
+                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
                         Aucune donnée pour le moment.
                     </p>
                 )}
@@ -160,20 +160,20 @@ function CategoryDonut({ reclamations }: { reclamations: any[] }) {
 function StatusBreakdown({ reclamations }: { reclamations: any[] }) {
     const total = reclamations.length || 1;
     return (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
             {Object.entries(RECLAMATION_STATUS).map(([key, st]) => {
                 const count = reclamations.filter((r) => r.status === key).length;
                 return (
                     <div key={key}>
-                        <div className="mb-1 flex items-center justify-between">
-                            <span className="text-[12px] font-medium text-slate-600 dark:text-slate-300">
+                        <div className="mb-0.5 flex items-center justify-between">
+                            <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">
                                 {st.label}
                             </span>
-                            <span className="text-[11.5px] font-bold tabular-nums text-slate-700 dark:text-slate-200">
+                            <span className="text-[10.5px] font-bold tabular-nums text-slate-700 dark:text-slate-200">
                                 {count}
                             </span>
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                        <div className="h-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                             <motion.div
                                 initial={{ width: 0 }}
                                 animate={{ width: `${(count / total) * 100}%` }}
@@ -198,12 +198,12 @@ export default function Reclamations() {
     const [openModal, setOpenModal] = useState(false);
     const [searchParams, setSearchParams] = useSearchParams();
 
-useEffect(() => {
-  if (searchParams.get("new") === "1") {
-    setOpenModal(true);
-    setSearchParams({}, { replace: true }); // Nettoie l'URL
-  }
-}, [searchParams, setSearchParams]);
+    useEffect(() => {
+        if (searchParams.get("new") === "1") {
+            setOpenModal(true);
+            setSearchParams({}, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const load = async () => {
         try {
@@ -285,70 +285,70 @@ useEffect(() => {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="h-9 w-56 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="space-y-4">
+                <div className="h-8 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="card h-32 animate-pulse" />
+                        <div key={i} className="card h-24 animate-pulse" />
                     ))}
                 </div>
-                <div className="card h-96 animate-pulse" />
+                <div className="card h-80 animate-pulse" />
             </div>
         );
     }
 
     return (
-        <div className="animate-fade-in space-y-6">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="animate-fade-in space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <div className="flex items-center gap-2">
                         <span/>
-                        <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-white">
+                        <h1 className="text-[18px] font-semibold tracking-tight text-slate-900 dark:text-white">
                             Réclamations
                         </h1>
                     </div>
-                    <p className="mt-2 text-[13px] text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
                         Vue d'ensemble de vos réclamations : notes, AMO, bourse, email académique.
                     </p>
                 </div>
                 <button
                     onClick={() => setOpenModal(true)}
-                    className="inline-flex items-center justify-center gap-2 self-start rounded-lg bg-primary-600 px-4 py-2 text-[13px] font-semibold text-white shadow-sm shadow-primary-500/25 transition hover:bg-primary-700 active:scale-[0.98] sm:self-auto"
+                    className="inline-flex items-center justify-center gap-1.5 self-start rounded-lg bg-primary-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm shadow-primary-500/25 transition hover:bg-primary-700 active:scale-[0.98] sm:self-auto"
                 >
-                    <Plus size={15} />
+                    <Plus size={14} />
                     Nouvelle réclamation
                 </button>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
                 {stats.map((stat, i) => (
                     <StatCard key={stat.id} data={stat as any} accent={stat.accent as any} index={i} />
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
                 <div className="card self-start xl:col-span-2">
-                    <div className="flex flex-col gap-3 border-b border-slate-200/70 px-6 py-4 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
-                        <h3 className="text-[15px] font-bold text-slate-800 dark:text-slate-100">
+                    <div className="flex flex-col gap-2.5 border-b border-slate-200/70 px-5 py-3 dark:border-slate-800 lg:flex-row lg:items-center lg:justify-between">
+                        <h3 className="text-[13px] font-bold text-slate-800 dark:text-slate-100">
                             Réclamations récentes
                         </h3>
-                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center">
                             <div className="relative">
                                 <Search
-                                    size={14}
-                                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                    size={13}
+                                    className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400"
                                 />
                                 <input
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
                                     placeholder="Rechercher..."
-                                    className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-[12px] text-slate-700 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none sm:w-44 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
+                                    className="w-full rounded-lg border border-slate-200 bg-white py-1.5 pl-8 pr-3 text-[11px] text-slate-700 placeholder:text-slate-400 focus:border-primary-500 focus:outline-none sm:w-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:placeholder:text-slate-500"
                                 />
                             </div>
                             <select
                                 value={categoryFilter}
                                 onChange={(e) => setCategoryFilter(e.target.value)}
-                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] font-medium text-slate-700 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                             >
                                 <option value="all">Toutes catégories</option>
                                 {Object.entries(RECLAMATION_CATEGORIES).map(([key, cfg]) => (
@@ -360,7 +360,7 @@ useEffect(() => {
                             <select
                                 value={statusFilter}
                                 onChange={(e) => setStatusFilter(e.target.value)}
-                                className="rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[12px] font-medium text-slate-700 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                                className="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[11px] font-medium text-slate-700 focus:border-primary-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
                             >
                                 <option value="all">Tous statuts</option>
                                 {Object.entries(RECLAMATION_STATUS).map(([key, st]) => (
@@ -373,11 +373,11 @@ useEffect(() => {
                     </div>
 
                     {filtered.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center gap-3 px-6 py-16 text-center">
-                            <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                                <Search size={18} className="text-slate-400" />
+                        <div className="flex flex-col items-center justify-center gap-2 px-5 py-12 text-center">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                                <Search size={16} className="text-slate-400" />
                             </div>
-                            <p className="max-w-sm text-[13px] text-slate-500 dark:text-slate-400">
+                            <p className="max-w-sm text-[12px] text-slate-500 dark:text-slate-400">
                                 {reclamations.length === 0
                                     ? "Vous n'avez soumis aucune réclamation pour le moment."
                                     : "Aucune réclamation ne correspond à vos filtres."}
@@ -385,22 +385,22 @@ useEffect(() => {
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
-                            <table className="w-full min-w-[640px] text-left">
+                            <table className="w-full min-w-[600px] text-left">
                                 <thead>
                                     <tr className="border-b border-slate-100 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-800/30">
-                                        <th className="px-6 py-3 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <th className="px-5 py-2.5 text-[9.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             Catégorie
                                         </th>
-                                        <th className="px-6 py-3 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <th className="px-5 py-2.5 text-[9.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             Objet
                                         </th>
-                                        <th className="px-6 py-3 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <th className="px-5 py-2.5 text-[9.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             Date
                                         </th>
-                                        <th className="px-6 py-3 text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <th className="px-5 py-2.5 text-[9.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             Statut
                                         </th>
-                                        <th className="px-6 py-3 text-right text-[10.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                                        <th className="px-5 py-2.5 text-right text-[9.5px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                                             Action
                                         </th>
                                     </tr>
@@ -415,39 +415,39 @@ useEffect(() => {
                                                 key={rec.id}
                                                 className="transition-colors hover:bg-slate-50/60 dark:hover:bg-slate-800/30"
                                             >
-                                                <td className="whitespace-nowrap px-6 py-4">
-                                                    <div className="flex items-center gap-2.5">
-                                                        <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${cfg.tile}`}>
-                                                            <Icon size={14} strokeWidth={1.8} />
+                                                <td className="whitespace-nowrap px-5 py-2.5">
+                                                    <div className="flex items-center gap-2">
+                                                        <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${cfg.tile}`}>
+                                                            <Icon size={13} strokeWidth={1.8} />
                                                         </div>
-                                                        <span className="text-[12.5px] font-semibold text-slate-700 dark:text-slate-200">
+                                                        <span className="text-[11.5px] font-semibold text-slate-700 dark:text-slate-200">
                                                             {cfg.label}
                                                         </span>
                                                     </div>
                                                 </td>
-                                                <td className="max-w-[260px] px-6 py-4">
-                                                    <p className="truncate text-[13px] font-semibold text-slate-800 dark:text-slate-100">
+                                                <td className="max-w-[240px] px-5 py-2.5">
+                                                    <p className="truncate text-[12px] font-semibold text-slate-800 dark:text-slate-100">
                                                         {rec.objet}
                                                     </p>
-                                                    <p className="truncate text-[11.5px] text-slate-400 dark:text-slate-500">
+                                                    <p className="truncate text-[10.5px] text-slate-400 dark:text-slate-500">
                                                         {rec.description}
                                                     </p>
                                                 </td>
-                                                <td className="whitespace-nowrap px-6 py-4 text-[12.5px] tabular-nums text-slate-500 dark:text-slate-400">
+                                                <td className="whitespace-nowrap px-5 py-2.5 text-[11.5px] tabular-nums text-slate-500 dark:text-slate-400">
                                                     {formatDate(rec.createdAt)}
                                                 </td>
-                                                <td className="whitespace-nowrap px-6 py-4">
-                                                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${st.cls}`}>
+                                                <td className="whitespace-nowrap px-5 py-2.5">
+                                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${st.cls}`}>
                                                         {st.label}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-right">
+                                                <td className="px-5 py-2.5 text-right">
                                                     <button
                                                         onClick={() => setViewing(rec)}
                                                         title="Voir les détails"
-                                                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-primary-700 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
+                                                        className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 transition hover:border-primary-300 hover:bg-primary-50 hover:text-primary-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400 dark:hover:border-primary-700 dark:hover:bg-primary-900/20 dark:hover:text-primary-300"
                                                     >
-                                                        <Eye size={15} />
+                                                        <Eye size={13} />
                                                     </button>
                                                 </td>
                                             </tr>
@@ -458,7 +458,7 @@ useEffect(() => {
                         </div>
                     )}
 
-                    <div className="flex items-center justify-between border-t border-slate-100 px-6 py-3 text-[11px] font-medium text-slate-400 dark:border-slate-800 dark:text-slate-500">
+                    <div className="flex items-center justify-between border-t border-slate-100 px-5 py-2 text-[10px] font-medium text-slate-400 dark:border-slate-800 dark:text-slate-500">
                         <span className="tabular-nums">
                             {filtered.length} sur {reclamations.length} réclamation{reclamations.length > 1 ? "s" : ""}
                         </span>
@@ -466,16 +466,16 @@ useEffect(() => {
                     </div>
                 </div>
 
-                <div className="space-y-6">
-                    <div className="card p-5">
-                        <h3 className="mb-4 text-[15px] font-bold text-slate-800 dark:text-slate-100">
+                <div className="space-y-5">
+                    <div className="card p-4">
+                        <h3 className="mb-3 text-[13px] font-bold text-slate-800 dark:text-slate-100">
                             Répartition par catégorie
                         </h3>
                         <CategoryDonut reclamations={reclamations} />
                     </div>
 
-                    <div className="card p-5">
-                        <h3 className="mb-4 text-[15px] font-bold text-slate-800 dark:text-slate-100">
+                    <div className="card p-4">
+                        <h3 className="mb-3 text-[13px] font-bold text-slate-800 dark:text-slate-100">
                             Avancement des statuts
                         </h3>
                         <StatusBreakdown reclamations={reclamations} />
@@ -486,7 +486,7 @@ useEffect(() => {
             <AnimatePresence>
                 {viewing && (
                     <div
-                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3 backdrop-blur-sm"
                         onClick={() => setViewing(null)}
                     >
                         <motion.div
@@ -495,74 +495,74 @@ useEffect(() => {
                             exit={{ opacity: 0, y: 16, scale: 0.98 }}
                             transition={{ duration: 0.2 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+                            className="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900"
                         >
-                            <div className="flex items-start justify-between gap-3 border-b border-slate-200 px-6 py-4 dark:border-slate-700">
-                                <div className="flex min-w-0 items-start gap-3">
-                                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${(RECLAMATION_CATEGORIES[viewing.categorie] ?? RECLAMATION_CATEGORIES.Autre).tile}`}>
+                            <div className="flex items-start justify-between gap-2.5 border-b border-slate-200 px-5 py-3 dark:border-slate-700">
+                                <div className="flex min-w-0 items-start gap-2.5">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${(RECLAMATION_CATEGORIES[viewing.categorie] ?? RECLAMATION_CATEGORIES.Autre).tile}`}>
                                         {(() => {
                                             const Icon = (RECLAMATION_CATEGORIES[viewing.categorie] ?? RECLAMATION_CATEGORIES.Autre).icon;
-                                            return <Icon size={17} strokeWidth={1.8} />;
+                                            return <Icon size={15} strokeWidth={1.8} />;
                                         })()}
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                             {(RECLAMATION_CATEGORIES[viewing.categorie] ?? RECLAMATION_CATEGORIES.Autre).label} · {viewing.typeCode}
                                         </p>
-                                        <h2 className="mt-0.5 truncate text-[15px] font-bold text-slate-800 dark:text-white">
+                                        <h2 className="mt-0.5 truncate text-[14px] font-bold text-slate-800 dark:text-white">
                                             {viewing.objet}
                                         </h2>
                                     </div>
                                 </div>
                                 <button
                                     onClick={() => setViewing(null)}
-                                    className="shrink-0 rounded-lg p-2 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
+                                    className="shrink-0 rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-800"
                                 >
-                                    <X size={17} />
+                                    <X size={15} />
                                 </button>
                             </div>
 
-                            <div className="space-y-5 overflow-y-auto p-6">
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
-                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                            <div className="space-y-4 overflow-y-auto p-5">
+                                <div className="grid grid-cols-2 gap-2.5">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 dark:border-slate-700 dark:bg-slate-800/40">
+                                        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                             Date de soumission
                                         </p>
-                                        <p className="mt-1 text-[12.5px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                                        <p className="mt-0.5 text-[11.5px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">
                                             {formatDate(viewing.createdAt)}
                                         </p>
                                     </div>
-                                    <div className="rounded-xl border border-slate-200 bg-slate-50/60 p-3 dark:border-slate-700 dark:bg-slate-800/40">
-                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <div className="rounded-lg border border-slate-200 bg-slate-50/60 p-2.5 dark:border-slate-700 dark:bg-slate-800/40">
+                                        <p className="text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                             Statut actuel
                                         </p>
-                                        <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${(RECLAMATION_STATUS[viewing.status] ?? RECLAMATION_STATUS.Soumise).cls}`}>
+                                        <span className={`mt-0.5 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${(RECLAMATION_STATUS[viewing.status] ?? RECLAMATION_STATUS.Soumise).cls}`}>
                                             {(RECLAMATION_STATUS[viewing.status] ?? RECLAMATION_STATUS.Soumise).label}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div>
-                                    <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <p className="mb-1.5 text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                         Description
                                     </p>
-                                    <p className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-slate-50/60 p-4 text-[13px] leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
+                                    <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50/60 p-3 text-[12px] leading-relaxed text-slate-600 dark:border-slate-700 dark:bg-slate-800/40 dark:text-slate-300">
                                         {viewing.description || "Aucune description fournie."}
                                     </p>
                                 </div>
 
                                 <div>
-                                    <p className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                                    <p className="mb-2 text-[9px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                                         Avancement
                                     </p>
                                     <StatusStepper status={viewing.status} />
                                 </div>
                             </div>
 
-                            <div className="flex justify-end border-t border-slate-200 px-6 py-4 dark:border-slate-700">
+                            <div className="flex justify-end border-t border-slate-200 px-5 py-3 dark:border-slate-700">
                                 <button
                                     onClick={() => setViewing(null)}
-                                    className="rounded-lg bg-primary-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-primary-700"
+                                    className="rounded-lg bg-primary-600 px-4 py-1.5 text-[12px] font-semibold text-white transition hover:bg-primary-700"
                                 >
                                     Fermer
                                 </button>

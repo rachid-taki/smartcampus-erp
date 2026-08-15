@@ -22,6 +22,7 @@
 
 require("dotenv").config();
 require("./config/database");
+require("./jobs/cleanupAssistant").startAssistantCleanup();
 
 const app = require("./app");
 const http = require("http");

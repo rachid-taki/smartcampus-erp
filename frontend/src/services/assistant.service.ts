@@ -13,10 +13,8 @@ export interface ChatResponse {
     conversationId: string;
     categorie: string;
     answer: string;
-    action: {
-        label: string;
-        url: string;
-    } | null;
+    action: { label: string; url: string } | null;
+    quickReplies: string[];
 }
 
 export interface AssistantMessage {
@@ -25,7 +23,10 @@ export interface AssistantMessage {
     contenu: string;
     dateEnvoi: string;
     action?: { label: string; url: string } | null;
+    quickReplies?: string[];
 }
+
+
 
 export interface AssistantConversation {
     id: string;

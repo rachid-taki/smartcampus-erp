@@ -83,10 +83,10 @@ export default function WorkflowPage() {
   };
 
   return (
-    <div className="animate-fade-in space-y-5">
+    <div className="w-full max-w-full min-w-0 space-y-5 overflow-x-hidden">
       <style>{`
         .workflow-scroll { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
-        .workflow-scroll::-webkit-scrollbar { height: 8px; }
+        .workflow-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
         .workflow-scroll::-webkit-scrollbar-track { background: transparent; }
         .workflow-scroll::-webkit-scrollbar-thumb {
           background: #cbd5e1;
@@ -107,9 +107,9 @@ export default function WorkflowPage() {
       `}</style>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
+        <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <span  />
+            <span />
             <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-white">
               Suivi de mes demandes
             </h1>
@@ -118,7 +118,7 @@ export default function WorkflowPage() {
             Consultez l'avancement de toutes vos demandes administratives.
           </p>
         </div>
-        <span className="inline-flex items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] font-medium text-slate-600 tabular-nums dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:self-auto">
+        <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11.5px] font-medium text-slate-600 tabular-nums dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:self-auto">
           <Workflow size={12} className="text-slate-400" />
           {displayedRequests.length} demande{displayedRequests.length > 1 ? "s" : ""}
         </span>
@@ -130,14 +130,14 @@ export default function WorkflowPage() {
           <div className="card h-16 animate-pulse" />
           <div className="flex gap-5 overflow-hidden">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="card h-64 w-[340px] shrink-0 animate-pulse" />
+              <div key={i} className="card h-64 w-full max-w-[340px] shrink-0 animate-pulse" />
             ))}
           </div>
         </div>
       ) : (
         <>
-          <div className="card overflow-hidden p-0">
-            <div className="grid grid-cols-1 gap-px bg-slate-200 sm:grid-cols-2 lg:grid-cols-4 dark:bg-slate-800">
+          <div className="card w-full max-w-full min-w-0 overflow-hidden p-0">
+            <div className="grid w-full grid-cols-1 gap-px bg-slate-200 sm:grid-cols-2 xl:grid-cols-4 dark:bg-slate-800">
               <KpiBlock
                 label="Total demandes"
                 value={stats.total}
@@ -213,7 +213,7 @@ export default function WorkflowPage() {
             </div>
           </div>
 
-          <div className="card flex flex-col gap-3 p-4">
+          <div className="card flex w-full max-w-full min-w-0 flex-col gap-3 p-4">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                 Filtrer par type
@@ -222,7 +222,7 @@ export default function WorkflowPage() {
                 {displayedRequests.length} résultat{displayedRequests.length > 1 ? "s" : ""}
               </span>
             </div>
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="flex flex-wrap items-center gap-1 overflow-x-auto">
               {TYPES.map((type) => {
                 const isActive = typeFilter === type;
                 const count =
@@ -250,9 +250,7 @@ export default function WorkflowPage() {
                       {type}
                       <span
                         className={`text-[10px] tabular-nums ${
-                          isActive
-                            ? "opacity-70"
-                            : "text-slate-400 dark:text-slate-500"
+                          isActive ? "opacity-70" : "text-slate-400 dark:text-slate-500"
                         }`}
                       >
                         {count}
@@ -281,7 +279,7 @@ export default function WorkflowPage() {
               </p>
             </div>
           ) : (
-            <div>
+            <div className="w-full max-w-full min-w-0">
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Vos demandes
@@ -304,7 +302,7 @@ export default function WorkflowPage() {
 
               <div
                 ref={scrollRef}
-                className="workflow-scroll flex snap-x snap-mandatory gap-5 overflow-x-auto pb-4 scroll-smooth"
+                className="workflow-scroll flex w-full max-w-full snap-x snap-mandatory gap-5 overflow-x-auto pb-4 scroll-smooth"
               >
                 {displayedRequests.map((request, index) => (
                   <motion.div
@@ -313,7 +311,7 @@ export default function WorkflowPage() {
                     initial={{ opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25, delay: index * 0.04 }}
-                    className="w-[340px] shrink-0 snap-start sm:w-[360px]"
+                    className="w-[min(86vw,340px)] shrink-0 snap-start sm:w-[360px]"
                   >
                     <WorkflowCard request={request} />
                   </motion.div>
@@ -357,17 +355,17 @@ function KpiBlock({
         : "text-slate-900 dark:text-white";
 
   return (
-    <div className="flex items-center justify-between gap-4 bg-white px-6 py-5 dark:bg-slate-900">
+    <div className="flex min-w-0 items-center justify-between gap-4 bg-white px-6 py-5 dark:bg-slate-900">
       <div className="min-w-0">
-        <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+        <p className="truncate text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {label}
         </p>
-        <p className={`mt-1 text-[28px] font-semibold leading-none tracking-tight tabular-nums ${valueColor}`}>
+        <p className={`mt-1 text-2xl font-semibold leading-none tracking-tight tabular-nums sm:text-[28px] ${valueColor}`}>
           {value}
         </p>
-        <p className="mt-1 text-[11.5px] text-slate-500 dark:text-slate-400">{hint}</p>
+        <p className="mt-1 truncate text-[11.5px] text-slate-500 dark:text-slate-400">{hint}</p>
       </div>
-      <div className="shrink-0">{right}</div>
+      <div className="hidden shrink-0 sm:block">{right}</div>
     </div>
   );
 }

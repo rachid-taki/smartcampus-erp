@@ -98,43 +98,40 @@ export default function Dashboard() {
   
 
  return (
-    <div className="space-y-6">
+    <div className="space-y-4">
         <WelcomeHeader />
         
-        
+        <ReclamationBanner />
 
-      <ReclamationBanner />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="xl:col-span-2">
-          <StudentInfoCard />
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <div className="xl:col-span-2">
+                <StudentInfoCard />
+            </div>
+            <SemesterProgress />
         </div>
-        <SemesterProgress />
-      </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {stats.map((stat, i) => (
-          <StatCard key={stat.id} data={stat} accent={stat.accent} index={i} />
-        ))}
-      </div>
-
-      <QuickActions />
-
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
-          <RecentRequestsTable requests={requests} />
-          <RecentDocuments />
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {stats.map((stat, i) => (
+                <StatCard key={stat.id} data={stat} accent={stat.accent} index={i} />
+            ))}
         </div>
-        <div className="space-y-6">
-          <RequestsOverviewChart requests={requests} />
-          <RecentNotifications />
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <MiniCalendar />
-        
-      </div>
+        <QuickActions />
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <div className="space-y-4 xl:col-span-2">
+                <RecentRequestsTable requests={requests} />
+                <RecentDocuments />
+            </div>
+            <div className="space-y-4">
+                <RequestsOverviewChart requests={requests} />
+                <RecentNotifications />
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+            <MiniCalendar />
+        </div>
     </div>
   );
 }

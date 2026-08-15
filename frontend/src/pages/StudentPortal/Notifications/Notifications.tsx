@@ -149,61 +149,59 @@ export default function Notifications() {
 
     if (loading) {
         return (
-            <div className="space-y-6">
-                <div className="h-9 w-56 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
-                <div className="card h-32 animate-pulse" />
-                <div className="card h-96 animate-pulse" />
+            <div className="space-y-4">
+                <div className="h-8 w-48 animate-pulse rounded-lg bg-slate-200 dark:bg-slate-800" />
+                <div className="card h-24 animate-pulse" />
+                <div className="card h-80 animate-pulse" />
             </div>
         );
     }
 
     return (
-        <div className="animate-fade-in space-y-5">
-            {/* Header */}
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div className="animate-fade-in space-y-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <div className="flex items-center gap-2">
-                        <span  />
-                        <h1 className="text-[22px] font-semibold tracking-tight text-slate-900 dark:text-white">
+                        <span />
+                        <h1 className="text-[18px] font-semibold tracking-tight text-slate-900 dark:text-white">
                             Notifications
                         </h1>
                     </div>
-                    <p className="mt-2 text-[13px] text-slate-500 dark:text-slate-400">
+                    <p className="mt-1 text-[12px] text-slate-500 dark:text-slate-400">
                         Centre de contrôle de vos alertes et mises à jour administratives.
                     </p>
                 </div>
 
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-       <a
-            href="https://classroom.google.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-yellow-400 hover:bg-[#0F9D58]/5 hover:shadow-md active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-yellow-400 dark:hover:hover:bg-[#0F9D58]/5"
-        >
-            <SiGoogleclassroom size={18} color="#0F9D58" />
-            Annonces universitaires
-        </a>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <a
+                        href="https://classroom.google.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3.5 py-1.5 text-[12px] font-semibold text-slate-700 shadow-sm transition hover:border-yellow-400 hover:bg-[#0F9D58]/5 hover:shadow-md active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-yellow-400"
+                    >
+                        <SiGoogleclassroom size={15} color="#0F9D58" />
+                        Annonces universitaires
+                    </a>
 
-        <button
-            type="button"
-            onClick={handleMarkAll}
-            disabled={markingAll || unreadCount === 0}
-            className="inline-flex items-center justify-center gap-2 rounded-full bg-primary-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
-        >
-            <CheckCheck size={16} />
-            {markingAll ? "Mise à jour..." : "Tout marquer comme lu"}
-        </button>
-    </div>
+                    <button
+                        type="button"
+                        onClick={handleMarkAll}
+                        disabled={markingAll || unreadCount === 0}
+                        className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary-600 px-3.5 py-1.5 text-[12px] font-semibold text-white shadow-sm transition hover:bg-primary-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                        <CheckCheck size={14} />
+                        {markingAll ? "Mise à jour..." : "Tout marquer comme lu"}
+                    </button>
+                </div>
             </div>
 
-            {/* KPI Strip — design dashboard pro */}
             <div className="card grid grid-cols-1 overflow-hidden sm:grid-cols-3">
                 <KpiBlock
                     label="Total"
                     value={notifications.length}
                     hint="notifications reçues"
                     right={
-                        <div className="flex items-end gap-px h-10">
+                        <div className="flex h-8 items-end gap-px">
                             {[2, 4, 3, 6, 5, 4, 7, 6, 5, 8, 6, 7].map((h, i) => (
                                 <span
                                     key={i}
@@ -220,8 +218,8 @@ export default function Notifications() {
                     hint="à consulter"
                     accent={unreadCount > 0}
                     right={
-                        <div className="flex items-center gap-2">
-                            <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                        <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
                                 <div
                                     className="h-full rounded-full bg-amber-500"
                                     style={{
@@ -229,7 +227,7 @@ export default function Notifications() {
                                     }}
                                 />
                             </div>
-                            <span className="text-[11px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
+                            <span className="text-[10px] font-medium tabular-nums text-slate-500 dark:text-slate-400">
                                 {notifications.length ? Math.round((unreadCount / notifications.length) * 100) : 0}%
                             </span>
                         </div>
@@ -240,7 +238,7 @@ export default function Notifications() {
                     value={readCount}
                     hint={`${readPct}% du total`}
                     right={
-                        <div className="relative h-10 w-10">
+                        <div className="relative h-9 w-9">
                             <svg viewBox="0 0 36 36" className="h-full w-full -rotate-90">
                                 <circle
                                     cx="18" cy="18" r="14"
@@ -260,7 +258,7 @@ export default function Notifications() {
                                     strokeDashoffset={87.96 - (readPct / 100) * 87.96}
                                 />
                             </svg>
-                            <span className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">
+                            <span className="absolute inset-0 flex items-center justify-center text-[9px] font-semibold tabular-nums text-slate-700 dark:text-slate-200">
                                 {readPct}
                             </span>
                         </div>
@@ -268,17 +266,16 @@ export default function Notifications() {
                 />
             </div>
 
-            {/* Filters bar */}
-            <div className="card flex flex-col gap-3 p-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="card flex flex-col gap-2.5 p-3 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex flex-wrap items-center gap-1">
-                    <span className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    <span className="px-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         État
                     </span>
                     {READ_FILTERS.map((f) => (
                         <button
                             key={f.value}
                             onClick={() => setReadFilter(f.value)}
-                            className={`rounded-md px-2.5 py-1.5 text-[12px] font-medium transition ${
+                            className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
                                 readFilter === f.value
                                     ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                                     : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -286,7 +283,7 @@ export default function Notifications() {
                         >
                             {f.label}
                             {f.value === "unread" && unreadCount > 0 && (
-                                <span className={`ml-1.5 rounded-full px-1.5 text-[10px] font-bold ${
+                                <span className={`ml-1 rounded-full px-1 text-[9px] font-bold ${
                                     readFilter === f.value
                                         ? "bg-white/20 text-white dark:bg-slate-900/20"
                                         : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"
@@ -298,13 +295,13 @@ export default function Notifications() {
                     ))}
                 </div>
 
-                <div className="flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3 sm:border-t-0 sm:pt-0 dark:border-slate-800">
-                    <span className="px-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2.5 sm:border-t-0 sm:pt-0 dark:border-slate-800">
+                    <span className="px-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         Catégorie
                     </span>
                     <button
                         onClick={() => setCategoryFilter("all")}
-                        className={`rounded-md px-2.5 py-1.5 text-[12px] font-medium transition ${
+                        className={`rounded-md px-2 py-1 text-[11px] font-medium transition ${
                             categoryFilter === "all"
                                 ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                                 : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
@@ -322,15 +319,15 @@ export default function Notifications() {
                                 onClick={() =>
                                     setCategoryFilter(cat === categoryFilter ? "all" : cat)
                                 }
-                                className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-[12px] font-medium transition ${
+                                className={`inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-medium transition ${
                                     categoryFilter === cat
                                         ? "bg-slate-900 text-white dark:bg-white dark:text-slate-900"
                                         : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
                                 }`}
                             >
-                                <span className={`h-1.5 w-1.5 rounded-full ${TONE_DOT[config.tone]}`} />
+                                <span className={`h-1 w-1 rounded-full ${TONE_DOT[config.tone]}`} />
                                 {config.label}
-                                <span className={`text-[10px] tabular-nums ${
+                                <span className={`text-[9px] tabular-nums ${
                                     categoryFilter === cat ? "opacity-70" : "text-slate-400 dark:text-slate-500"
                                 }`}>
                                     {count}
@@ -341,25 +338,23 @@ export default function Notifications() {
                 </div>
             </div>
 
-            {/* Split view: list + preview */}
             {filtered.length === 0 ? (
-                <div className="card flex flex-col items-center justify-center gap-3 p-20 text-center">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
-                        <Bell size={20} className="text-slate-400" />
+                <div className="card flex flex-col items-center justify-center gap-2 p-14 text-center">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800">
+                        <Bell size={18} className="text-slate-400" />
                     </div>
-                    <h3 className="text-sm font-semibold text-slate-800 dark:text-white">
+                    <h3 className="text-[13px] font-semibold text-slate-800 dark:text-white">
                         Aucune notification
                     </h3>
-                    <p className="max-w-sm text-[13px] text-slate-500 dark:text-slate-400">
+                    <p className="max-w-sm text-[12px] text-slate-500 dark:text-slate-400">
                         {notifications.length === 0
                             ? "Vous êtes à jour. Les nouvelles notifications apparaîtront ici."
                             : "Aucune notification ne correspond à vos filtres."}
                     </p>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[minmax(0,1fr)_420px] dark:border-slate-800 dark:bg-slate-900">
-                    {/* LEFT: compact list */}
-                    <div className="max-h-[640px] overflow-y-auto border-slate-200 lg:border-r dark:border-slate-800">
+                <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-xl border border-slate-200 bg-white lg:grid-cols-[minmax(0,1fr)_380px] dark:border-slate-800 dark:bg-slate-900">
+                    <div className="max-h-[560px] overflow-y-auto border-slate-200 lg:border-r dark:border-slate-800">
                         {filtered.map((item, index) => {
                             const config = CATEGORY_CONFIG[item.category] ?? CATEGORY_CONFIG.info;
                             const ItemIcon = config.icon;
@@ -369,30 +364,27 @@ export default function Notifications() {
                                 <button
                                     key={item.id}
                                     onClick={() => handleSelect(item)}
-                                    className={`group relative flex w-full items-start gap-3 border-b border-slate-100 px-5 py-4 text-left transition-colors last:border-b-0 dark:border-slate-800 ${
+                                    className={`group relative flex w-full items-start gap-2.5 border-b border-slate-100 px-4 py-3 text-left transition-colors last:border-b-0 dark:border-slate-800 ${
                                         isSelected
                                             ? "bg-slate-50 dark:bg-slate-800/60"
                                             : "hover:bg-slate-50/60 dark:hover:bg-slate-800/40"
                                     }`}
                                 >
-                                    {/* Unread indicator bar */}
                                     {!item.read && (
                                         <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r bg-slate-900 dark:bg-white" />
                                     )}
 
-                                    {/* Category icon tile */}
-                                    <div className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${
+                                    <div className={`mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900 ${
                                         !item.read ? TONE_TEXT[config.tone] : "text-slate-400"
                                     }`}>
-                                        <ItemIcon size={15} strokeWidth={1.8} />
+                                        <ItemIcon size={13} strokeWidth={1.8} />
                                     </div>
 
-                                    {/* Content */}
                                     <div className="min-w-0 flex-1">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <div className="flex items-center gap-2 min-w-0">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-1.5 min-w-0">
                                                 <h3
-                                                    className={`truncate text-[13px] ${
+                                                    className={`truncate text-[12px] ${
                                                         item.read
                                                             ? "font-medium text-slate-600 dark:text-slate-300"
                                                             : "font-semibold text-slate-900 dark:text-white"
@@ -404,20 +396,20 @@ export default function Notifications() {
                                                     <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-slate-900 dark:bg-white" />
                                                 )}
                                             </div>
-                                            <span className="shrink-0 text-[11px] font-medium tabular-nums text-slate-400 dark:text-slate-500">
+                                            <span className="shrink-0 text-[10px] font-medium tabular-nums text-slate-400 dark:text-slate-500">
                                                 {formatRelative(item.createdAt)}
                                             </span>
                                         </div>
-                                        <p className="mt-0.5 line-clamp-1 text-[12.5px] text-slate-500 dark:text-slate-400">
+                                        <p className="mt-0.5 line-clamp-1 text-[11.5px] text-slate-500 dark:text-slate-400">
                                             {item.message}
                                         </p>
-                                        <div className="mt-2 flex items-center gap-2">
-                                            <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium ${TONE_TEXT[config.tone]} bg-slate-100 dark:bg-slate-800`}>
-                                                <span className={`h-1 w-1 rounded-full ${TONE_DOT[config.tone]}`} />
+                                        <div className="mt-1.5 flex items-center gap-1.5">
+                                            <span className={`inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-medium ${TONE_TEXT[config.tone]} bg-slate-100 dark:bg-slate-800`}>
+                                                <span className={`h-0.5 w-0.5 rounded-full ${TONE_DOT[config.tone]}`} />
                                                 {config.label}
                                             </span>
                                             {!item.read && (
-                                                <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                                                <span className="text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                                     Nouveau
                                                 </span>
                                             )}
@@ -425,8 +417,8 @@ export default function Notifications() {
                                     </div>
 
                                     <ChevronRight
-                                        size={14}
-                                        className={`mt-2 shrink-0 transition-opacity ${
+                                        size={13}
+                                        className={`mt-1.5 shrink-0 transition-opacity ${
                                             isSelected
                                                 ? "opacity-100 text-slate-700 dark:text-slate-200"
                                                 : "opacity-0 group-hover:opacity-60 text-slate-400"
@@ -437,7 +429,6 @@ export default function Notifications() {
                         })}
                     </div>
 
-                    {/* RIGHT: preview pane */}
                     <AnimatePresence mode="wait">
                         {selected ? (
                             <motion.div
@@ -446,17 +437,17 @@ export default function Notifications() {
                                 animate={{ opacity: 1, x: 0 }}
                                 exit={{ opacity: 0, x: -8 }}
                                 transition={{ duration: 0.2 }}
-                                className="flex flex-col border-t border-slate-200 p-6 lg:border-t-0 dark:border-slate-800"
+                                className="flex flex-col border-t border-slate-200 p-5 lg:border-t-0 dark:border-slate-800"
                             >
                                 <PreviewPane item={selected} />
                             </motion.div>
                         ) : (
-                            <div className="hidden items-center justify-center p-12 text-center lg:flex">
+                            <div className="hidden items-center justify-center p-10 text-center lg:flex">
                                 <div>
-                                    <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-                                        <Bell size={20} className="text-slate-400" />
+                                    <div className="mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+                                        <Bell size={18} className="text-slate-400" />
                                     </div>
-                                    <p className="text-[13px] text-slate-500 dark:text-slate-400">
+                                    <p className="text-[12px] text-slate-500 dark:text-slate-400">
                                         Sélectionnez une notification pour la lire
                                     </p>
                                 </div>
@@ -466,23 +457,20 @@ export default function Notifications() {
                 </div>
             )}
 
-            {/* Footer count */}
-            <div className="flex items-center justify-between px-1 text-[11px] font-medium text-slate-400 dark:text-slate-500">
+            <div className="flex items-center justify-between px-1 text-[10px] font-medium text-slate-400 dark:text-slate-500">
                 <span className="tabular-nums">
                     {filtered.length} sur {notifications.length} notifications
                 </span>
-                <span className="inline-flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-900 dark:bg-white" />
+                <span className="inline-flex items-center gap-1">
+                    <span className="h-1 w-1 rounded-full bg-slate-900 dark:bg-white" />
                     Non lu
-                    <span className="ml-2 h-1.5 w-1.5 rounded-full bg-slate-300 dark:bg-slate-600" />
+                    <span className="ml-1.5 h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
                     Lu
                 </span>
             </div>
         </div>
     );
 }
-
-/* ---------- Sub-components ---------- */
 
 function KpiBlock({
     label,
@@ -498,17 +486,17 @@ function KpiBlock({
     right?: React.ReactNode;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-6 py-5 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 dark:border-slate-800">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-5 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0 dark:border-slate-800">
             <div className="min-w-0">
-                <p className="text-[10.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <p className="text-[9.5px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {label}
                 </p>
-                <p className={`mt-1 text-[28px] font-semibold leading-none tracking-tight tabular-nums ${
+                <p className={`mt-0.5 text-2xl font-semibold leading-none tracking-tight tabular-nums ${
                     accent ? "text-amber-600 dark:text-amber-400" : "text-slate-900 dark:text-white"
                 }`}>
                     {value}
                 </p>
-                <p className="mt-1 text-[11.5px] text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-[10.5px] text-slate-500 dark:text-slate-400">
                     {hint}
                 </p>
             </div>
@@ -532,42 +520,39 @@ function PreviewPane({ item }: { item: NotificationItem }) {
 
     return (
         <>
-            {/* Top metadata bar */}
-            <div className="flex items-start gap-3 border-b border-slate-100 pb-5 dark:border-slate-800">
-                <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white ${TONE_TEXT[config.tone]} dark:border-slate-700 dark:bg-slate-900`}>
-                    <ItemIcon size={18} strokeWidth={1.8} />
+            <div className="flex items-start gap-2.5 border-b border-slate-100 pb-4 dark:border-slate-800">
+                <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white ${TONE_TEXT[config.tone]} dark:border-slate-700 dark:bg-slate-900`}>
+                    <ItemIcon size={16} strokeWidth={1.8} />
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                        <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10.5px] font-semibold uppercase tracking-wide ${TONE_TEXT[config.tone]} bg-slate-100 dark:bg-slate-800`}>
-                            <span className={`h-1 w-1 rounded-full ${TONE_DOT[config.tone]}`} />
+                    <div className="flex items-center gap-1.5">
+                        <span className={`inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wide ${TONE_TEXT[config.tone]} bg-slate-100 dark:bg-slate-800`}>
+                            <span className={`h-0.5 w-0.5 rounded-full ${TONE_DOT[config.tone]}`} />
                             {config.label}
                         </span>
                         {item.read ? (
-                            <span className="text-[10.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                            <span className="text-[9.5px] font-medium uppercase tracking-wide text-slate-400 dark:text-slate-500">
                                 Lu
                             </span>
                         ) : (
-                            <span className="text-[10.5px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+                            <span className="text-[9.5px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
                                 Non lu
                             </span>
                         )}
                     </div>
-                    <h2 className="mt-2 text-[16px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-white">
+                    <h2 className="mt-1.5 text-[14px] font-semibold leading-tight tracking-tight text-slate-900 dark:text-white">
                         {item.title}
                     </h2>
                 </div>
             </div>
 
-            {/* Body */}
-            <div className="flex-1 overflow-y-auto py-5">
-                <p className="whitespace-pre-wrap text-[14px] leading-relaxed text-slate-700 dark:text-slate-300">
+            <div className="flex-1 overflow-y-auto py-4">
+                <p className="whitespace-pre-wrap text-[13px] leading-relaxed text-slate-700 dark:text-slate-300">
                     {item.message}
                 </p>
             </div>
 
-            {/* Metadata grid */}
-            <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-[11.5px] dark:border-slate-800">
+            <div className="grid grid-cols-2 gap-2.5 border-t border-slate-100 pt-3 text-[10.5px] dark:border-slate-800">
                 <div>
                     <p className="font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         Reçue
@@ -586,22 +571,21 @@ function PreviewPane({ item }: { item: NotificationItem }) {
                 </div>
             </div>
 
-            {/* Actions */}
-            <div className="mt-5 flex items-center gap-2 border-t border-slate-100 pt-4 dark:border-slate-800">
+            <div className="mt-4 flex items-center gap-1.5 border-t border-slate-100 pt-3 dark:border-slate-800">
                 {!item.read ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
-                        <CheckCircle2 size={12} />
+                    <span className="inline-flex items-center gap-1 rounded bg-emerald-50 px-2 py-1 text-[10.5px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">
+                        <CheckCircle2 size={11} />
                         Marqué comme lu
                     </span>
                 ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-md bg-slate-100 px-2.5 py-1.5 text-[11.5px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                        <CheckCircle2 size={12} />
+                    <span className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-1 text-[10.5px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <CheckCircle2 size={11} />
                         Consultée
                     </span>
                 )}
                 <div className="ml-auto flex items-center gap-1">
-                    <button className="inline-flex items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 py-1.5 text-[11.5px] font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
-                        <Trash2 size={12} />
+                    <button className="inline-flex items-center gap-1 rounded border border-slate-200 bg-white px-2 py-1 text-[10.5px] font-medium text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">
+                        <Trash2 size={11} />
                         Supprimer
                     </button>
                 </div>
