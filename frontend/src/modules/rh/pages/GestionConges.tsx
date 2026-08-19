@@ -403,6 +403,9 @@ function SimulateCongeModal({
   onCreated: () => Promise<void>;
   pushToast: (type: Toast['type'], message: string) => void;
 }) {
+  const [employes, setEmployes] = useState<Employe[]>([]);
+  const [loadingEmployes, setLoadingEmployes] = useState(true);
+
   const [idEmploye, setIdEmploye] = useState('');
   const [type, setType] = useState<TypeConge>('Conge_Normal');
   const [dateDebut, setDateDebut] = useState('');
@@ -411,11 +414,35 @@ function SimulateCongeModal({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Charger la liste des employés au montage de la modale
+  useEffect(() => {
+    const fetchEmployes = async () => {
+      try {
+        const response = await fetch(`${API_BASE}/employes`);
+        const json = await response.json();
+        if (json.success && json.data) {
+          setEmployes(json.data);
+          // Auto-sélectionner le premier employé de la liste s'il y en a
+          if (json.data.length > 0) {
+            setIdEmploye(json.data[0].id_employe);
+          }
+        }
+      } catch (err) {
+        console.error("Impossible de charger les employés", err);
+        setFormError("Impossible de charger la liste des employés.");
+      } finally {
+        setLoadingEmployes(false);
+      }
+    };
+    
+    fetchEmployes();
+  }, []);
+
   const handleSubmit = async () => {
     setFormError(null);
 
     if (!idEmploye.trim()) {
-      setFormError("L'ID de l'employé est requis (UUID).");
+      setFormError("Veuillez sélectionner un employé.");
       return;
     }
     if (!dateDebut || !dateFin) {
@@ -484,7 +511,7 @@ function SimulateCongeModal({
               Simuler une demande de congé
             </h2>
             <p className="text-sm text-gray-500 mt-0.5">
-              Utile pour tester le flux de validation RH.
+              Sélectionnez un employé dans la liste pour tester.
             </p>
           </div>
           <button
@@ -505,17 +532,30 @@ function SimulateCongeModal({
             </div>
           )}
 
+          {/* Menu déroulant pour l'employé au lieu du champ texte */}
           <div>
             <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
-              ID de l'employé (UUID) <span className="text-red-500">*</span>
+              Employé <span className="text-red-500">*</span>
             </label>
-            <input
-              type="text"
-              value={idEmploye}
-              onChange={(e) => setIdEmploye(e.target.value)}
-              placeholder="Ex: 3fa85f64-5717-4562-b3fc-2c963f66afa6"
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent"
-            />
+            {loadingEmployes ? (
+              <div className="flex items-center gap-2 text-sm text-gray-500 py-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Chargement des employés...
+              </div>
+            ) : (
+              <select
+                value={idEmploye}
+                onChange={(e) => setIdEmploye(e.target.value)}
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-emerald-400 focus:border-transparent bg-white"
+              >
+                <option value="" disabled>Sélectionnez un employé...</option>
+                {employes.map((emp) => (
+                  <option key={emp.id_employe} value={emp.id_employe}>
+                    {emp.utilisateur?.prenom} {emp.utilisateur?.nom}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
 
           <div>

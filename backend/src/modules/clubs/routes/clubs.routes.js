@@ -44,4 +44,5 @@ router.put('/:id', updateClub);
  */
 router.delete('/:id', deleteClub);
 
+
 module.exports = router;

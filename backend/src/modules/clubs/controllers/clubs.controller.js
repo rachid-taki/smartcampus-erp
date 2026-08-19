@@ -276,6 +276,24 @@ const deleteClub = async (req, res) => {
   }
 };
 
+const getPresidents = async (req, res) => {
+  try {
+    const presidents = await prisma.president.findMany({
+      include: {
+        etudiant: {
+          include: {
+            utilisateur: { select: { nom: true, prenom: true } }
+          }
+        }
+      }
+    });
+    return res.status(200).json({ success: true, data: presidents });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Erreur lors de la récupération des présidents" });
+  }
+};
+
+
 module.exports = {
   getClubs,
   getClubById,

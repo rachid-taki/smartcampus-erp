@@ -34,6 +34,7 @@ interface Cours {
 }
 
 interface Professeur {
+  id_professeur: string;
   employe?: {
     utilisateur?: {
       nom: string;
@@ -66,7 +67,7 @@ interface Toast {
   message: string;
 }
 
-const API_BASE = 'http://localhost:3000/api';
+const API_BASE = 'http://localhost:3000/api/sessions';
 const STATUT_OPTIONS: StatutSession[] = ['Planifiee', 'En_Cours', 'Terminee', 'Annulee'];
 
 // ─────────────────────────────────────────────────────────────
@@ -148,7 +149,14 @@ function CreateSessionModal({
 }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  
+  // États pour les listes déroulantes
   const [salles, setSalles] = useState<any[]>([]);
+  const [coursList, setCoursList] = useState<any[]>([]);
+  const [profsList, setProfsList] = useState<any[]>([]);
+  
+  const [loadingCours, setLoadingCours] = useState(true);
+  const [loadingProfs, setLoadingProfs] = useState(true);
 
   const [form, setForm] = useState({
     id_salle: '',
@@ -160,10 +168,27 @@ function CreateSessionModal({
   });
 
   useEffect(() => {
-    fetch(`${API_BASE}/salles`)
+    // 1. Charger les salles (URL absolue pointant vers le module salles)
+    fetch(`http://localhost:3000/api/salles`)
       .then(res => res.json())
       .then(json => { if (json.success) setSalles(json.data); })
       .catch(err => console.error("Erreur salles:", err));
+
+    // 2. Charger les cours (URL pointant vers les nouvelles routes du module sessions)
+    setLoadingCours(true);
+    fetch(`${API_BASE}/cours`)
+      .then(res => res.json())
+      .then(json => { if (json.success) setCoursList(json.data); })
+      .catch(err => console.error("Erreur cours:", err))
+      .finally(() => setLoadingCours(false));
+
+    // 3. Charger les professeurs (URL pointant vers les nouvelles routes du module sessions)
+    setLoadingProfs(true);
+    fetch(`${API_BASE}/professeurs`)
+      .then(res => res.json())
+      .then(json => { if (json.success) setProfsList(json.data); })
+      .catch(err => console.error("Erreur professeurs:", err))
+      .finally(() => setLoadingProfs(false));
   }, []);
 
   const handleSubmit = async () => {
@@ -179,7 +204,7 @@ function CreateSessionModal({
 
     setSaving(true);
     try {
-      const response = await fetch(`${API_BASE}/sessions`, {
+      const response = await fetch(API_BASE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
@@ -222,33 +247,66 @@ function CreateSessionModal({
               onChange={e => setForm({ ...form, id_salle: e.target.value })}
               className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
             >
-              <option value="">-- Sélectionner une salle --</option>
+              <option value="" disabled>-- Sélectionner une salle --</option>
               {salles.map(s => <option key={s.id_salle} value={s.id_salle}>{s.numero} {s.nom ? `(${s.nom})` : ''}</option>)}
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-3">
+            {/* Menu déroulant pour le Cours */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Cours (UUID)</label>
-              <input type="text" value={form.id_cours} onChange={e => setForm({ ...form, id_cours: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" placeholder="UUID du cours" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Cours <span className="text-red-500">*</span></label>
+              {loadingCours ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
+                </div>
+              ) : (
+                <select
+                  value={form.id_cours}
+                  onChange={e => setForm({ ...form, id_cours: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                >
+                  <option value="" disabled>-- Sélectionner --</option>
+                  {coursList.map(c => <option key={c.id_cours} value={c.id_cours}>{c.nom} ({c.code})</option>)}
+                </select>
+              )}
             </div>
+
+            {/* Menu déroulant pour le Professeur */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Professeur (UUID)</label>
-              <input type="text" value={form.id_professeur} onChange={e => setForm({ ...form, id_professeur: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" placeholder="UUID du prof" />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Professeur <span className="text-red-500">*</span></label>
+              {loadingProfs ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" /> Chargement...
+                </div>
+              ) : (
+                <select
+                  value={form.id_professeur}
+                  onChange={e => setForm({ ...form, id_professeur: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                >
+                  <option value="" disabled>-- Sélectionner --</option>
+                  {profsList.map(p => (
+                    <option key={p.id_professeur} value={p.id_professeur}>
+                      {p.employe?.utilisateur?.prenom} {p.employe?.utilisateur?.nom}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Date</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Date <span className="text-red-500">*</span></label>
               <input type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Début</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Début <span className="text-red-500">*</span></label>
               <input type="time" value={form.heure_debut} onChange={e => setForm({ ...form, heure_debut: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Fin</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Fin <span className="text-red-500">*</span></label>
               <input type="time" value={form.heure_fin} onChange={e => setForm({ ...form, heure_fin: e.target.value })} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums" />
             </div>
           </div>
@@ -299,7 +357,7 @@ function UpdateSessionModal({
         if (nbEtudiants) payload.nombre_etudiants = parseInt(nbEtudiants, 10);
       }
 
-      const response = await fetch(`${API_BASE}/sessions/${session.id_session}/statut`, {
+      const response = await fetch(`${API_BASE}/${session.id_session}/statut`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -407,7 +465,7 @@ export default function GestionSessions() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE}/sessions`);
+      const response = await fetch(API_BASE);
       const json = await response.json();
       if (!response.ok) throw new Error(json.message);
       setSessions(json.data || []);

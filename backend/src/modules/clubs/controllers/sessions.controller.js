@@ -16,9 +16,6 @@ const VALID_STATUTS = ['Planifiee', 'En_Cours', 'Terminee', 'Annulee'];
 
 /**
  * Safely parse a "YYYY-MM-DD" date string into a Date object.
- *
- * @param {string} value
- * @returns {Date|null}
  */
 const parseDateOnly = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -27,13 +24,7 @@ const parseDateOnly = (value) => {
 };
 
 /**
- * Safely parse a time string ("HH:mm" or "HH:mm:ss") into a valid
- * DateTime for a Prisma `@db.Time` field. Postgres TIME columns are
- * represented by Prisma as DateTime values anchored to an arbitrary
- * base date — only the time-of-day portion is actually persisted.
- *
- * @param {string} value
- * @returns {Date|null}
+ * Safely parse a time string ("HH:mm" or "HH:mm:ss") into a valid DateTime
  */
 const parseTimeOnly = (value) => {
   if (!value || typeof value !== 'string') return null;
@@ -48,19 +39,14 @@ const parseTimeOnly = (value) => {
 
     if (hours > 23 || minutes > 59 || seconds > 59) return null;
 
-    // Anchor to a fixed arbitrary UTC date — only time-of-day matters
-    // for a @db.Time column; the date portion is ignored by Postgres.
     const anchored = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
     return Number.isNaN(anchored.getTime()) ? null : anchored;
   }
 
-  // Fallback: already a full ISO datetime string
   const parsed = new Date(trimmed);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
-// Shared include shape used across GET, POST, and PUT so the response
-// structure stays identical everywhere.
 const SESSION_INCLUDE = {
   salle: {
     select: { numero: true, nom: true, capacite: true },
@@ -68,7 +54,6 @@ const SESSION_INCLUDE = {
   cours: {
     select: { nom: true, code: true },
   },
-  // CRITICAL: professeur -> employe -> utilisateur, exactly as specified.
   professeur: {
     include: {
       employe: {
@@ -84,22 +69,10 @@ const SESSION_INCLUDE = {
 
 /**
  * GET /api/sessions
- *
- * Fetch all classroom sessions, including room, course, and teacher
- * identity. Ordered by date descending, then heure_debut descending.
- *
- * Query params (optional):
- *   - statut  (Planifiee | En_Cours | Terminee | Annulee)
- *   - id_salle (UUID — filter to a specific room)
- *   - date     ("YYYY-MM-DD" — filter to a specific day)
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const getSessions = async (req, res) => {
   try {
     const { statut, id_salle, date } = req.query;
-
     const where = {};
 
     if (statut) {
@@ -130,14 +103,8 @@ const getSessions = async (req, res) => {
           message: `"date" n'est pas une date valide: "${date}".`,
         });
       }
-      // Match the full calendar day regardless of the stored time
-      // component, since `date` is filtered as a range boundary.
-      const startOfDay = new Date(
-        Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate())
-      );
-      const endOfDay = new Date(
-        Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate() + 1)
-      );
+      const startOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate()));
+      const endOfDay = new Date(Date.UTC(parsedDate.getUTCFullYear(), parsedDate.getUTCMonth(), parsedDate.getUTCDate() + 1));
       where.date = { gte: startOfDay, lt: endOfDay };
     }
 
@@ -163,99 +130,44 @@ const getSessions = async (req, res) => {
 
 /**
  * POST /api/sessions
- *
- * Create a new classroom session. Status defaults to 'Planifiee'.
- *
- * Body:
- *   - id_salle       (required) UUID of the room
- *   - id_cours       (required) UUID of the course
- *   - id_professeur  (required) UUID of the teacher
- *   - date           (required) "YYYY-MM-DD"
- *   - heure_debut    (required) "HH:mm" or "HH:mm:ss"
- *   - heure_fin      (required) "HH:mm" or "HH:mm:ss"
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const createSession = async (req, res) => {
   try {
     const { id_salle, id_cours, id_professeur, date, heure_debut, heure_fin } = req.body;
 
-    // --- Validation ---
-
     if (!id_salle || !UUID_REGEX.test(id_salle)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "id_salle" est requis et doit être un UUID valide.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "id_salle" est requis et doit être un UUID valide.' });
     }
-
     if (!id_cours || !UUID_REGEX.test(id_cours)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "id_cours" est requis et doit être un UUID valide.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "id_cours" est requis et doit être un UUID valide.' });
     }
-
     if (!id_professeur || !UUID_REGEX.test(id_professeur)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "id_professeur" est requis et doit être un UUID valide.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "id_professeur" est requis et doit être un UUID valide.' });
     }
-
     if (!date) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "date" est requis.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "date" est requis.' });
     }
-
     const parsedDate = parseDateOnly(date);
     if (!parsedDate) {
-      return res.status(400).json({
-        success: false,
-        message: `"date" n'est pas une date valide: "${date}".`,
-      });
+      return res.status(400).json({ success: false, message: `"date" n'est pas une date valide: "${date}".` });
     }
-
     if (!heure_debut) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "heure_debut" est requis.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "heure_debut" est requis.' });
     }
-
     const parsedHeureDebut = parseTimeOnly(heure_debut);
     if (!parsedHeureDebut) {
-      return res.status(400).json({
-        success: false,
-        message: `"heure_debut" n'est pas une heure valide: "${heure_debut}". Format attendu: "HH:mm".`,
-      });
+      return res.status(400).json({ success: false, message: `"heure_debut" n'est pas une heure valide: "${heure_debut}". Format attendu: "HH:mm".` });
     }
-
     if (!heure_fin) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "heure_fin" est requis.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "heure_fin" est requis.' });
     }
-
     const parsedHeureFin = parseTimeOnly(heure_fin);
     if (!parsedHeureFin) {
-      return res.status(400).json({
-        success: false,
-        message: `"heure_fin" n'est pas une heure valide: "${heure_fin}". Format attendu: "HH:mm".`,
-      });
+      return res.status(400).json({ success: false, message: `"heure_fin" n'est pas une heure valide: "${heure_fin}". Format attendu: "HH:mm".` });
     }
 
-    // Since both times are anchored to the same base date, a direct
-    // comparison correctly validates chronological order.
     if (parsedHeureFin <= parsedHeureDebut) {
-      return res.status(400).json({
-        success: false,
-        message: '"heure_fin" doit être postérieure à "heure_debut".',
-      });
+      return res.status(400).json({ success: false, message: '"heure_fin" doit être postérieure à "heure_debut".' });
     }
 
     const newSession = await prisma.sessionSalle.create({
@@ -277,15 +189,12 @@ const createSession = async (req, res) => {
       data: newSession,
     });
   } catch (error) {
-    // Prisma P2003 = foreign key constraint violation (invalid
-    // id_salle, id_cours, or id_professeur)
     if (error.code === 'P2003') {
       return res.status(400).json({
         success: false,
         message: 'Référence invalide: vérifiez que "id_salle", "id_cours" et "id_professeur" correspondent à des enregistrements existants.',
       });
     }
-
     console.error('[Sessions Salle] Failed to create session:', error);
     return res.status(500).json({
       success: false,
@@ -296,95 +205,48 @@ const createSession = async (req, res) => {
 
 /**
  * PUT /api/sessions/:id/statut
- *
- * Update a session's live tracking status. This is the endpoint that
- * will eventually be driven by RFID/QR check-ins and the "empty room"
- * AI alert system.
- *
- * URL params:
- *   - id: id_session (UUID)
- *
- * Body:
- *   - statut              (required) Planifiee | En_Cours | Terminee | Annulee
- *   - heure_debut_reelle  (optional) "HH:mm" — relevant when statut = 'En_Cours'
- *   - heure_fin_reelle    (optional) "HH:mm" — relevant when statut = 'Terminee'
- *   - nombre_etudiants    (optional) integer — relevant when statut = 'Terminee'
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const updateSessionStatut = async (req, res) => {
   try {
     const { id } = req.params;
     const { statut, heure_debut_reelle, heure_fin_reelle, nombre_etudiants } = req.body;
 
-    // --- Validate the id param before hitting the database ---
     if (!id || !UUID_REGEX.test(id)) {
-      return res.status(400).json({
-        success: false,
-        message: `L'identifiant fourni ("${id}") n'est pas un UUID valide.`,
-      });
+      return res.status(400).json({ success: false, message: `L'identifiant fourni ("${id}") n'est pas un UUID valide.` });
     }
-
-    // --- Validate statut ---
     if (!statut) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "statut" est requis.',
-      });
+      return res.status(400).json({ success: false, message: 'Le champ "statut" est requis.' });
     }
-
     if (!VALID_STATUTS.includes(statut)) {
-      return res.status(400).json({
-        success: false,
-        message: `Statut invalide: "${statut}". Valeurs autorisées: ${VALID_STATUTS.join(', ')}.`,
-      });
+      return res.status(400).json({ success: false, message: `Statut invalide: "${statut}". Valeurs autorisées: ${VALID_STATUTS.join(', ')}.` });
     }
 
-    // --- Verify the session exists before attempting the update ---
-    const existingSession = await prisma.sessionSalle.findUnique({
-      where: { id_session: id },
-    });
-
+    const existingSession = await prisma.sessionSalle.findUnique({ where: { id_session: id } });
     if (!existingSession) {
-      return res.status(404).json({
-        success: false,
-        message: `Aucune session trouvée avec l'id "${id}".`,
-      });
+      return res.status(404).json({ success: false, message: `Aucune session trouvée avec l'id "${id}".` });
     }
 
-    // --- Build the update payload ---
     const updateData = { statut };
 
-    // heure_debut_reelle is accepted whenever provided, but is most
-    // meaningful when transitioning to 'En_Cours'.
     if (heure_debut_reelle !== undefined) {
       if (heure_debut_reelle === null || heure_debut_reelle === '') {
         updateData.heure_debut_reelle = null;
       } else {
         const parsed = parseTimeOnly(heure_debut_reelle);
         if (!parsed) {
-          return res.status(400).json({
-            success: false,
-            message: `"heure_debut_reelle" n'est pas une heure valide: "${heure_debut_reelle}". Format attendu: "HH:mm".`,
-          });
+          return res.status(400).json({ success: false, message: `"heure_debut_reelle" n'est pas une heure valide.` });
         }
         updateData.heure_debut_reelle = parsed;
       }
     }
 
-    // heure_fin_reelle and nombre_etudiants are most meaningful when
-    // transitioning to 'Terminee', but are accepted whenever provided.
     if (heure_fin_reelle !== undefined) {
       if (heure_fin_reelle === null || heure_fin_reelle === '') {
         updateData.heure_fin_reelle = null;
       } else {
         const parsed = parseTimeOnly(heure_fin_reelle);
         if (!parsed) {
-          return res.status(400).json({
-            success: false,
-            message: `"heure_fin_reelle" n'est pas une heure valide: "${heure_fin_reelle}". Format attendu: "HH:mm".`,
-          });
+          return res.status(400).json({ success: false, message: `"heure_fin_reelle" n'est pas une heure valide.` });
         }
         updateData.heure_fin_reelle = parsed;
       }
@@ -396,29 +258,18 @@ const updateSessionStatut = async (req, res) => {
       } else {
         const parsedCount = Number(nombre_etudiants);
         if (!Number.isInteger(parsedCount) || parsedCount < 0) {
-          return res.status(400).json({
-            success: false,
-            message: 'Le champ "nombre_etudiants" doit être un entier positif ou nul.',
-          });
+          return res.status(400).json({ success: false, message: 'Le champ "nombre_etudiants" doit être un entier positif ou nul.' });
         }
         updateData.nombre_etudiants = parsedCount;
       }
     }
 
-    // --- Auto-compute retard_moyen (minutes late) when possible ---
-    // If we have both the scheduled start and the real start, and no
-    // explicit override is provided elsewhere, compute the delay so the
-    // AI/reporting layer has a ready-made metric.
-    const effectiveHeureDebutReelle =
-      updateData.heure_debut_reelle !== undefined
-        ? updateData.heure_debut_reelle
-        : existingSession.heure_debut_reelle;
+    const effectiveHeureDebutReelle = updateData.heure_debut_reelle !== undefined ? updateData.heure_debut_reelle : existingSession.heure_debut_reelle;
 
     if (effectiveHeureDebutReelle && existingSession.heure_debut) {
       const scheduledMs = new Date(existingSession.heure_debut).getTime();
       const actualMs = new Date(effectiveHeureDebutReelle).getTime();
       const diffMinutes = Math.round((actualMs - scheduledMs) / 60000);
-      // Only record a non-negative delay (early starts aren't "retard")
       updateData.retard_moyen = diffMinutes > 0 ? diffMinutes : 0;
     }
 
@@ -428,26 +279,53 @@ const updateSessionStatut = async (req, res) => {
       include: SESSION_INCLUDE,
     });
 
-    return res.status(200).json({
-      success: true,
-      message: 'Statut de la session mis à jour avec succès.',
-      data: updatedSession,
-    });
+    return res.status(200).json({ success: true, message: 'Statut de la session mis à jour.', data: updatedSession });
   } catch (error) {
-    // Prisma P2025 = record to update not found (race condition:
-    // deleted between the findUnique check and the update call)
     if (error.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        message: 'La session est introuvable ou a déjà été supprimée.',
-      });
+      return res.status(404).json({ success: false, message: 'La session est introuvable ou a déjà été supprimée.' });
     }
+    return res.status(500).json({ success: false, message: 'Une erreur est survenue lors de la mise à jour.' });
+  }
+};
 
-    console.error('[Sessions Salle] Failed to update session status:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Une erreur est survenue lors de la mise à jour du statut.',
+/**
+ * GET /api/cours
+ * (NOUVEAU) - Permet d'alimenter la liste déroulante des cours dans le frontend
+ */
+const getCours = async (req, res) => {
+  try {
+    const coursList = await prisma.cours.findMany({
+      select: { id_cours: true, nom: true, code: true },
+      orderBy: { nom: 'asc' }
     });
+    return res.status(200).json({ success: true, data: coursList });
+  } catch (error) {
+    console.error('[Sessions Salle] Failed to fetch cours:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des cours.' });
+  }
+};
+
+/**
+ * GET /api/professeurs
+ * (NOUVEAU) - Permet d'alimenter la liste déroulante des professeurs
+ */
+const getProfesseurs = async (req, res) => {
+  try {
+    const professeursList = await prisma.professeur.findMany({
+      include: {
+        employe: {
+          include: {
+            utilisateur: {
+              select: { nom: true, prenom: true }
+            }
+          }
+        }
+      }
+    });
+    return res.status(200).json({ success: true, data: professeursList });
+  } catch (error) {
+    console.error('[Sessions Salle] Failed to fetch professeurs:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des professeurs.' });
   }
 };
 
@@ -455,4 +333,6 @@ module.exports = {
   getSessions,
   createSession,
   updateSessionStatut,
+  getCours,
+  getProfesseurs,
 };

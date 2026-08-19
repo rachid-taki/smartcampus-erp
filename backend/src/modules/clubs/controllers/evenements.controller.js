@@ -462,9 +462,59 @@ const updateEvenementStatut = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/presidents
+ *
+ * Fetch all club president mandates, including the student's identity
+ * (via etudiant -> utilisateur) and the club's basic info (nom, statut).
+ *
+ * Query params (optional):
+ *   - statut ('Actif' or 'Expire')
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ */
+const getPresidents = async (req, res) => {
+  try {
+    const { statut } = req.query;
+
+    const where = {};
+
+    if (statut) {
+      if (!VALID_STATUTS.includes(statut)) {
+        return res.status(400).json({
+          success: false,
+          message: `Statut invalide: "${statut}". Valeurs autorisées: ${VALID_STATUTS.join(', ')}.`,
+        });
+      }
+      where.statut = statut;
+    }
+
+    const presidents = await prisma.presidentClub.findMany({
+      where,
+      include: PRESIDENT_INCLUDE,
+      orderBy: { date_designation: 'desc' },
+    });
+
+    return res.status(200).json({
+      success: true,
+      count: presidents.length,
+      data: presidents,
+    });
+  } catch (error) {
+    console.error('[Présidents Clubs] Failed to fetch presidents:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Une erreur est survenue lors de la récupération des présidents.',
+    });
+  }
+};
+
+
 module.exports = {
   getEvenements,
   getEvenementById,
   createEvenement,
+  getPresidents,
   updateEvenementStatut,
 };

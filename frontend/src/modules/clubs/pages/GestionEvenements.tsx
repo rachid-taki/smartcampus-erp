@@ -179,7 +179,11 @@ function CreateDemandeModal({
 }) {
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
+  
+  // États pour les listes déroulantes
   const [clubs, setClubs] = useState<{ id_club: string; nom: string }[]>([]);
+  const [presidents, setPresidents] = useState<any[]>([]);
+  const [loadingPresidents, setLoadingPresidents] = useState(true);
 
   const [form, setForm] = useState({
     id_club: '',
@@ -194,19 +198,35 @@ function CreateDemandeModal({
   });
 
   useEffect(() => {
+    // 1. Charger les clubs
     fetch(API_CLUBS)
       .then((res) => res.json())
       .then((json) => {
         if (json.success) setClubs(json.data);
       })
       .catch((err) => console.error('Erreur chargement clubs:', err));
+
+    // 2. Charger les présidents
+    setLoadingPresidents(true);
+    fetch('http://localhost:3000/api/presidents')
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && json.data) {
+          setPresidents(json.data);
+        }
+      })
+      .catch((err) => {
+        console.error('Erreur chargement présidents:', err);
+        setFormError("Impossible de charger la liste des présidents.");
+      })
+      .finally(() => setLoadingPresidents(false));
   }, []);
 
   const handleSubmit = async () => {
     setFormError(null);
 
     if (!form.id_club || !form.id_president || !form.objet || !form.type) {
-      setFormError('Les champs Club, ID Président, Type et Objet sont obligatoires.');
+      setFormError('Les champs Club, Président, Type et Objet sont obligatoires.');
       return;
     }
 
@@ -280,15 +300,29 @@ function CreateDemandeModal({
                 ))}
               </select>
             </div>
+            
+            {/* Menu déroulant dynamique pour le Président */}
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Président (Temporaire) <span className="text-red-500">*</span></label>
-              <input
-                type="text"
-                value={form.id_president}
-                onChange={(e) => setForm({ ...form, id_president: e.target.value })}
-                placeholder="UUID du président..."
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              />
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Président <span className="text-red-500">*</span></label>
+              {loadingPresidents ? (
+                <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Chargement...
+                </div>
+              ) : (
+                <select
+                  value={form.id_president}
+                  onChange={(e) => setForm({ ...form, id_president: e.target.value })}
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                >
+                  <option value="" disabled>-- Sélectionner un président --</option>
+                  {presidents.map((p) => (
+                    <option key={p.id_president} value={p.id_president}>
+                      {p.etudiant?.utilisateur?.prenom} {p.etudiant?.utilisateur?.nom} {p.club?.nom ? `(${p.club.nom})` : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           </div>
 
@@ -379,123 +413,6 @@ function CreateDemandeModal({
           <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
             {saving && <Loader2 className="h-4 w-4 animate-spin" />}
             Soumettre
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Process Demande Modal (Validation)
-// ─────────────────────────────────────────────────────────────
-
-function ProcessDemandeModal({
-  demande,
-  onClose,
-  onSaved,
-  pushToast,
-}: {
-  demande: DemandeClub;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-  pushToast: (type: Toast['type'], message: string) => void;
-}) {
-  const [statut, setStatut] = useState<StatutDemande>(demande.statut === 'Soumise' ? 'En_Revue' : demande.statut);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    setError(null);
-    setSaving(true);
-    try {
-      const response = await fetch(`${API_BASE}/${demande.id_demande_club}/statut`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ statut }),
-      });
-
-      const json = await response.json();
-      if (!response.ok || !json.success) throw new Error(json.message);
-
-      pushToast('success', 'Statut mis à jour avec succès.');
-      await onSaved();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur réseau');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
-      <div className="card p-0 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="px-6 py-5 space-y-5">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Traiter la demande</h2>
-          
-          {error && (
-            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-3 w-3" />
-              </div>
-              <span>{error}</span>
-            </div>
-          )}
-
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3 border border-slate-200/70 dark:border-slate-700">
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">Club:</span>
-              <span className="font-medium text-slate-800 dark:text-white">{demande.club?.nom}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-slate-500 dark:text-slate-400">Objet:</span>
-              <span className="font-medium text-slate-800 dark:text-white text-right ml-4">{demande.objet}</span>
-            </div>
-            <div className="flex justify-between text-sm items-center">
-              <span className="text-slate-500 dark:text-slate-400">Type:</span>
-              <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold border ${getTypeBadgeClasses(demande.type)}`}>
-                {demande.type}
-              </span>
-            </div>
-            
-            {(demande.date_evenement || demande.budget_demande) && (
-              <div className="pt-2 border-t border-slate-200 dark:border-slate-700 space-y-2 mt-2">
-                {demande.date_evenement && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 dark:text-slate-400">Date prévue:</span>
-                    <span className="text-slate-800 dark:text-white tabular-nums">{formatDateFr(demande.date_evenement)}</span>
-                  </div>
-                )}
-                {demande.budget_demande && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-slate-500 dark:text-slate-400">Budget demandé:</span>
-                    <span className="text-slate-800 dark:text-white font-semibold tabular-nums tracking-tight">{formatCurrencyMAD(demande.budget_demande)}</span>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Décision (Statut)</label>
-            <select
-              value={statut}
-              onChange={(e) => setStatut(e.target.value as StatutDemande)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              {STATUT_OPTIONS.map((s) => (
-                <option key={s} value={s}>{s.replace('_', ' ')}</option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 rounded-b-card bg-card dark:bg-card-dark">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">Annuler</button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Enregistrer
           </button>
         </div>
       </div>

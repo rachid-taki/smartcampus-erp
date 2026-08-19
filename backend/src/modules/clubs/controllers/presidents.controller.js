@@ -245,6 +245,8 @@ const updatePresident = async (req, res) => {
   }
 };
 
+
+
 module.exports = {
   getPresidents,
   getPresidentById,

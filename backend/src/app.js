@@ -22,7 +22,7 @@ app.get("/", (req, res) => {
   });
 });
 
-// 2. Import your Module 5 routes
+// 2. Import your Modules
 const scolariteDashboardRoutes = require('./modules/scolarite/routes/scolarite.dashboard.routes');
 const scolariteDemandesRoutes = require('./modules/scolarite/routes/scolarite.demandes.routes');
 const scolariteWorkflowsRoutes = require('./modules/scolarite/routes/scolarite.workflows.routes');
@@ -41,15 +41,14 @@ const clubsRoutes = require('./modules/clubs/routes/clubs.routes');
 const presidentsRoutes = require('./modules/clubs/routes/presidents.routes');
 const reservationsRoutes = require('./modules/clubs/routes/reservations.routes');
 const evenementsRoutes = require('./modules/clubs/routes/evenements.routes');
-const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
 const presencesRoutes = require('./modules/clubs/routes/presences.routes');
 const alertesRoutes = require('./modules/clubs/routes/alertes.routes');
 const clubsDashboardRoutes = require('./modules/clubs/routes/dashboard.routes');
 const parametresRoutes = require('./modules/configuration/routes/parametres.routes');
 const calendriersRoutes = require('./modules/configuration/routes/calendriers.routes');
+const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
 
-
-// 3. Mount the routes to the /api/scolarite path
+// 3. Mount the routes
 app.use('/api/scolarite', scolariteDashboardRoutes);
 app.use('/api/scolarite', scolariteDemandesRoutes);
 app.use('/api/scolarite', scolariteWorkflowsRoutes);
