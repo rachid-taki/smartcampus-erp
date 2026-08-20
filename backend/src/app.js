@@ -47,6 +47,9 @@ const clubsDashboardRoutes = require('./modules/clubs/routes/dashboard.routes');
 const parametresRoutes = require('./modules/configuration/routes/parametres.routes');
 const calendriersRoutes = require('./modules/configuration/routes/calendriers.routes');
 const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
+const enseignantReservationsRoutes = require('./modules/enseignant/routes/enseignant.reservations.routes');
+
+
 
 // 3. Mount the routes
 app.use('/api/scolarite', scolariteDashboardRoutes);
@@ -73,6 +76,7 @@ app.use('/api/alertes', alertesRoutes);
 app.use('/api/clubs-dashboard', clubsDashboardRoutes);
 app.use('/api/parametres', parametresRoutes);
 app.use('/api/calendriers', calendriersRoutes);
+app.use('/api/enseignant', enseignantReservationsRoutes);
 
 //app.use("/api/permissions", permissionRoutes);
 //app.use("/api/auth", authRoutes);

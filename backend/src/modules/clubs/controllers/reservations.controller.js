@@ -399,9 +399,76 @@ const updateReservationStatut = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/utilisateurs
+ */
+const getUtilisateurs = async (req, res) => {
+  try {
+    const { role } = req.query;
+    
+    // On cherche uniquement les utilisateurs actifs
+    const where = { actif: true };
+
+    if (role) {
+      // Mapping intelligent pour gérer les différences de nommage dans votre BDD
+      if (role === 'PROFESSEUR') {
+        where.role = { 
+          nom_role: { in: ['PROFESSEUR', 'PROFESSOR', 'Professeur', 'professor'] } 
+        };
+      } else if (role === 'SCOLARITE') {
+        where.role = { 
+          nom_role: { in: ['SCOLARITE', 'Scolarité', 'ADMIN', 'SCOLARITE_STAFF'] } 
+        };
+      } else if (role === 'RH') {
+        where.role = { 
+          nom_role: { in: ['RH', 'HR', 'Ressources Humaines'] } 
+        };
+      } else {
+        // Pour ETUDIANT ou autre : recherche qui ignore les majuscules/minuscules
+        where.role = { 
+          nom_role: { contains: role, mode: 'insensitive' } 
+        };
+      }
+    }
+
+    const utilisateurs = await prisma.utilisateur.findMany({
+      where,
+      select: {
+        id_utilisateur: true,
+        nom: true,
+        prenom: true,
+        email: true,
+        role: {
+          select: { nom_role: true }
+        }
+      },
+      orderBy: [
+        { nom: 'asc' },
+        { prenom: 'asc' }
+      ]
+    });
+
+    // 💡 LOG UTILE : Affichera dans le terminal backend ce qu'il a trouvé
+    console.log(`[Recherche Utilisateurs] Rôle demandé: "${role}" -> ${utilisateurs.length} trouvés.`);
+
+    return res.status(200).json({
+      success: true,
+      count: utilisateurs.length,
+      data: utilisateurs,
+    });
+  } catch (error) {
+    console.error('[Utilisateurs] Failed to fetch users:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des utilisateurs.',
+    });
+  }
+};
+
 module.exports = {
   getSalles,
   getReservations,
   createReservation,
   updateReservationStatut,
+  getUtilisateurs,
 };

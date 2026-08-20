@@ -4,6 +4,7 @@ const {
   getReservations,
   createReservation,
   updateReservationStatut,
+  getUtilisateurs,
 } = require('../controllers/reservations.controller');
 
 const router = Router();
@@ -37,5 +38,8 @@ router.post('/reservations', createReservation);
  * @access  Private (apply auth/role middleware as needed)
  */
 router.put('/reservations/:id/statut', updateReservationStatut);
+
+// Route pour récupérer les utilisateurs (ex: /api/utilisateurs?role=PROFESSEUR)
+router.get('/utilisateurs', getUtilisateurs);
 
 module.exports = router;

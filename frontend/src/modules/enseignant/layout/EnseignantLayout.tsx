@@ -16,17 +16,21 @@ import {
   ChevronsLeft,
   ChevronsRight,
   Construction,
+  Building2, // <-- Ajout de l'icône pour les salles
 } from 'lucide-react';
 
 // Importez vos pages réelles ici
 import ReclamationsNotes from '../pages/ReclamationsNotes';
 import ValidationAbsences from '../pages/ValidationAbsences';
 import PlanificationConsultations from '../pages/PlanificationConsultations';
+import ReservationEnseignant from '../pages/ReservationEnseignant'; // <-- Ajout de la nouvelle page
+
 // ─────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────
 
-type TabKey = 'dashboard' | 'reclamations' | 'absences' | 'consultations';
+// <-- Ajout de 'reservations'
+type TabKey = 'dashboard' | 'reclamations' | 'absences' | 'consultations' | 'reservations';
 
 interface NavItem {
   key: TabKey;
@@ -42,6 +46,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'reclamations', label: 'Réclamations de notes', icon: MessageSquare },
   { key: 'absences', label: 'Validation des absences', icon: UserX },
   { key: 'consultations', label: 'Planification consultations', icon: CalendarDays },
+  { key: 'reservations', label: 'Réservation de salles', icon: Building2 }, // <-- Ajout au menu
 ];
 
 const PAGE_TITLES: Record<TabKey, string> = {
@@ -49,6 +54,7 @@ const PAGE_TITLES: Record<TabKey, string> = {
   reclamations: 'Réclamations de Notes',
   absences: 'Validation des Absences',
   consultations: 'Planification des Consultations',
+  reservations: 'Mes Réservations de Salles', // <-- Ajout du titre
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -85,11 +91,13 @@ export default function EnseignantLayout() {
   const renderActivePage = () => {
     switch (activeTab) {
       case 'reclamations':
-        return <ReclamationsNotes />; // Votre vrai composant !
+        return <ReclamationsNotes />;
       case 'absences':
         return <ValidationAbsences />;
       case 'consultations':
         return <PlanificationConsultations />;
+      case 'reservations':
+        return <ReservationEnseignant />; // <-- Appel du composant
       default:
         return null;
     }
@@ -220,7 +228,7 @@ export default function EnseignantLayout() {
         >
           <div className="flex items-center gap-3 rounded-lg bg-slate-800/60 p-3">
             <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary-600 text-xs font-bold text-white">
-              Prof
+              Pr
             </div>
             <div className="min-w-0">
               <p className="text-xs font-semibold text-slate-100 truncate">

@@ -194,12 +194,12 @@ function WorkflowCard({
                 <div className="min-w-0 flex-1">
                   <p className="text-sm text-slate-700 dark:text-slate-200 leading-tight">{etape.nom}</p>
                   {etape.role_responsable && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mt-0.5">
                       <div className="flex h-4 w-4 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
                         <User className="h-2.5 w-2.5 text-slate-500 dark:text-slate-400" />
                       </div>
                       {etape.role_responsable}
-                    </p>
+                    </div>
                   )}
                 </div>
                 {idx < sortedEtapes.length - 1 && (

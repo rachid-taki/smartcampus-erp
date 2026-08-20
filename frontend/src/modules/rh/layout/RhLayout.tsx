@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from 'react';
 import {
   LayoutDashboard,
   Users,
-  Palmtree,
   FileText,
   Clock,
   Menu,
@@ -16,12 +15,10 @@ import {
   Building2,
   ChevronsLeft,
   ChevronsRight,
-  Construction,
 } from 'lucide-react';
 
-// Import the existing page component
+// Import the existing page components
 import GestionEmployes from '../pages/GestionEmployes';
-import GestionConges from "../pages/GestionConges";
 import GestionAttestationsRh from "../pages/GestionAttestationsRh";
 import HeuresSupplementaires from "../pages/HeuresSupplementaires";
 import RhDashboard from "../pages/RhDashboard";
@@ -30,7 +27,7 @@ import RhDashboard from "../pages/RhDashboard";
 // Types
 // ─────────────────────────────────────────────────────────────
 
-type TabKey = 'dashboard' | 'employes' | 'conges' | 'attestations' | 'heures';
+type TabKey = 'dashboard' | 'employes' | 'attestations' | 'heures';
 
 interface NavItem {
   key: TabKey;
@@ -45,7 +42,6 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { key: 'dashboard', label: 'Tableau de Bord', icon: LayoutDashboard },
   { key: 'employes', label: 'Gestion des Employés', icon: Users },
-  { key: 'conges', label: 'Gestion des Congés', icon: Palmtree },
   { key: 'attestations', label: 'Attestations', icon: FileText },
   { key: 'heures', label: 'Heures Supplémentaires', icon: Clock },
 ];
@@ -53,7 +49,6 @@ const NAV_ITEMS: NavItem[] = [
 const PAGE_TITLES: Record<TabKey, string> = {
   dashboard: 'Tableau de Bord RH',
   employes: 'Gestion des Employés',
-  conges: 'Gestion des Congés',
   attestations: 'Attestations',
   heures: 'Heures Supplémentaires',
 };
@@ -95,8 +90,6 @@ export default function RhLayout() {
         return <RhDashboard />;
       case 'employes':
         return <GestionEmployes />;
-      case 'conges':
-        return <GestionConges />;
       case 'attestations':
         return <GestionAttestationsRh />;
       case 'heures':

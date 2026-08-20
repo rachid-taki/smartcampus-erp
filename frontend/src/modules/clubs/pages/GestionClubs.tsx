@@ -30,6 +30,7 @@ interface Utilisateur {
 
 interface Etudiant {
   id_etudiant: string;
+  cne?: string;
   utilisateur: Utilisateur;
 }
 
@@ -81,7 +82,8 @@ interface ClubFormState {
 }
 
 const API_BASE = 'http://localhost:3000/api/clubs';
-const API_ETUDIANTS = 'http://localhost:3000/api/scolarite/etudiants'; 
+// Assurez-vous que cette URL permet de chercher par CNE (ex: ?cne=R123456)
+const API_ETUDIANTS = 'http://localhost:3000/api/clubs/etudiants';
 
 const STATUT_OPTIONS: StatutClub[] = ['Actif', 'Inactif', 'Suspendu'];
 
@@ -263,24 +265,56 @@ function ClubFormModal({
 
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [etudiants, setEtudiants] = useState<Etudiant[]>([]);
-  const [loadingEtudiants, setLoadingEtudiants] = useState(false);
 
-  useEffect(() => {
-    setLoadingEtudiants(true);
-    fetch(API_ETUDIANTS)
-      .then((res) => res.json())
-      .then((json) => {
-        if (json.success && Array.isArray(json.data)) {
-          setEtudiants(json.data);
-        }
-      })
-      .catch((err) => console.error('Erreur chargement étudiants:', err))
-      .finally(() => setLoadingEtudiants(false));
-  }, []);
+  // States pour la recherche par CNE
+  const [cneInput, setCneInput] = useState('');
+  const [searchingCne, setSearchingCne] = useState(false);
+  const [cneError, setCneError] = useState<string | null>(null);
+  
+  // Si on est en mode édition et qu'il y a un président, on le pré-charge visuellement
+  const [verifiedEtudiant, setVerifiedEtudiant] = useState<Etudiant | null>(() => {
+    if (mode === 'edit' && initialData?.president?.etudiant) {
+      return initialData.president.etudiant;
+    }
+    return null;
+  });
 
   const updateField = (field: keyof ClubFormState, value: string) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // ── Recherche d'un étudiant par CNE ──
+  const handleSearchCne = async () => {
+    if (!cneInput.trim()) return;
+    setSearchingCne(true);
+    setCneError(null);
+    setVerifiedEtudiant(null);
+    updateField('id_etudiant', '');
+
+    try {
+      // Ajustez cette URL selon votre configuration backend réelle
+      const response = await fetch(`${API_ETUDIANTS}?cne=${cneInput.trim()}`);
+      const json = await response.json();
+
+      if (response.ok && json.success && json.data) {
+        // Gère le cas où l'API renvoie un tableau ou un objet direct
+        const studentData = Array.isArray(json.data) ? json.data[0] : json.data;
+        
+        if (studentData && studentData.id_etudiant) {
+          setVerifiedEtudiant(studentData);
+          updateField('id_etudiant', studentData.id_etudiant);
+          setCneError(null);
+        } else {
+          setCneError("Aucun étudiant trouvé avec ce CNE.");
+        }
+      } else {
+        setCneError(json.message || "Aucun étudiant trouvé avec ce CNE.");
+      }
+    } catch (err) {
+      setCneError("Erreur de connexion lors de la recherche.");
+    } finally {
+      setSearchingCne(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -430,7 +464,7 @@ function ClubFormModal({
               </label>
               <select
                 value={form.statut}
-                onChange={(e) => updateField('statut', e.target.value)}
+                onChange={(e) => updateField('statut', e.target.value as StatutClub)}
                 className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
               >
                 {STATUT_OPTIONS.map((s) => (
@@ -442,31 +476,68 @@ function ClubFormModal({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800">
+          {/* ───────────────────────────────────────────────────────────── */}
+          {/* NOUVEAU BLOC : Assignation du Président par CNE                 */}
+          {/* ───────────────────────────────────────────────────────────── */}
+          <div className="pt-3 border-t border-slate-200/70 dark:border-slate-800">
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-              Président du Club (Optionnel)
+              Président du Club (Recherche par CNE)
             </label>
-            {loadingEtudiants ? (
-              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 py-2">
-                <Loader2 className="h-4 w-4 animate-spin" /> Chargement des étudiants...
+
+            {!verifiedEtudiant ? (
+              // Affichage du champ de recherche si aucun étudiant n'est vérifié
+              <div>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={cneInput}
+                    onChange={(e) => setCneInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') handleSearchCne(); }}
+                    placeholder="Saisissez le CNE (ex: R123456789)"
+                    className="flex-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSearchCne}
+                    disabled={searchingCne || !cneInput.trim()}
+                    className="px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center"
+                  >
+                    {searchingCne ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  </button>
+                </div>
+                {cneError && <p className="text-xs text-red-500 mt-1.5">{cneError}</p>}
+                <p className="text-[11px] text-slate-400 mt-1.5">
+                  L'étudiant sera automatiquement défini comme président si le CNE est valide.
+                </p>
               </div>
             ) : (
-              <select
-                value={form.id_etudiant}
-                onChange={(e) => updateField('id_etudiant', e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              >
-                <option value="">-- Aucun président assigné --</option>
-                {etudiants.map((etu) => (
-                  <option key={etu.id_etudiant} value={etu.id_etudiant}>
-                    {etu.utilisateur.prenom} {etu.utilisateur.nom}
-                  </option>
-                ))}
-              </select>
+              // Affichage de l'étudiant vérifié avec possibilité d'annuler
+              <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400">
+                    <CheckCircle className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-green-800 dark:text-green-300">
+                      {verifiedEtudiant.utilisateur.prenom} {verifiedEtudiant.utilisateur.nom}
+                    </p>
+                    <p className="text-[11px] text-green-600 dark:text-green-400">Président assigné</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setVerifiedEtudiant(null);
+                    updateField('id_etudiant', '');
+                    setCneInput('');
+                  }}
+                  title="Changer de président"
+                  className="text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-200 p-1.5 rounded-md hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             )}
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-              Sélectionnez un étudiant pour lui attribuer le rôle de président.
-            </p>
           </div>
 
         </div>
@@ -797,22 +868,6 @@ export default function GestionClubs() {
           </button>
         </div>
 
-        {/* Inline error banner */}
-        {error && !loading && clubs.length > 0 && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 mb-6 flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0">
-              <AlertTriangle className="h-4 w-4" />
-            </div>
-            <p className="text-sm text-red-700 dark:text-red-300 flex-1">{error}</p>
-            <button
-              onClick={() => fetchClubs()}
-              className="text-sm font-medium text-red-700 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 underline flex-shrink-0"
-            >
-              Réessayer
-            </button>
-          </div>
-        )}
-
         {/* Table */}
         <div className="card overflow-hidden">
           <div className="overflow-x-auto">
@@ -982,7 +1037,9 @@ export default function GestionClubs() {
       )}
 
       {/* Toasts */}
-      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      <div className="z-[9999] relative">
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </div>
     </div>
   );
 }

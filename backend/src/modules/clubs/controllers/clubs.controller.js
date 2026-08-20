@@ -293,11 +293,33 @@ const getPresidents = async (req, res) => {
   }
 };
 
+// GET /api/scolarite/etudiants?cne=R123456
+const getEtudiants = async (req, res) => {
+  try {
+    const { cne } = req.query;
+    const where = {};
+    if (cne) {
+      where.cne = cne;
+    }
+    const etudiants = await prisma.etudiant.findMany({
+      where,
+      include: {
+        utilisateur: { select: { nom: true, prenom: true } }
+      }
+    });
+
+    return res.status(200).json({ success: true, data: etudiants });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: "Erreur" });
+  }
+}
 
 module.exports = {
   getClubs,
   getClubById,
   createClub,
   updateClub,
+  getPresidents,
   deleteClub,
+  getEtudiants,
 };

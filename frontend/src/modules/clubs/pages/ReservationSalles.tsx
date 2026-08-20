@@ -12,7 +12,8 @@ import {
   Shield,
   Loader2,
   FileText,
-  User
+  User,
+  Users
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -31,6 +32,13 @@ interface Salle {
 }
 
 interface Demandeur {
+  nom: string;
+  prenom: string;
+  email: string;
+}
+
+interface UtilisateurCourt {
+  id_utilisateur: string;
   nom: string;
   prenom: string;
   email: string;
@@ -154,6 +162,11 @@ function CreateReservationModal({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // States pour la sélection dynamique des utilisateurs
+  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [utilisateurs, setUtilisateurs] = useState<UtilisateurCourt[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
   const [form, setForm] = useState({
     id_salle: '',
     id_demandeur: '',
@@ -162,6 +175,36 @@ function CreateReservationModal({
     heure_fin: '',
     motif: '',
   });
+
+  // Fetch des utilisateurs quand on change le type de demandeur
+  useEffect(() => {
+    if (!selectedRole) {
+      setUtilisateurs([]);
+      setForm((prev) => ({ ...prev, id_demandeur: '' }));
+      return;
+    }
+
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        // Appelle un endpoint générique pour récupérer les utilisateurs selon le rôle
+        const res = await fetch(`${API_BASE}/utilisateurs?role=${selectedRole}`);
+        const json = await res.json();
+        if (json.success) {
+          setUtilisateurs(json.data);
+        } else {
+          setUtilisateurs([]);
+        }
+      } catch (error) {
+        console.error("Erreur lors de la récupération des utilisateurs", error);
+        pushToast('error', 'Impossible de charger la liste des utilisateurs.');
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [selectedRole, pushToast]);
 
   const handleSubmit = async () => {
     setFormError(null);
@@ -201,15 +244,15 @@ function CreateReservationModal({
 
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && onClose()}>
-      <div className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+      <div className="card p-0 w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Nouvelle Réservation</h2>
-          <button onClick={onClose} disabled={saving} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800">
+          <button onClick={onClose} disabled={saving} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="px-6 py-5 space-y-4">
+        <div className="px-6 py-5 space-y-5">
           {formError && (
             <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
@@ -220,82 +263,120 @@ function CreateReservationModal({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Salle</label>
-            <select
-              value={form.id_salle}
-              onChange={(e) => setForm({ ...form, id_salle: e.target.value })}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              <option value="">-- Sélectionner une salle --</option>
-              {salles.map((s) => (
-                <option key={s.id_salle} value={s.id_salle}>
-                  {s.numero} {s.nom ? `- ${s.nom}` : ''} (Capacité: {s.capacite})
-                </option>
-              ))}
-            </select>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Sélectionner la Salle</label>
+            <div className="relative">
+              <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <select
+                value={form.id_salle}
+                onChange={(e) => setForm({ ...form, id_salle: e.target.value })}
+                className="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 transition-shadow"
+              >
+                <option value="">-- Choisir une salle --</option>
+                {salles.map((s) => (
+                  <option key={s.id_salle} value={s.id_salle}>
+                    {s.numero} {s.nom ? `- ${s.nom}` : ''} (Capacité: {s.capacite})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">ID Demandeur (UUID temporaire)</label>
-            <input
-              type="text"
-              value={form.id_demandeur}
-              onChange={(e) => setForm({ ...form, id_demandeur: e.target.value })}
-              placeholder="Ex: 123e4567-e89b-12d3-a456-426614174000"
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            />
-            <p className="text-xs text-slate-400 dark:text-slate-500 mt-1.5">À remplacer plus tard par l'ID de l'utilisateur connecté.</p>
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200/70 dark:border-slate-700 space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Type de profil du demandeur</label>
+              <div className="relative">
+                <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <select
+                  value={selectedRole}
+                  onChange={(e) => setSelectedRole(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 transition-shadow"
+                >
+                  <option value="">-- Sélectionner un rôle --</option>
+                  <option value="PROFESSEUR">Enseignant / Professeur</option>
+                  <option value="ETUDIANT">Étudiant / Président de Club</option>
+                  <option value="SCOLARITE">Administration (Scolarité)</option>
+                  <option value="RH">Ressources Humaines</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Nom de la personne</label>
+              <div className="relative">
+                {loadingUsers ? (
+                  <Loader2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-primary-500 animate-spin" />
+                ) : (
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                )}
+                <select
+                  value={form.id_demandeur}
+                  onChange={(e) => setForm({ ...form, id_demandeur: e.target.value })}
+                  disabled={!selectedRole || loadingUsers}
+                  className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-800 transition-shadow"
+                >
+                  <option value="">
+                    {loadingUsers ? 'Chargement...' : '-- Sélectionner la personne --'}
+                  </option>
+                  {utilisateurs.map((u) => (
+                    <option key={u.id_utilisateur} value={u.id_utilisateur}>
+                      {u.prenom} {u.nom} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Date</label>
               <input
                 type="date"
                 value={form.date}
+                min={new Date().toISOString().split('T')[0]}
                 onChange={(e) => setForm({ ...form, date: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de début</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Début</label>
               <input
                 type="time"
                 value={form.heure_debut}
                 onChange={(e) => setForm({ ...form, heure_debut: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Heure de fin</label>
+              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Fin</label>
               <input
                 type="time"
                 value={form.heure_fin}
                 onChange={(e) => setForm({ ...form, heure_fin: e.target.value })}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent tabular-nums"
+                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 tabular-nums"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Motif</label>
+            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">Motif de la réservation</label>
             <textarea
               value={form.motif}
               onChange={(e) => setForm({ ...form, motif: e.target.value })}
               rows={3}
-              placeholder="Ex: Réunion du club d'informatique..."
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
+              placeholder="Ex: Réunion du club d'informatique, Examen de rattrapage..."
+              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2.5 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 resize-none transition-shadow"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-slate-50 dark:bg-card-dark rounded-b-card">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50">
             Annuler
           </button>
-          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Créer
+          <button onClick={handleSubmit} disabled={saving} className="inline-flex items-center gap-2 px-5 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+            Valider la réservation
           </button>
         </div>
       </div>
@@ -350,7 +431,7 @@ function ProcessReservationModal({
       <div className="card p-0 w-full max-w-md max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div className="px-6 py-5 space-y-5">
           <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Traiter la demande</h2>
-          
+
           {error && (
             <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
               <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
@@ -475,7 +556,7 @@ export default function ReservationSalles() {
   return (
     <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
-        
+
         {/* Header */}
         <header className="flex items-center gap-3 mb-6">
           <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
