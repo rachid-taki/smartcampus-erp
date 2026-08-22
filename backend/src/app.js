@@ -48,10 +48,11 @@ const parametresRoutes = require('./modules/configuration/routes/parametres.rout
 const calendriersRoutes = require('./modules/configuration/routes/calendriers.routes');
 const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
 const enseignantReservationsRoutes = require('./modules/enseignant/routes/enseignant.reservations.routes');
-
+const emploisRoutes = require('./modules/scolarite/routes/emplois.routes');
 
 
 // 3. Mount the routes
+app.use('/api/emplois-ia', emploisRoutes);
 app.use('/api/scolarite', scolariteDashboardRoutes);
 app.use('/api/scolarite', scolariteDemandesRoutes);
 app.use('/api/scolarite', scolariteWorkflowsRoutes);
@@ -77,6 +78,8 @@ app.use('/api/clubs-dashboard', clubsDashboardRoutes);
 app.use('/api/parametres', parametresRoutes);
 app.use('/api/calendriers', calendriersRoutes);
 app.use('/api/enseignant', enseignantReservationsRoutes);
+
+
 
 //app.use("/api/permissions", permissionRoutes);
 //app.use("/api/auth", authRoutes);

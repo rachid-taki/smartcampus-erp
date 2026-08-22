@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Inbox, GitMerge, FolderOpen, Menu, X, Bell, ChevronDown,
   Search, Settings, LogOut, User, ChevronsLeft, ChevronsRight, Moon, Sun,
-  Building2, LayoutGrid, ArrowLeftRight, HelpCircle,
+  Building2, LayoutGrid, ArrowLeftRight, HelpCircle, BrainCircuit
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -12,18 +12,21 @@ import ValidationDemandes from '../pages/ValidationDemandes';
 import GestionWorkflows from '../pages/GestionWorkflows';
 import GestionDocumentaire from '../pages/GestionDocumentaire';
 import GestionSallesIntelligente from '../pages/GestionSallesIntelligente';
+import GestionEmplois from '../pages/GestionEmplois'; // <-- Import de la nouvelle page
 
 // ⚠️ Adapte ce chemin aux routes réelles de ton App.tsx
 const CLUBS_PATH = '/clubs';
 
-type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles';
+// <-- Ajout de 'emplois' dans le TabKey
+type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles' | 'emplois';
 
 const NAV_ITEMS: { key: TabKey; label: string; icon: any }[] = [
   { key: 'dashboard', label: 'Tableau de bord', icon: LayoutDashboard },
   { key: 'demandes', label: 'Demandes', icon: Inbox },
   { key: 'workflows', label: 'Workflows', icon: GitMerge },
   { key: 'documents', label: 'Documents', icon: FolderOpen },
-  { key: 'salles', label: 'Salles & Emplois du temps', icon: Building2 },
+  { key: 'salles', label: 'Salles & Conflits', icon: Building2 }, // <-- Ajustement du label
+  { key: 'emplois', label: 'Emplois du temps (IA)', icon: BrainCircuit }, // <-- Nouvel onglet ajouté
 ];
 
 const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
@@ -31,7 +34,8 @@ const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
   demandes: { title: 'Traitement des demandes', subtitle: 'Validation des demandes administratives' },
   workflows: { title: 'Workflows', subtitle: 'Processus de validation' },
   documents: { title: 'Base documentaire', subtitle: 'Documents officiels' },
-  salles: { title: 'Salles & Emplois du temps', subtitle: 'Suivi temps réel et détection de conflits' },
+  salles: { title: 'Salles & Conflits', subtitle: 'Suivi temps réel et détection de conflits' },
+  emplois: { title: 'Emplois du Temps (IA)', subtitle: 'Génération automatique via extraction intelligente' }, // <-- Titre de la nouvelle page
 };
 
 export default function ScolariteLayout() {
@@ -67,7 +71,8 @@ export default function ScolariteLayout() {
       case 'demandes': return <ValidationDemandes />;
       case 'workflows': return <GestionWorkflows />;
       case 'documents': return <GestionDocumentaire />;
-      case 'salles': return <GestionSallesIntelligente />;
+      case 'salles': return <GestionSallesIntelligente onNavigateToEmplois={() => go('emplois')} />;
+      case 'emplois': return <GestionEmplois />;
       default: return null;
     }
   };
@@ -123,7 +128,7 @@ export default function ScolariteLayout() {
             })}
           </div>
 
-          {/* ⬅️️⬅️ TUILE OD OO ICI : juste après les items Scolarité, dans le <nav> */}
+          {/* TUILE OD OO ICI : juste après les items Scolarité, dans le <nav> */}
           <div className={`px-3 pt-4 mt-3 border-t border-slate-200 dark:border-slate-800 ${collapsed ? 'lg:px-0' : ''}`}>
             <p className={`mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 ${collapsed ? 'lg:hidden' : ''}`}>
               Autres modules
@@ -138,7 +143,7 @@ export default function ScolariteLayout() {
               <ArrowLeftRight className={`h-3.5 w-3.5 ml-auto opacity-70 ${collapsed ? 'lg:hidden' : ''}`} />
             </button>
           </div>
-          {/* ⬆️⬆️⬆️ FIN TUILE */}
+          {/* FIN TUILE */}
         </nav>
 
         <div className="hidden lg:flex border-t border-slate-200 dark:border-slate-800 p-2">

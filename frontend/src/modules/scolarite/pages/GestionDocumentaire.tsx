@@ -128,9 +128,18 @@ const formatFileSize = (bytes: number): string => {
 const truncateId = (id: string): string =>
   id.length > 10 ? `${id.slice(0, 6)}...${id.slice(-4)}` : id;
 
-const getFileIcon = (type: string) => {
+const getFileIcon = (type: string | null | undefined) => {
   let icon = <FileIcon className="h-5 w-5" />;
   let colorClasses = "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400";
+
+  // Add a safety check for null or undefined types
+  if (!type) {
+    return (
+      <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg ${colorClasses}`}>
+        {icon}
+      </div>
+    );
+  }
 
   if (type.includes('pdf')) {
     icon = <FileText className="h-5 w-5" />;

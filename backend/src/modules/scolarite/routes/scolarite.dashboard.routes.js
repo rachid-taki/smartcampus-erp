@@ -16,7 +16,6 @@ router.get('/utilisateurs', getUtilisateursPourNotification);
 router.post('/notifications', sendNotification);
 
 // ─── Salles Intelligentes ───
-router.post('/salles/import-edt', sallesCtrl.uploadArray, sallesCtrl.importEDT);
 router.get('/salles/planning', sallesCtrl.getPlanning);
 router.post('/salles/analyser-conflits', sallesCtrl.analyserConflits);
 router.get('/filieres', sallesCtrl.getFilieres);

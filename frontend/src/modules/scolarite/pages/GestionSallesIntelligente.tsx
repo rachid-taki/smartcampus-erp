@@ -1,12 +1,13 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Building2, Upload, ShieldAlert, CheckCircle, X, Clock, Calendar, Users,
-  Loader2, RefreshCw, Search, GraduationCap, User, AlertTriangle, MapPin,
-  FileText, Table as TableIcon, Radio, TrendingUp,
+  Building2, ShieldAlert, CheckCircle, X, Calendar, Users,
+  Loader2, RefreshCw, Search, GraduationCap, User, AlertTriangle,
+  Radio, TrendingUp, CalendarDays, Combine
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const API = 'http://localhost:3000/api/scolarite';
+const API = 'http://localhost:3000/api/scolarite'; // Vérifiez que le chemin est correct selon votre server.js
 const DAY_START = 8 * 60, DAY_END = 20 * 60;
 
 interface Session { id_session: string; id_salle: string; date: string; heure_debut: string; heure_fin: string; statut: string; nombre_etudiants?: number; cours?: { nom: string }; filiere?: { nom: string } | null; professeur?: { utilisateur?: { nom: string; prenom: string } } }
@@ -24,32 +25,34 @@ function LiveClock() {
   return (
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900 dark:bg-black border border-slate-700">
       <span className="relative flex h-2 w-2"><span className="animate-ping absolute h-full w-full rounded-full bg-emerald-400 opacity-75" /><span className="relative h-2 w-2 rounded-full bg-emerald-500" /></span>
-      <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">
-        {now.toLocaleTimeString('fr-FR')}
-      </span>
+      <span className="text-xs font-mono font-bold text-emerald-400 tabular-nums">{now.toLocaleTimeString('fr-FR')}</span>
       <span className="text-[9px] uppercase font-bold text-slate-500">Live</span>
     </div>
   );
 }
 
-export default function GestionSallesIntelligente() {
+export default function GestionSallesIntelligente({ onNavigateToEmplois }: { onNavigateToEmplois?: () => void }) {
   const [salles, setSalles] = useState<Salle[]>([]);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [alertes, setAlertes] = useState<Alerte[]>([]);
-  const [filieres, setFilieres] = useState<any[]>([]);
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedSalle, setSelectedSalle] = useState('');
   const [search, setSearch] = useState('');
-  const [files, setFiles] = useState<File[]>([]);
-  const [dragging, setDragging] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [importing, setImporting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [now, setNow] = useState(new Date());
   const [toast, setToast] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
+
+  // ÉTATS POUR LA FUSION (MERGE)
+  const [showMergeModal, setShowMergeModal] = useState(false);
+  const [mergeSelection, setMergeSelection] = useState<string[]>([]);
+  const [mergeTargetId, setMergeTargetId] = useState<string>('');
+  const [mergeName, setMergeName] = useState('');
+  const [mergeCapacite, setMergeCapacite] = useState(30);
+  const [mergeType, setMergeType] = useState('Salle_Cours');
+  const [isMerging, setIsMerging] = useState(false);
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
@@ -57,17 +60,15 @@ export default function GestionSallesIntelligente() {
 
   const load = useCallback(async () => {
     try {
-      const [pl, al, fi] = await Promise.all([
-        fetch(`${API}/salles/planning?date=${date}`).then(r => r.json()),
+      const [pl, al] = await Promise.all([
+        fetch(`${API}/salles/planning?date=${date}`).then(r => r.json()), // Adaptez l'URL si besoin
         fetch('http://localhost:3000/api/alertes').then(r => r.json()),
-        fetch(`${API}/filieres`).then(r => r.json()),
       ]);
       if (pl.success) {
         setSalles(pl.data.salles || []); setSessions(pl.data.sessions || []); setReservations(pl.data.reservations || []);
         if (!selectedSalle && pl.data.salles?.length) setSelectedSalle(pl.data.salles[0].id_salle);
       }
       setAlertes((al.data || []).filter((a: Alerte) => a.statut !== 'Resolue' && a.statut !== 'Ignoree'));
-      if (fi.success) setFilieres(fi.data || []);
     } catch { setToast({ type: 'error', msg: 'Erreur de chargement.' }); }
     setLoading(false);
   }, [date, selectedSalle]);
@@ -76,32 +77,64 @@ export default function GestionSallesIntelligente() {
   useEffect(() => { if (!autoRefresh) return; const i = setInterval(load, 30000); return () => clearInterval(i); }, [autoRefresh, load]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 5000); return () => clearTimeout(t); }, [toast]);
 
-  const addFiles = (list: FileList | null) => { if (list) setFiles((p) => [...p, ...Array.from(list)]); };
-
-  const doImport = async () => {
-    if (!files.length) return;
-    setImporting(true);
-    try {
-      const fd = new FormData();
-      files.forEach((f) => fd.append('files', f));
-      const r = await fetch(`${API}/salles/import-edt`, { method: 'POST', body: fd });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.message);
-      setToast({ type: 'success', msg: `${j.fichiers} fichier(s) traité(s) : ${j.sessions_creees} session(s) créée(s), ${j.ignorees} ignorée(s), ${j.conflits} conflit(s).` });
-      setFiles([]); load();
-    } catch (e) { setToast({ type: 'error', msg: e instanceof Error ? e.message : "Erreur d'import." }); }
-    setImporting(false);
-  };
-
   const analyser = async () => {
     setAnalyzing(true);
     try {
       const r = await fetch(`${API}/salles/analyser-conflits`, { method: 'POST' });
       const j = await r.json();
-      setToast({ type: 'success', msg: `Analyse terminée : ${j.created} alerte(s).` });
+      setToast({ type: 'success', msg: `Analyse terminée : ${j.created} alerte(s) détectées.` });
       load();
     } catch { setToast({ type: 'error', msg: "Erreur d'analyse." }); }
     setAnalyzing(false);
+  };
+
+  // FONCTION DE FUSION
+  const handleMerge = async () => {
+    if (!mergeTargetId || mergeSelection.length < 2) return;
+    setIsMerging(true);
+    try {
+      const sourceIds = mergeSelection.filter(id => id !== mergeTargetId); // Exclure la cible des sources à supprimer
+      const r = await fetch('http://localhost:3000/api/emplois-ia/merge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetId: mergeTargetId,
+          sourceIds: sourceIds,
+          newName: mergeName,
+          newCapacite: mergeCapacite,
+          newType: mergeType
+        })
+      });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.message);
+      
+      setToast({ type: 'success', msg: j.message });
+      setShowMergeModal(false);
+      setMergeSelection([]);
+      load(); // Recharger le planning
+    } catch (e: any) {
+      setToast({ type: 'error', msg: e.message || 'Erreur lors de la fusion.' });
+    }
+    setIsMerging(false);
+  };
+
+  const toggleMergeSelection = (id: string) => {
+    setMergeSelection(prev => {
+      const newSel = prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id];
+      // Si la cible n'est plus dans la sélection, on la réinitialise
+      if (!newSel.includes(mergeTargetId)) setMergeTargetId('');
+      // Si c'est la première sélection, on la définit comme cible par défaut
+      if (newSel.length === 1) {
+        const s = salles.find(x => x.id_salle === newSel[0]);
+        if (s) {
+          setMergeTargetId(s.id_salle);
+          setMergeName(s.numero);
+          setMergeCapacite(s.capacite);
+          setMergeType(s.type);
+        }
+      }
+      return newSel;
+    });
   };
 
   const isToday = date === new Date().toISOString().split('T')[0];
@@ -128,7 +161,9 @@ export default function GestionSallesIntelligente() {
     <div className="min-h-screen p-5 md:p-6 space-y-5">
       <header className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 text-white shadow-md"><Building2 className="h-6 w-6" /></div>
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-indigo-600 text-white shadow-md">
+            <Building2 className="h-6 w-6" />
+          </div>
           <div>
             <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Centre de contrôle des salles</h1>
             <p className="text-sm text-slate-500 dark:text-slate-400">Suivi temps réel, emplois du temps et détection de conflits</p>
@@ -136,6 +171,19 @@ export default function GestionSallesIntelligente() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <LiveClock />
+          <button 
+            onClick={() => {
+              setMergeSelection([]);
+              setShowMergeModal(true);
+            }} 
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors">
+            <Combine className="h-3.5 w-3.5" /> Nettoyer les doublons
+          </button>
+          <button 
+            onClick={onNavigateToEmplois} 
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors">
+            <CalendarDays className="h-3.5 w-3.5" /> Gérer Emplois du temps
+          </button>
           <button onClick={() => setAutoRefresh(!autoRefresh)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors ${autoRefresh ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-500'}`}>
             <Radio className="h-3.5 w-3.5" /> {autoRefresh ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
           </button>
@@ -144,6 +192,108 @@ export default function GestionSallesIntelligente() {
           </button>
         </div>
       </header>
+
+      {/* --- MODAL DE FUSION --- */}
+      <AnimatePresence>
+        {showMergeModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} exit={{ scale: 0.95 }} className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-3xl flex flex-col max-h-[90vh] shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
+              
+              <div className="flex items-center justify-between p-5 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2"><Combine className="h-5 w-5 text-indigo-500" /> Fusionner des salles</h2>
+                  <p className="text-xs text-slate-500 mt-1">Sélectionnez les doublons pour les regrouper. Les emplois du temps seront transférés automatiquement.</p>
+                </div>
+                <button onClick={() => setShowMergeModal(false)} className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800"><X className="h-5 w-5" /></button>
+              </div>
+
+              <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+                {/* Liste des salles avec checkboxes */}
+                <div className="w-full md:w-1/2 p-4 border-r border-slate-200 dark:border-slate-800 flex flex-col">
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <input type="text" placeholder="Rechercher (ex: Amphi)..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500" />
+                  </div>
+                  <div className="flex-1 overflow-y-auto space-y-1.5 pr-2 scrollbar-thin">
+                    {filteredSalles.map(s => (
+                      <label key={s.id_salle} className={`flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors ${mergeSelection.includes(s.id_salle) ? 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                        <input type="checkbox" checked={mergeSelection.includes(s.id_salle)} onChange={() => toggleMergeSelection(s.id_salle)} className="w-4 h-4 text-indigo-600 rounded border-slate-300" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{s.numero}</p>
+                          <p className="text-[10px] text-slate-500">{s.capacite} places · {s.type}</p>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Configuration de la fusion */}
+                <div className="w-full md:w-1/2 p-5 bg-slate-50/50 dark:bg-slate-900/30 overflow-y-auto">
+                  {mergeSelection.length < 2 ? (
+                    <div className="h-full flex flex-col items-center justify-center text-center text-slate-500 space-y-3">
+                      <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-full"><Combine className="h-8 w-8 opacity-50" /></div>
+                      <p className="text-sm">Sélectionnez au moins 2 salles<br/>pour les fusionner.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/50 rounded-lg flex gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+                        <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+                          Toutes les données des {mergeSelection.length} salles sélectionnées seront combinées dans la salle ci-dessous. Les autres seront supprimées.
+                        </p>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">Salle principale à conserver</label>
+                        <select 
+                          value={mergeTargetId} 
+                          onChange={(e) => {
+                            const t = salles.find(s => s.id_salle === e.target.value);
+                            setMergeTargetId(t?.id_salle || '');
+                            if(t) { setMergeName(t.numero); setMergeCapacite(t.capacite); setMergeType(t.type); }
+                          }} 
+                          className="w-full p-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                          {mergeSelection.map(id => {
+                            const s = salles.find(x => x.id_salle === id);
+                            return s ? <option key={id} value={id}>{s.numero}</option> : null;
+                          })}
+                        </select>
+                      </div>
+
+                      <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-800">
+                        <h4 className="text-sm font-bold text-slate-900 dark:text-white">Nouvelles informations</h4>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nom / Numéro final</label>
+                          <input type="text" value={mergeName} onChange={e => setMergeName(e.target.value)} className="w-full p-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Capacité</label>
+                            <input type="number" value={mergeCapacite} onChange={e => setMergeCapacite(parseInt(e.target.value) || 0)} className="w-full p-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Type</label>
+                            <select value={mergeType} onChange={e => setMergeType(e.target.value)} className="w-full p-2.5 text-sm rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white">
+                              <option value="Salle_Cours">Salle de cours</option>
+                              <option value="Amphitheatre">Amphithéâtre</option>
+                              <option value="Laboratoire">Laboratoire</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+
+                      <button onClick={handleMerge} disabled={isMerging || !mergeTargetId || !mergeName} className="w-full mt-4 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white p-3 rounded-xl font-bold shadow-lg disabled:opacity-50 transition-all">
+                        {isMerging ? <Loader2 className="h-5 w-5 animate-spin" /> : <Combine className="h-5 w-5" />}
+                        {isMerging ? 'Fusion en cours...' : 'Fusionner les salles'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3">
         {[
@@ -163,38 +313,6 @@ export default function GestionSallesIntelligente() {
             </div>
           </div>
         ))}
-      </div>
-
-      <div
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); addFiles(e.dataTransfer.files); }}
-        className={`card p-4 border-2 border-dashed transition-colors ${dragging ? 'border-primary-500 bg-primary-50/40 dark:bg-primary-900/10' : 'border-slate-200 dark:border-slate-700'}`}>
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="flex items-center gap-3 flex-1">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 dark:bg-primary-900/30"><Upload className="h-5 w-5 text-primary-600 dark:text-primary-400" /></div>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-slate-800 dark:text-white">Importer des emplois du temps</p>
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">PDF ou Excel (xlsx/xls/csv) · plusieurs fichiers acceptés · glisser-déposer supporté</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {files.length > 0 && (
-              <span className="text-xs font-semibold text-primary-600 dark:text-primary-400">{files.length} fichier(s)</span>
-            )}
-            <button onClick={() => fileRef.current?.click()} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-              <FileText className="h-3.5 w-3.5" /> PDF
-            </button>
-            <button onClick={() => fileRef.current?.click()} className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-              <TableIcon className="h-3.5 w-3.5" /> Excel
-            </button>
-            <input ref={fileRef} type="file" multiple accept=".pdf,.xlsx,.xls,.csv" hidden onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-            <button onClick={doImport} disabled={!files.length || importing} className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-primary-500 to-indigo-600 text-white px-4 py-2 text-xs font-semibold shadow-md disabled:opacity-50">
-              {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />} Importer
-            </button>
-            {files.length > 0 && <button onClick={() => setFiles([])} className="p-2 text-slate-400 hover:text-rose-500"><X className="h-4 w-4" /></button>}
-          </div>
-        </div>
       </div>
 
       {conflicts > 0 && (

@@ -6,11 +6,13 @@ const XLSX = require('xlsx');
 const multer = require('multer');
 const { GoogleGenerativeAI, SchemaType } = require("@google/generative-ai");
 
+// --- INITIALISATIONS ---
 const pool = new Pool({ connectionString: (process.env.DATABASE_URL || '').split('?')[0] });
 const prisma = new PrismaClient({ adapter: new PrismaPg(pool) });
 const uploadArray = multer({ storage: multer.memoryStorage(), limits: { fileSize: 15 * 1024 * 1024 } }).array('files', 10);
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// --- SCHÉMA IA ---
 const scheduleSchema = {
   type: SchemaType.ARRAY,
   description: "Liste des sessions de cours extraites.",
@@ -28,6 +30,7 @@ const scheduleSchema = {
   }
 };
 
+// --- UTILITAIRES ---
 const norm = (s) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '');
 const toMin = (t) => {
   if (t == null || t === '') return null;
@@ -53,6 +56,7 @@ function cleanSalleName(s) {
   return String(s).replace(/\n/g, ' ').replace(/\s+/g, ' ').replace(/Gr\s*\d+/gi, '').replace(/[P]$/, '').trim();
 }
 
+// Convertit un jour ("Lundi") en dates ISO pour les 8 prochaines semaines
 function generateDatesForDay(jourStr, weeks = 8) {
   const daysMap = { 'dimanche': 0, 'lundi': 1, 'mardi': 2, 'mercredi': 3, 'jeudi': 4, 'vendredi': 5, 'samedi': 6 };
   const targetDay = daysMap[String(jourStr).toLowerCase().trim()] ?? 1;
@@ -67,50 +71,7 @@ function generateDatesForDay(jourStr, weeks = 8) {
   return dates;
 }
 
-function generateCourseCode(nom) {
-  if (!nom) return 'C';
-  const stopWords = new Set(['le', 'la', 'les', 'de', 'du', 'des', 'et', 'en', 'a', 'au', 'aux', 'pour', 'par', 'sur', 'd', 'l']);
-  const words = String(nom).replace(/['’]/g, ' ').split(/[^a-zA-ZÀ-ÿ0-9]+/);
-  let acronym = '';
-  for (const w of words) {
-    if (w.length > 0 && !stopWords.has(w.toLowerCase())) {
-      acronym += w[0].toUpperCase();
-    }
-  }
-  return acronym.length > 0 ? acronym.substring(0, 10) : 'COURS'; 
-}
-
-async function getAvailableGeminiModels() {
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${process.env.GEMINI_API_KEY}`);
-    const data = await response.json();
-    let flashModels = data.models
-      .map(m => m.name.replace('models/', ''))
-      .filter(name => name.includes('flash') && !name.includes('preview') && !name.includes('lite'));
-    flashModels.sort((a, b) => b.localeCompare(a));
-    if (flashModels.includes('gemini-flash-latest')) {
-      flashModels = ['gemini-flash-latest', ...flashModels.filter(m => m !== 'gemini-flash-latest')];
-    }
-    return flashModels.length > 0 ? flashModels : ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
-  } catch (error) {
-    return ['gemini-flash-latest', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-2.5-flash'];
-  }
-}
-
-async function retryWithBackoff(apiCall, maxRetries = 3, initialDelay = 2000) {
-  let delay = initialDelay;
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      return await apiCall();
-    } catch (error) {
-      if (error.status !== 503 || i === maxRetries - 1) throw error;
-      console.log(`[IA] Serveur surchargé (503). Nouvelle tentative ${i + 1}/${maxRetries} dans ${delay/1000}s...`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      delay *= 2;
-    }
-  }
-}
-
+// --- CRÉATION AUTO (Prof, Salle, Cours) ---
 async function findOrCreateProfesseur(nomProf) {
   if (!nomProf) return null;
   const nom = String(nomProf).trim();
@@ -141,43 +102,30 @@ async function findOrCreateProfesseur(nomProf) {
   return prisma.professeur.create({ data: { id_professeur: newUser.id_utilisateur, specialite: 'Importé EDT' } });
 }
 
+// --- EXTRACTION PAR IA (PDF) ---
 async function parsePdfWithAI(fileBuffer) {
-  const fallbackModels = await getAvailableGeminiModels();
+  const model = genAI.getGenerativeModel({ 
+    model: "gemini-flash-latest", 
+    generationConfig: { responseMimeType: "application/json", responseSchema: scheduleSchema, temperature: 0 }
+  });
+
   const prompt = "Extrais précisément chaque session de cours de cet emploi du temps PDF.";
   
-  let result = null;
-  let lastError = null;
-
-  for (const modelName of fallbackModels) {
-    try {
-      console.log(`[IA] Tentative d'extraction avec : ${modelName}`);
-      const model = genAI.getGenerativeModel({ 
-        model: modelName, 
-        generationConfig: { responseMimeType: "application/json", responseSchema: scheduleSchema, temperature: 0 }
-      });
-
-      result = await retryWithBackoff(() => model.generateContent([
-        prompt,
-        { inlineData: { data: fileBuffer.toString("base64"), mimeType: "application/pdf" } }
-      ]));
-
-      console.log(`[IA] ✅ Succès avec le modèle : ${modelName}`);
-      break; 
-    } catch (error) {
-      console.warn(`[IA] ⚠️ Échec avec ${modelName}. Passage à la version précédente...`);
-      lastError = error;
-    }
-  }
-
-  if (!result) throw new Error("Tous les modèles d'IA ont échoué. " + (lastError?.message || "Erreur inconnue"));
+  // Lecture super rapide en RAM (Base64)
+  const result = await model.generateContent([
+    prompt,
+    { inlineData: { data: fileBuffer.toString("base64"), mimeType: "application/pdf" } }
+  ]);
 
   const extractedData = JSON.parse(result.response.text());
   const rows = [];
 
+  // Mappage JSON IA -> Format interne (8 semaines)
   for (const item of extractedData) {
     const dates = generateDatesForDay(item.jour, 8);
     for (const dateISO of dates) {
       rows.push({
+        coursCode: item.matiere.substring(0, 4).toUpperCase(), // Code générique
         coursNom: item.matiere,
         prof: item.professeur,
         salle: item.salle,
@@ -191,6 +139,7 @@ async function parsePdfWithAI(fileBuffer) {
   return rows;
 }
 
+// --- EXTRACTION EXCEL ---
 function parseExcelEDT(buffer) {
   const wb = XLSX.read(buffer, { type: 'buffer', cellDates: true });
   const rowsRaw = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' });
@@ -199,6 +148,7 @@ function parseExcelEDT(buffer) {
     const row = {}; Object.keys(raw).forEach((k) => { row[norm(k)] = raw[k]; });
     const get = (...keys) => { for (const k of keys) { const hit = Object.keys(row).find((rk) => rk.includes(k)); if (hit && row[hit] !== '') return row[hit]; } return null; };
     rows.push({
+      coursCode: get('codecours', 'code'),
       coursNom: get('nomcours', 'module', 'matiere'),
       prof: get('emailprof', 'professeur'),
       salle: get('salle', 'numero'),
@@ -211,7 +161,8 @@ function parseExcelEDT(buffer) {
   return rows;
 }
 
-async function createSessions(rows, stats, anneeUniversitaire, semestre) {
+// --- INSERTION DES SESSIONS ---
+async function createSessions(rows, stats) {
   for (const r of rows) {
     if (!r.coursNom || !r.salle || !r.dateISO || r.debutMin == null || r.finMin == null) {
       stats.ignorees++; continue;
@@ -222,14 +173,7 @@ async function createSessions(rows, stats, anneeUniversitaire, semestre) {
 
     let cours = await prisma.cours.findFirst({ where: { nom: { contains: r.coursNom, mode: 'insensitive' } } });
     if (!cours) {
-      let baseCode = generateCourseCode(r.coursNom);
-      let finalCode = baseCode;
-      let counter = 1;
-      while (await prisma.cours.findUnique({ where: { code: finalCode } })) {
-        finalCode = `${baseCode}${counter}`;
-        counter++;
-      }
-      cours = await prisma.cours.create({ data: { code: finalCode, nom: r.coursNom, credits: 3, coefficient: 2 } });
+      cours = await prisma.cours.create({ data: { code: r.coursCode || `C-${Date.now()}`, nom: r.coursNom, credits: 3, coefficient: 2 } });
       stats.cours_crees++;
     }
 
@@ -245,24 +189,16 @@ async function createSessions(rows, stats, anneeUniversitaire, semestre) {
 
     await prisma.sessionSalle.create({
       data: {
-        id_salle: salle.id_salle, 
-        id_cours: cours.id_cours, 
-        id_professeur: professeur.id_professeur,
-        date: new Date(r.dateISO), 
-        heure_debut: new Date(`1970-01-01T${toTime(r.debutMin)}Z`), 
-        heure_fin: new Date(`1970-01-01T${toTime(r.finMin)}Z`),
-        nombre_etudiants: r.effectif, 
-        statut: 'Planifiee',
-        
-        // DÉCOMMENTEZ CES DEUX LIGNES :
-        id_calendrier: anneeUniversitaire,
-        semestre: semestre
+        id_salle: salle.id_salle, id_cours: cours.id_cours, id_professeur: professeur.id_professeur,
+        date: new Date(r.dateISO), heure_debut: new Date(`1970-01-01T${toTime(r.debutMin)}Z`), heure_fin: new Date(`1970-01-01T${toTime(r.finMin)}Z`),
+        nombre_etudiants: r.effectif, statut: 'Planifiee',
       },
     });
     stats.sessions_creees++;
   }
 }
 
+// --- ANALYSE DES CONFLITS ---
 async function analyserConflitsInternal() {
   let created = 0;
   await prisma.alerteIa.deleteMany({ where: { type: 'Conflit_Planning', statut: 'Nouvelle' } }).catch(() => {});
@@ -278,6 +214,7 @@ async function analyserConflitsInternal() {
     (byProfDate[pk] = byProfDate[pk] || []).push(s);
   });
 
+  // Conflits de salles
   for (const list of Object.values(bySalleDate)) {
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
@@ -288,6 +225,7 @@ async function analyserConflitsInternal() {
     }
   }
 
+  // Conflits de professeurs
   for (const list of Object.values(byProfDate)) {
     for (let i = 0; i < list.length; i++) {
       for (let j = i + 1; j < list.length; j++) {
@@ -301,107 +239,37 @@ async function analyserConflitsInternal() {
   return created;
 }
 
-// --- FUSION DE SALLES (MERGE) ---
-const mergeSalles = async (req, res) => {
-  try {
-    const { targetId, sourceIds, newName, newCapacite, newType } = req.body;
-
-    if (!targetId || !sourceIds || !Array.isArray(sourceIds) || sourceIds.length === 0) {
-      return res.status(400).json({ success: false, message: 'Paramètres manquants pour la fusion.' });
-    }
-
-    // 1. Mettre à jour la salle principale (cible) avec les nouvelles informations
-    await prisma.salle.update({
-      where: { id_salle: targetId },
-      data: {
-        numero: newName,
-        nom: newName,
-        capacite: parseInt(newCapacite) || 30,
-        type: newType || 'Salle_Cours'
-      }
-    });
-
-    // 2. Transférer toutes les dépendances (Sessions, Réservations, Alertes) vers la salle principale
-    await prisma.sessionSalle.updateMany({
-      where: { id_salle: { in: sourceIds } },
-      data: { id_salle: targetId }
-    });
-
-    await prisma.reservationSalle.updateMany({
-      where: { id_salle: { in: sourceIds } },
-      data: { id_salle: targetId }
-    });
-
-    await prisma.alerteIa.updateMany({
-      where: { id_salle: { in: sourceIds } },
-      data: { id_salle: targetId }
-    });
-
-    // 3. Supprimer définitivement les salles doublons
-    await prisma.salle.deleteMany({
-      where: { id_salle: { in: sourceIds } }
-    });
-
-    // 4. Relancer l'analyse IA au cas où la fusion a créé des superpositions horaires
-    const conflits = await analyserConflitsInternal();
-
-    return res.status(200).json({ 
-      success: true, 
-      message: `Salles fusionnées avec succès ! ${conflits} nouveau(x) conflit(s) détecté(s).` 
-    });
-  } catch (error) {
-    console.error('[Salles] Erreur de fusion:', error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// --- LES 2 ÉTAPES POUR L'UI ---
-const extractEDT = async (req, res) => {
+// --- CONTROLEURS ---
+const importEDT = async (req, res) => {
   try {
     const files = req.files || [];
     if (!files.length) return res.status(400).json({ success: false, message: 'Aucun fichier.' });
 
-    let allRows = [];
+    const stats = { fichiers: files.length, sessions_creees: 0, ignorees: 0, cours_crees: 0, salles_creees: 0, prof_non_trouves: 0, doublons: 0 };
+
     for (const f of files) {
       const isPdf = f.mimetype === 'application/pdf' || f.originalname.toLowerCase().endsWith('.pdf');
       let rows = [];
+
       if (isPdf) {
         console.log(`[Import] Extraction IA du PDF: ${f.originalname}`);
-        rows = await parsePdfWithAI(f.buffer); 
+        rows = await parsePdfWithAI(f.buffer); // <-- ICI Gemini est appelé
       } else {
         console.log(`[Import] Extraction Excel: ${f.originalname}`);
         rows = parseExcelEDT(f.buffer);
       }
-      allRows = [...allRows, ...rows];
-    }
-    return res.status(200).json({ success: true, data: allRows });
-  } catch (error) {
-    console.error('[Salles] extract error:', error);
-    return res.status(500).json({ success: false, message: `Erreur extraction: ${error.message}` });
-  }
-};
 
-const confirmEDT = async (req, res) => {
-  try {
-    // On extrait l'année universitaire et le semestre envoyés par le frontend
-    const { sessions, anneeUniversitaire, semestre } = req.body;
-    
-    if (!sessions || !Array.isArray(sessions) || !anneeUniversitaire || !semestre) {
-      return res.status(400).json({ success: false, message: 'Données, année ou semestre manquants.' });
+      await createSessions(rows, stats);
     }
-    const stats = { sessions_creees: 0, ignorees: 0, cours_crees: 0, salles_creees: 0, prof_non_trouves: 0, doublons: 0 };
-    
-    // On les transmet à la fonction de création
-    await createSessions(sessions, stats, anneeUniversitaire, semestre);
+
     stats.conflits = await analyserConflitsInternal();
-
     return res.status(200).json({
       success: true, ...stats,
-      details: `✅ ${stats.sessions_creees} sessions créées | 🏫 ${stats.salles_creees} nvl salles | ⚠️ ${stats.ignorees} ignorées | 🚨 ${stats.conflits} conflits détectés`,
+      details: `✅ ${stats.sessions_creees} sessions | 🏫 ${stats.salles_creees} nvl salles | ⚠️ ${stats.ignorees} ignorées | 🚨 ${stats.conflits} conflits détectés`,
     });
   } catch (error) {
-    console.error('[Salles] confirm error:', error);
-    return res.status(500).json({ success: false, message: `Erreur sauvegarde: ${error.message}` });
+    console.error('[Salles] import error:', error);
+    return res.status(500).json({ success: false, message: `Erreur import: ${error.message}` });
   }
 };
 
@@ -427,53 +295,4 @@ const getFilieres = async (req, res) => {
   return res.status(200).json({ success: true, data });
 };
 
-// --- RÉCUPÉRATION DES ANNÉES ET SEMESTRES ---
-const getPeriodesAcademiques = async (req, res) => {
-  try {
-    const calendriers = await prisma.calendrierAcademique.findMany({
-      orderBy: { date_debut: 'desc' }
-    });
-    
-    const periodesFormattees = calendriers.map(cal => {
-      let semestres = [];
-      
-      // On vérifie si periodes existe, si c'est un tableau, ET s'il n'est pas vide
-      if (cal.periodes && Array.isArray(cal.periodes) && cal.periodes.length > 0) {
-        
-        semestres = cal.periodes.map((p, index) => {
-          // Cas 1 : Le JSON est un simple tableau de texte ex: ["S1", "S2"]
-          if (typeof p === 'string') {
-            return { id_semestre: p, nom_semestre: p };
-          }
-          
-          // Cas 2 : C'est un objet, on cherche intelligemment les clés peu importe leur nom
-          return {
-            id_semestre: p.id_semestre || p.code || p.id || `S${index + 1}`,
-            nom_semestre: p.nom_semestre || p.nom || p.libelle || p.name || `Semestre ${index + 1}`
-          };
-        });
-
-      } else {
-        // Fallback sécurisé : Si le JSON est vide [], null ou invalide, on met les standards
-        semestres = [
-          { id_semestre: 'S1', nom_semestre: 'Semestre 1 (Automne)' },
-          { id_semestre: 'S2', nom_semestre: 'Semestre 2 (Printemps)' }
-        ];
-      }
-
-      return {
-        id_annee: cal.id_calendrier,
-        annee: cal.annee_scolaire,
-        semestres: semestres
-      };
-    });
-    
-    return res.status(200).json({ success: true, data: periodesFormattees });
-  } catch (error) {
-    console.error('[Salles] Erreur récupération périodes:', error);
-    return res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// VÉRIFIEZ BIEN CETTE LIGNE, extractEDT ET confirmEDT SONT EXPORTÉS
-module.exports = { uploadArray, mergeSalles, extractEDT, confirmEDT, getPlanning, analyserConflits, getFilieres, getPeriodesAcademiques };
+module.exports = { uploadArray, importEDT, getPlanning, analyserConflits, getFilieres };

@@ -12,7 +12,7 @@ const prisma = new PrismaClient({ adapter });
 // GET: List all official documents (Excluding the BYTEA buffer to keep the API fast)
 const getOfficialDocuments = async (req, res) => {
   try {
-    const docs = await prisma.document_officiel.findMany({
+    const docs = await prisma.documentOfficiel.findMany({
       orderBy: { date_generation: 'desc' },
       select: {
         id_document_officiel: true,
@@ -38,7 +38,7 @@ const getOfficialDocuments = async (req, res) => {
 const downloadOfficialDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await prisma.document_officiel.findUnique({ 
+    const doc = await prisma.documentOfficiel.findUnique({ 
       where: { id_document_officiel: id } 
     });
 
@@ -47,7 +47,7 @@ const downloadOfficialDocument = async (req, res) => {
     }
 
     // Increment download tracking
-    await prisma.document_officiel.update({
+    await prisma.documentOfficiel.update({
       where: { id_document_officiel: id },
       data: { 
         nombre_telechargements: { increment: 1 }, 

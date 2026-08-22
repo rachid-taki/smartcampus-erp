@@ -795,6 +795,11 @@ model SessionSalle {
   id_filiere String?  @db.Uuid                      // ← ajouter
   filiere    Filiere? @relation(fields: [id_filiere], references: [id_filiere], onDelete: SetNull)
 
+  id_calendrier      String?             @db.Uuid
+  semestre           String?             @db.VarChar(50)
+  
+  calendrier         CalendrierAcademique? @relation(fields: [id_calendrier], references: [id_calendrier])
+  
   @@index([id_salle], map: "idx_session_salle_salle")
   @@index([id_cours], map: "idx_session_salle_cours")
   @@index([id_professeur], map: "idx_session_salle_professeur")
@@ -1019,6 +1024,8 @@ model CalendrierAcademique {
   date_debut     DateTime @db.Date
   date_fin       DateTime @db.Date
   periodes       Json?    @db.JsonB
+
+  sessions       SessionSalle[] // ← AJOUTEZ JUSTE CETTE LIGNE
 
   @@map("calendrier_academique")
 }
