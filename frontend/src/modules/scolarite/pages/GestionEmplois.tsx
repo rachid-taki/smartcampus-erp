@@ -173,7 +173,7 @@ export default function GestionEmplois() {
         </div>
       </header>
 
-      {/* SCHÉMA DU PROCESSUS */}
+      {/* SCHÉMA DU PROCESSUS (Style original conservé) */}
       <div className="flex items-center justify-between mb-8 max-w-3xl mx-auto relative px-4">
         <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-slate-200 dark:bg-slate-700 -z-10 rounded-full"></div>
         <div className="flex flex-col items-center gap-2 bg-slate-50 dark:bg-slate-900 px-2">
@@ -279,7 +279,7 @@ export default function GestionEmplois() {
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Vérification et Assignation</h3>
               <p className="text-sm text-slate-500 dark:text-slate-400">Vérifiez les données et assignez l'emploi du temps à une période.</p>
             </div>
-            <button onClick={() => setStep('upload')} className="text-sm font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white px-3 py-2">
+            <button onClick={() => { setStep('upload'); setExtractedData([]); setFiles([]); }} className="text-sm font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white px-3 py-2">
               Annuler
             </button>
           </div>
@@ -375,18 +375,36 @@ export default function GestionEmplois() {
             </table>
           </div>
 
+          {/* ✅ BOUTON D'ANNULATION AJOUTÉ ICI */}
           <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <p className="text-xs text-amber-600 dark:text-amber-400 font-medium px-4 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800/50">
               <AlertTriangle className="h-4 w-4 inline mr-2 -mt-0.5" />
               Vérifiez bien l'année et le semestre avant de sauvegarder.
             </p>
-            <button 
-              onClick={doConfirm} 
-              disabled={loading || extractedData.length === 0 || !anneeUniversitaire || !semestre} 
-              className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 text-sm font-bold shadow-lg hover:shadow-emerald-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
-              {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
-              {loading ? 'Sauvegarde en cours...' : '2. Confirmer et Sauvegarder'}
-            </button>
+            
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              {/* NOUVEAU BOUTON : Annuler l'opération */}
+              <button 
+                onClick={() => {
+                  setExtractedData([]);
+                  setFiles([]);
+                  setStep('upload');
+                  setFilterText('');
+                  setToast({ type: 'success', msg: 'Importation annulée. Vous pouvez recommencer.' });
+                }} 
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 px-6 py-3 text-sm font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all">
+                <X className="h-5 w-5" />
+                Annuler l'opération
+              </button>
+
+              <button 
+                onClick={doConfirm} 
+                disabled={loading || extractedData.length === 0 || !anneeUniversitaire || !semestre} 
+                className="inline-flex items-center justify-center gap-2 w-full sm:w-auto rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white px-6 py-3 text-sm font-bold shadow-lg hover:shadow-emerald-500/50 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Database className="h-5 w-5" />}
+                {loading ? 'Sauvegarde en cours...' : '2. Confirmer et Sauvegarder'}
+              </button>
+            </div>
           </div>
         </motion.div>
       )}

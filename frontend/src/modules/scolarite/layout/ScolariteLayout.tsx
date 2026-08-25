@@ -12,12 +12,10 @@ import ValidationDemandes from '../pages/ValidationDemandes';
 import GestionWorkflows from '../pages/GestionWorkflows';
 import GestionDocumentaire from '../pages/GestionDocumentaire';
 import GestionSallesIntelligente from '../pages/GestionSallesIntelligente';
-import GestionEmplois from '../pages/GestionEmplois'; // <-- Import de la nouvelle page
+import GestionEmplois from '../pages/GestionEmplois';
 
-// ⚠️ Adapte ce chemin aux routes réelles de ton App.tsx
 const CLUBS_PATH = '/clubs';
 
-// <-- Ajout de 'emplois' dans le TabKey
 type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles' | 'emplois';
 
 const NAV_ITEMS: { key: TabKey; label: string; icon: any }[] = [
@@ -25,8 +23,8 @@ const NAV_ITEMS: { key: TabKey; label: string; icon: any }[] = [
   { key: 'demandes', label: 'Demandes', icon: Inbox },
   { key: 'workflows', label: 'Workflows', icon: GitMerge },
   { key: 'documents', label: 'Documents', icon: FolderOpen },
-  { key: 'salles', label: 'Salles & Conflits', icon: Building2 }, // <-- Ajustement du label
-  { key: 'emplois', label: 'Emplois du temps (IA)', icon: BrainCircuit }, // <-- Nouvel onglet ajouté
+  { key: 'salles', label: 'Salles & Conflits', icon: Building2 },
+  { key: 'emplois', label: 'Emplois du temps (IA)', icon: BrainCircuit },
 ];
 
 const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
@@ -35,7 +33,7 @@ const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
   workflows: { title: 'Workflows', subtitle: 'Processus de validation' },
   documents: { title: 'Base documentaire', subtitle: 'Documents officiels' },
   salles: { title: 'Salles & Conflits', subtitle: 'Suivi temps réel et détection de conflits' },
-  emplois: { title: 'Emplois du Temps (IA)', subtitle: 'Génération automatique via extraction intelligente' }, // <-- Titre de la nouvelle page
+  emplois: { title: 'Emplois du Temps (IA)', subtitle: 'Génération automatique via extraction intelligente' },
 };
 
 export default function ScolariteLayout() {
@@ -91,6 +89,7 @@ export default function ScolariteLayout() {
       <aside className={`fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-white dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 transition-all duration-300
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} ${collapsed ? 'lg:w-[72px]' : 'lg:w-64'} w-64`}>
 
+        {/* Header Sidebar */}
         <div className={`flex items-center h-16 px-4 border-b border-slate-200 dark:border-slate-800 flex-shrink-0 ${collapsed ? 'lg:justify-center lg:px-0' : 'gap-3'}`}>
           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-700 shadow-md">
             <LayoutDashboard className="h-5 w-5 text-white" />
@@ -128,7 +127,7 @@ export default function ScolariteLayout() {
             })}
           </div>
 
-          {/* TUILE OD OO ICI : juste après les items Scolarité, dans le <nav> */}
+          {/* ✅ BOUTON VIE ÉTUDIANTE & CLUBS (CORRIGÉ POUR LE RETOUR À LA LIGNE) */}
           <div className={`px-3 pt-4 mt-3 border-t border-slate-200 dark:border-slate-800 ${collapsed ? 'lg:px-0' : ''}`}>
             <p className={`mb-2 text-[9px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 ${collapsed ? 'lg:hidden' : ''}`}>
               Autres modules
@@ -136,14 +135,27 @@ export default function ScolariteLayout() {
             <button
               onClick={() => navigate(CLUBS_PATH)}
               title="Vie Étudiante & Clubs"
-              className={`w-full flex items-center gap-3 rounded-lg py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 shadow-md transition-all
-                ${collapsed ? 'lg:justify-center lg:px-0' : 'px-3'}`}>
-              <LayoutGrid className="h-[18px] w-[18px] flex-shrink-0" />
-              <span className={`truncate ${collapsed ? 'lg:hidden' : ''}`}>Vie Étudiante & Clubs</span>
-              <ArrowLeftRight className={`h-3.5 w-3.5 ml-auto opacity-70 ${collapsed ? 'lg:hidden' : ''}`} />
+              className={`group relative w-full flex items-start gap-3 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 border
+                ${collapsed 
+                  ? 'lg:justify-center lg:px-0 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40' 
+                  : 'px-3 border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900/40 hover:border-indigo-300 dark:hover:border-indigo-700 shadow-sm'
+                }`}
+            >
+              {/* mt-0.5 pour aligner l'icône avec la première ligne du texte */}
+              <LayoutGrid className="h-[18px] w-[18px] flex-shrink-0 mt-0.5" />
+              
+              {/* flex-1 et leading-snug permettent au texte de passer à la ligne proprement */}
+              <span className={`flex-1 text-left leading-snug ${collapsed ? 'lg:hidden' : ''}`}>
+                Vie Étudiante & Clubs
+              </span>
+              
+              {!collapsed && (
+                <ArrowLeftRight className="h-3.5 w-3.5 flex-shrink-0 mt-0.5 text-indigo-500/70 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors" />
+              )}
             </button>
           </div>
-          {/* FIN TUILE */}
+          {/* ✅ FIN BOUTON CORRIGÉ */}
+
         </nav>
 
         <div className="hidden lg:flex border-t border-slate-200 dark:border-slate-800 p-2">

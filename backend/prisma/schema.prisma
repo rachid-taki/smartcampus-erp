@@ -7,7 +7,7 @@ datasource db {
 }
 
 // =====================================================================
-// ENUMS — Aligned with PostgreSQL dump (all values preserved)
+// ENUMS (Format multi-lignes obligatoire pour Prisma)
 // =====================================================================
 
 enum enum_statut_etudiant {
@@ -216,7 +216,7 @@ enum enum_type_parametre {
 }
 
 // =====================================================================
-// CORE: ROLE, PERMISSION, UTILISATEUR
+// CORE
 // =====================================================================
 
 model Role {
@@ -239,6 +239,7 @@ model Permission {
   roles         RolePermission[]
 
   @@unique([nom, module])
+  @@unique([nom], map: "uq_permission_nom") // ✅ Empêche la suppression de la contrainte existante
   @@map("permission")
 }
 
@@ -255,8 +256,8 @@ model RolePermission {
 model Utilisateur {
   id_utilisateur     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id_role            String    @db.Uuid
-  nom                String    @db.VarChar(100)
-  prenom             String    @db.VarChar(100)
+  nom                String?   @db.VarChar(100)      // ✅ Optionnel pour matcher la DB
+  prenom             String?   @db.VarChar(100)      // ✅ Optionnel pour matcher la DB
   email              String    @unique @db.VarChar(255)
   mot_de_passe       String?   @db.VarChar(255)
   telephone          String?   @db.VarChar(30)
@@ -267,7 +268,6 @@ model Utilisateur {
   derniere_connexion DateTime? @db.Timestamptz(6)
   updated_at         DateTime  @default(now()) @db.Timestamptz(6)
 
-  // Préférences de notifications
   notif_email      Boolean @default(true)
   notif_demandes   Boolean @default(true)
   notif_documents  Boolean @default(true)
@@ -300,15 +300,15 @@ model PasswordResetToken {
 }
 
 // =====================================================================
-// ACADÉMIQUE: FILIÈRE, ÉTUDIANT, COURS, PROFESSEUR
+// ACADÉMIQUE & EMPLOYÉS
 // =====================================================================
 
 model Filiere {
-  id_filiere String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom        String     @db.VarChar(150)
-  code       String?    @db.VarChar(10)
+  id_filiere String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom        String         @db.VarChar(150)
+  code       String?        @db.VarChar(10)
   etudiants  Etudiant[]
-  sessions   SessionSalle[] 
+  sessions   SessionSalle[] // ✅ AJOUTÉ pour conserver la relation existante
 
   @@map("filiere")
 }
@@ -341,34 +341,6 @@ model Etudiant {
   @@index([statut], map: "idx_etudiant_statut")
   @@map("etudiant")
 }
-
-model Cours {
-  id_cours    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  code        String @unique @db.VarChar(30)
-  nom         String @db.VarChar(200)
-  credits     Int    @db.SmallInt
-  coefficient Int    @db.SmallInt
-
-  cours_professeur CoursProfesseur[]
-  reclamations     Reclamation[]
-  sessions         SessionSalle[]
-
-  @@map("cours")
-}
-
-model CoursProfesseur {
-  id_cours      String     @db.Uuid
-  id_professeur String     @db.Uuid
-  cours         Cours      @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade)
-  professeur    Professeur @relation(fields: [id_professeur], references: [id_professeur], onDelete: Cascade)
-
-  @@id([id_cours, id_professeur])
-  @@map("cours_professeur")
-}
-
-// =====================================================================
-// EMPLOYÉS & STAFF
-// =====================================================================
 
 model Employe {
   id_employe         String              @id @db.Uuid
@@ -436,6 +408,30 @@ model RhResponsable {
   demandes_traitees DemandeRh[]
 
   @@map("rh_responsable")
+}
+
+model Cours {
+  id_cours    String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  code        String @unique @db.VarChar(30)
+  nom         String @db.VarChar(200)
+  credits     Int    @db.SmallInt
+  coefficient Int    @db.SmallInt
+
+  cours_professeur CoursProfesseur[]
+  reclamations     Reclamation[]
+  sessions         SessionSalle[]
+
+  @@map("cours")
+}
+
+model CoursProfesseur {
+  id_cours      String     @db.Uuid
+  id_professeur String     @db.Uuid
+  cours         Cours      @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade)
+  professeur    Professeur @relation(fields: [id_professeur], references: [id_professeur], onDelete: Cascade)
+
+  @@id([id_cours, id_professeur])
+  @@map("cours_professeur")
 }
 
 // =====================================================================
@@ -518,7 +514,7 @@ model Demande {
 }
 
 // =====================================================================
-// RÉCLAMATIONS
+// RÉCLAMATIONS & DOCUMENTS
 // =====================================================================
 
 model TypeReclamation {
@@ -564,10 +560,6 @@ model Reclamation {
   @@index([id_traite_par], map: "idx_reclamation_traite_par")
   @@map("reclamation")
 }
-
-// =====================================================================
-// DOCUMENTS
-// =====================================================================
 
 model Document {
   id_document         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -617,10 +609,6 @@ model DocumentOfficiel {
   @@map("document_officiel")
 }
 
-// =====================================================================
-// CERTIFICATS MÉDICAUX & VÉRIFICATIONS
-// =====================================================================
-
 model CertificatMedical {
   id_certificat  String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id_etudiant    String                 @db.Uuid
@@ -667,7 +655,126 @@ model VerificationExam {
 }
 
 // =====================================================================
-// DEMANDES RH
+// SALLES, SESSIONS, CALENDRIER (✅ 100% SÉCURISÉ)
+// =====================================================================
+
+model Salle {
+  id_salle     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  numero       String            @unique @db.VarChar(30)
+  nom          String?           @db.VarChar(150)
+  capacite     Int               @db.SmallInt
+  type         enum_type_salle
+  equipements  Json?             @db.JsonB
+  localisation String?           @db.VarChar(255)
+  statut       enum_statut_salle @default(Disponible)
+
+  sessions     SessionSalle[]
+  reservations ReservationSalle[]
+  alertes      AlerteIa[]
+
+  @@map("salle")
+}
+
+model SessionSalle {
+  id_session         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle           String              @db.Uuid
+  id_cours           String              @db.Uuid
+  id_professeur      String              @db.Uuid
+  date               DateTime            @db.Date
+  heure_debut        DateTime            @db.Time(6)
+  heure_fin          DateTime            @db.Time(6)
+  heure_debut_reelle DateTime?           @db.Time(6)
+  heure_fin_reelle   DateTime?           @db.Time(6)
+  statut             enum_statut_session @default(Planifiee)
+  nombre_etudiants   Int?
+  retard_moyen       Int?
+  
+  // ✅ COLONNES EXISTANTES + NOUVELLES (Aucune donnée ne sera perdue)
+  id_filiere         String?             @db.Uuid
+  id_calendrier      String?             @db.Uuid
+  semestre           String?             @db.VarChar(50)
+
+  salle                Salle                @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade)
+  cours                Cours                @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade)
+  professeur           Professeur           @relation(fields: [id_professeur], references: [id_professeur], onDelete: Restrict)
+  filiere              Filiere?             @relation(fields: [id_filiere], references: [id_filiere], onDelete: SetNull)
+  presences            PresenceEtudiant[]
+  calendrier           CalendrierAcademique? @relation(fields: [id_calendrier], references: [id_calendrier], onDelete: SetNull)
+
+  @@index([id_salle], map: "idx_session_salle_salle")
+  @@index([id_cours], map: "idx_session_salle_cours")
+  @@index([id_professeur], map: "idx_session_salle_professeur")
+  @@index([date], map: "idx_session_salle_date")
+  @@map("session_salle")
+}
+
+model CalendrierAcademique {
+  id_calendrier  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nom            String   @db.VarChar(150)
+  annee_scolaire String   @unique @db.VarChar(20)
+  date_debut     DateTime @db.Date
+  date_fin       DateTime @db.Date
+  periodes       Json?    @db.JsonB
+
+  sessions       SessionSalle[]
+
+  @@map("calendrier_academique")
+}
+
+model PresenceEtudiant {
+  id_presence            String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_session             String                       @db.Uuid
+  id_etudiant            String                       @db.Uuid
+  heure_arrivee          DateTime?                    @db.Time(6)
+  heure_depart           DateTime?                    @db.Time(6)
+  statut                 enum_statut_presence         @default(Absent)
+  methode_identification enum_methode_identification?
+
+  session  SessionSalle @relation(fields: [id_session], references: [id_session], onDelete: Cascade)
+  etudiant Etudiant     @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade)
+
+  @@unique([id_session, id_etudiant])
+  @@index([id_session], map: "idx_presence_session")
+  @@index([id_etudiant], map: "idx_presence_etudiant")
+  @@map("presence_etudiant")
+}
+
+model ReservationSalle {
+  id_reservation String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle       String                  @db.Uuid
+  id_demandeur   String                  @db.Uuid
+  date           DateTime                @db.Date
+  heure_debut    DateTime                @db.Time(6)
+  heure_fin      DateTime                @db.Time(6)
+  motif          String?                 @db.VarChar(255)
+  statut         enum_statut_reservation @default(Demandee)
+
+  salle     Salle       @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade)
+  demandeur Utilisateur @relation(fields: [id_demandeur], references: [id_utilisateur], onDelete: Cascade)
+
+  @@index([id_salle], map: "idx_reservation_salle_salle")
+  @@index([id_demandeur], map: "idx_reservation_salle_demandeur")
+  @@map("reservation_salle")
+}
+
+model AlerteIa {
+  id_alerte      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id_salle       String?            @db.Uuid
+  type           enum_type_alerte
+  description    String?            @db.Text
+  date_detection DateTime           @default(now()) @db.Timestamptz(6)
+  statut         enum_statut_alerte @default(Nouvelle)
+  priorite       enum_priorite      @default(Normale)
+
+  salle Salle? @relation(fields: [id_salle], references: [id_salle], onDelete: SetNull)
+
+  @@index([id_salle], map: "idx_alerte_ia_salle")
+  @@index([statut], map: "idx_alerte_ia_statut")
+  @@map("alerte_ia")
+}
+
+// =====================================================================
+// RH, CLUBS, MESSAGERIE & IA
 // =====================================================================
 
 model DemandeRh {
@@ -691,10 +798,6 @@ model DemandeRh {
   @@index([id_traite_par], map: "idx_demande_rh_traite_par")
   @@map("demande_rh")
 }
-
-// =====================================================================
-// CLUBS
-// =====================================================================
 
 model Club {
   id_club       String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -753,116 +856,6 @@ model DemandeClub {
   @@map("demande_club")
 }
 
-// =====================================================================
-// SALLES, SESSIONS, PRÉSENCES, RÉSERVATIONS
-// =====================================================================
-
-model Salle {
-  id_salle     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  numero       String            @unique @db.VarChar(30)
-  nom          String?           @db.VarChar(150)
-  capacite     Int               @db.SmallInt
-  type         enum_type_salle
-  equipements  Json?             @db.JsonB
-  localisation String?           @db.VarChar(255)
-  statut       enum_statut_salle @default(Disponible)
-
-  sessions     SessionSalle[]
-  reservations ReservationSalle[]
-  alertes      AlerteIa[]
-
-  @@map("salle")
-}
-
-model SessionSalle {
-  id_session         String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_salle           String              @db.Uuid
-  id_cours           String              @db.Uuid
-  id_professeur      String              @db.Uuid
-  date               DateTime            @db.Date
-  heure_debut        DateTime            @db.Time(6)
-  heure_fin          DateTime            @db.Time(6)
-  heure_debut_reelle DateTime?           @db.Time(6)
-  heure_fin_reelle   DateTime?           @db.Time(6)
-  statut             enum_statut_session @default(Planifiee)
-  nombre_etudiants   Int?
-  retard_moyen       Int?
-
-  salle      Salle              @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade)
-  cours      Cours              @relation(fields: [id_cours], references: [id_cours], onDelete: Cascade)
-  professeur Professeur         @relation(fields: [id_professeur], references: [id_professeur], onDelete: Restrict)
-  presences  PresenceEtudiant[]
-  id_filiere String?  @db.Uuid                      // ← ajouter
-  filiere    Filiere? @relation(fields: [id_filiere], references: [id_filiere], onDelete: SetNull)
-
-  id_calendrier      String?             @db.Uuid
-  semestre           String?             @db.VarChar(50)
-  
-  calendrier         CalendrierAcademique? @relation(fields: [id_calendrier], references: [id_calendrier])
-  
-  @@index([id_salle], map: "idx_session_salle_salle")
-  @@index([id_cours], map: "idx_session_salle_cours")
-  @@index([id_professeur], map: "idx_session_salle_professeur")
-  @@index([date], map: "idx_session_salle_date")
-  @@map("session_salle")
-}
-
-model PresenceEtudiant {
-  id_presence            String                       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_session             String                       @db.Uuid
-  id_etudiant            String                       @db.Uuid
-  heure_arrivee          DateTime?                    @db.Time(6)
-  heure_depart           DateTime?                    @db.Time(6)
-  statut                 enum_statut_presence         @default(Absent)
-  methode_identification enum_methode_identification?
-
-  session  SessionSalle @relation(fields: [id_session], references: [id_session], onDelete: Cascade)
-  etudiant Etudiant     @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade)
-
-  @@unique([id_session, id_etudiant])
-  @@index([id_session], map: "idx_presence_session")
-  @@index([id_etudiant], map: "idx_presence_etudiant")
-  @@map("presence_etudiant")
-}
-
-model ReservationSalle {
-  id_reservation String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_salle       String                  @db.Uuid
-  id_demandeur   String                  @db.Uuid
-  date           DateTime                @db.Date
-  heure_debut    DateTime                @db.Time(6)
-  heure_fin      DateTime                @db.Time(6)
-  motif          String?                 @db.VarChar(255)
-  statut         enum_statut_reservation @default(Demandee)
-
-  salle     Salle       @relation(fields: [id_salle], references: [id_salle], onDelete: Cascade)
-  demandeur Utilisateur @relation(fields: [id_demandeur], references: [id_utilisateur], onDelete: Cascade)
-
-  @@index([id_salle], map: "idx_reservation_salle_salle")
-  @@index([id_demandeur], map: "idx_reservation_salle_demandeur")
-  @@map("reservation_salle")
-}
-
-model AlerteIa {
-  id_alerte      String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  id_salle       String?            @db.Uuid
-  type           enum_type_alerte
-  description    String?            @db.Text
-  date_detection DateTime           @default(now()) @db.Timestamptz(6)
-  statut         enum_statut_alerte @default(Nouvelle)
-  priorite       enum_priorite      @default(Normale)
-
-  salle Salle? @relation(fields: [id_salle], references: [id_salle], onDelete: SetNull)
-
-  @@index([id_salle], map: "idx_alerte_ia_salle")
-  @@index([statut], map: "idx_alerte_ia_statut")
-  @@map("alerte_ia")
-}
-
-// =====================================================================
-// MESSAGERIE
-// =====================================================================
-
 model Conversation {
   id_conversation String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id_etudiant     String?                  @db.Uuid
@@ -908,10 +901,6 @@ model Message {
   @@map("message")
 }
 
-// =====================================================================
-// NOTIFICATIONS
-// =====================================================================
-
 model Notification {
   id_notification String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   id_utilisateur  String                     @db.Uuid
@@ -928,10 +917,6 @@ model Notification {
   @@index([lu], map: "idx_notification_lu")
   @@map("notification")
 }
-
-// =====================================================================
-// ASSISTANT IA
-// =====================================================================
 
 model BaseConnaissance {
   id_base       String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -981,10 +966,6 @@ model MessageIA {
   @@map("message_ia")
 }
 
-// =====================================================================
-// SYSTÈME: AUDIT, PARAMÈTRES, CALENDRIER
-// =====================================================================
-
 model AuditLog {
   id_log         BigInt   @id @default(autoincrement())
   id_utilisateur String?  @db.Uuid
@@ -1015,17 +996,4 @@ model ParametreSysteme {
   module       String?             @db.VarChar(100)
 
   @@map("parametre_systeme")
-}
-
-model CalendrierAcademique {
-  id_calendrier  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  nom            String   @db.VarChar(150)
-  annee_scolaire String   @unique @db.VarChar(20)
-  date_debut     DateTime @db.Date
-  date_fin       DateTime @db.Date
-  periodes       Json?    @db.JsonB
-
-  sessions       SessionSalle[] // ← AJOUTEZ JUSTE CETTE LIGNE
-
-  @@map("calendrier_academique")
 }
