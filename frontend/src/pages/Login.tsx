@@ -50,8 +50,7 @@ const STATS: Stat[] = [
   { value: "< 48h", label: "délai de traitement moyen" },
 ];
 
-// Same wave geometry reused for the panel's clip shape and for the glowing
-// stroke drawn on top of it, so the two stay perfectly aligned.
+
 const WAVE_EDGE =
   "M1,0 C0.97,0.06 0.93,0.09 0.94,0.15 C0.95,0.21 1,0.24 1,0.3 C1,0.36 0.93,0.39 0.92,0.45 C0.91,0.51 0.99,0.54 1,0.6 C1,0.66 0.93,0.69 0.93,0.75 C0.93,0.81 1,0.84 1,0.9 C1,0.94 0.98,0.97 1,1";
 const WAVE_CLIP = `M0,0 H1 ${WAVE_EDGE.replace("M1,0 ", "")} H0 Z`;
@@ -140,7 +139,6 @@ export default function Login() {
   };
 
   const passwordStrong = Object.values(passwordChecks).every(Boolean);
-  // reset password strenght
   const resetPasswordChecks = {
     length: newPassword.length >= 12,
     upper: /[A-Z]/.test(newPassword),
@@ -165,7 +163,6 @@ export default function Login() {
             window.history.go(1);
         };
     } else {
-        // VERY IMPORTANT
         window.onpopstate = null;
     }
 
@@ -226,7 +223,6 @@ if (remember) {
   };
 
   
-  //register
   const handleRegister = async () => {
     const user = {
       nom,
