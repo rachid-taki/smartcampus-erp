@@ -11,6 +11,18 @@ const pool = new Pool({ connectionString: cleanUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
+const nodemailer = require('nodemailer');
+
+// Configuration du transporteur d'e-mails (se connecte à votre Gmail)
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: process.env.SMTP_PORT || 587,
+  secure: false, // true pour le port 465, false pour 587
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -25,7 +37,6 @@ const upload = multer({
 const uploadDocument = upload.single('document');
 
 const VALID_STATUTS = ['Brouillon', 'Soumise', 'En_Traitement', 'Validee', 'Rejetee', 'Cloturee'];
-
 const DOCUMENT_OFFICIAL_TYPES = ['ATTESTATION_SCOLARITE', 'RELEVE_NOTES', 'ATTESTATION', 'RELEVE'];
 
 const isDocumentOfficialType = (typeDemande) => {
@@ -44,18 +55,19 @@ const getDocumentCategorie = (typeDemande) => {
   return 'autre';
 };
 
-
 const getDemandes = async (req, res) => {
   try {
-    const { statut, search } = req.query;
+    const { statut, search, tab } = req.query;
     const where = {};
 
-    if (statut) {
+    // Gestion par onglets du Frontend (En Cours vs Historique)
+    if (tab === 'historique') {
+      where.statut = { in: ['Cloturee', 'Rejetee'] }; // Cloturee = Servée
+    } else if (tab === 'actives') {
+      where.statut = { in: ['Soumise', 'En_Traitement', 'Validee'] };
+    } else if (statut) {
       if (!VALID_STATUTS.includes(statut)) {
-        return res.status(400).json({
-          success: false,
-          message: `Statut invalide: "${statut}".`,
-        });
+        return res.status(400).json({ success: false, message: `Statut invalide: "${statut}".` });
       }
       where.statut = statut;
     }
@@ -64,6 +76,16 @@ const getDemandes = async (req, res) => {
       where.OR = [
         { numero: { contains: search, mode: 'insensitive' } },
         { objet: { contains: search, mode: 'insensitive' } },
+        { 
+          etudiant: {
+            utilisateur: {
+              OR: [
+                { nom: { contains: search, mode: 'insensitive' } },
+                { prenom: { contains: search, mode: 'insensitive' } }
+              ]
+            }
+          }
+        }
       ];
     }
 
@@ -74,12 +96,19 @@ const getDemandes = async (req, res) => {
         type_demande: {
           select: { id_type: true, libelle: true, code: true },
         },
+        // INJECTION DES DETAILS COMPLETS DE L'ETUDIANT
+        etudiant: {
+          include: {
+            utilisateur: {
+              select: { nom: true, prenom: true, email: true, telephone: true }
+            },
+            filiere: {
+              select: { nom: true, code: true }
+            }
+          }
+        },
         documents_officiels: {
-          select: {
-            id_document_officiel: true,
-            nom: true,
-            date_generation: true,
-          },
+          select: { id_document_officiel: true, nom: true, date_generation: true },
           take: 1,
           orderBy: { date_generation: 'desc' },
         },
@@ -89,67 +118,46 @@ const getDemandes = async (req, res) => {
     return res.status(200).json({ success: true, count: demandes.length, data: demandes });
   } catch (error) {
     console.error('[Scolarité Demandes] Failed to fetch:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des demandes.',
-    });
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des demandes.' });
   }
 };
-
 
 const updateDemandeStatus = async (req, res) => {
   try {
     const { id } = req.params;
-
-    
     const statut = req.body?.statut;
     const commentaires = req.body?.commentaires;
     const fichier = req.file; 
+    
+    // Nouvelles options de délivrance
+    const sendEmail = String(req.body?.sendEmail) === 'true';
+    const collectBureau = String(req.body?.collectBureau) === 'true';
 
-    console.log('[updateDemandeStatus] Reçu:', { id, statut, hasFile: !!fichier, mimetype: fichier?.mimetype });
-
-    if (!statut) {
-      return res.status(400).json({ success: false, message: 'Le champ "statut" est requis.' });
-    }
-
-    if (!VALID_STATUTS.includes(statut)) {
-      return res.status(400).json({
-        success: false,
-        message: `Statut invalide: "${statut}".`,
-      });
-    }
+    if (!statut) return res.status(400).json({ success: false, message: 'Le champ "statut" est requis.' });
+    if (!VALID_STATUTS.includes(statut)) return res.status(400).json({ success: false, message: `Statut invalide: "${statut}".` });
 
     const existingDemande = await prisma.demande.findUnique({
       where: { id_demande: id },
-      include: { etudiant: true, type_demande: true },
+      include: { 
+        etudiant: { include: { utilisateur: true } }, 
+        type_demande: true 
+      },
     });
 
-    if (!existingDemande) {
-      return res.status(404).json({ success: false, message: `Aucune demande avec l'id "${id}".` });
-    }
+    if (!existingDemande) return res.status(404).json({ success: false, message: `Aucune demande avec l'id "${id}".` });
 
-    
     const idTraitePar = (req.user && req.user.id_scolarite) || null;
-
-    
     const updateData = { statut };
     
-    if (idTraitePar) {
-      updateData.id_traite_par = idTraitePar;
-    }
-    
-    if (commentaires !== undefined && commentaires !== '') {
-      updateData.commentaires = commentaires;
-    }
+    if (idTraitePar) updateData.id_traite_par = idTraitePar;
+    if (commentaires !== undefined && commentaires !== '') updateData.commentaires = commentaires;
 
     const updatedDemande = await prisma.demande.update({
       where: { id_demande: id },
       data: updateData,
     });
 
-    
     let documentOfficiel = null;
-
     if (fichier && statut === 'Validee' && isDocumentOfficialType(existingDemande.type_demande)) {
       try {
         const hash = crypto.createHash('sha256').update(fichier.buffer).digest('hex');
@@ -157,7 +165,7 @@ const updateDemandeStatus = async (req, res) => {
         const safeNumero = (existingDemande.numero || id).replace(/[^a-zA-Z0-9_-]/g, '_');
         const nomFichier = fichier.originalname || `${categorie}_${safeNumero}.pdf`;
 
-        documentOfficiel = await prisma.document_officiel.create({
+        documentOfficiel = await prisma.documentOfficiel.create({
           data: {
             id_demande: existingDemande.id_demande,
             id_etudiant: existingDemande.id_etudiant,
@@ -169,65 +177,104 @@ const updateDemandeStatus = async (req, res) => {
             hash: hash,
           },
         });
-
-        console.log(`[Scolarité] ✅ Document "${nomFichier}" sauvegardé`);
       } catch (docError) {
         console.error('[Scolarité] Erreur création document_officiel:', docError);
-        
+      }
+    }
+
+    // --- GESTION DES NOTIFICATIONS ET EMAILS ---
+    if (statut === 'Validee' && (sendEmail || collectBureau)) {
+      let notificationMsg = `Votre demande "${existingDemande.objet}" a été validée. `;
+      
+      if (sendEmail && collectBureau) {
+        notificationMsg += `Le document a été envoyé sur votre e-mail académique et la version originale est disponible au bureau de l'administration.`;
+      } else if (sendEmail) {
+        notificationMsg += `Le document a été envoyé sur votre e-mail académique.`;
+      } else if (collectBureau) {
+        notificationMsg += `Veuillez vous présenter au bureau de l'administration pour récupérer votre document.`;
+      }
+
+      if (commentaires) {
+        notificationMsg += `\n\nMot de l'administration : ${commentaires}`;
+      }
+
+      // 1. Création de la notification dans la base de données
+      await prisma.notification.create({
+        data: {
+          id_utilisateur: existingDemande.id_etudiant,
+          titre: `Demande Validée : ${existingDemande.numero}`,
+          message: notificationMsg,
+          type: 'Document', // Basé sur enum_type_notification
+          priorite: 'Info'
+        }
+      });
+
+      // 2. Envoi RÉEL de l'e-mail avec Nodemailer
+      if (sendEmail) {
+        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+          console.error("[EMAIL] ❌ Erreur : Identifiants SMTP manquants dans le fichier .env");
+        } else {
+          try {
+            console.log(`[EMAIL] ⏳ Préparation de l'envoi à : ${existingDemande.etudiant.utilisateur.email}`);
+            
+            // Préparation du message
+            const mailOptions = {
+              from: `"Scolarité SmartCampus" <${process.env.SMTP_USER}>`,
+              to: existingDemande.etudiant.utilisateur.email,
+              subject: `Mise à jour de votre demande : ${existingDemande.numero}`,
+              text: notificationMsg,
+            };
+
+            // S'il y a un fichier téléversé, on l'attache directement depuis la mémoire
+            if (fichier) {
+              mailOptions.attachments = [
+                {
+                  filename: (documentOfficiel && documentOfficiel.nom) || fichier.originalname || 'document.pdf',
+                  content: fichier.buffer, 
+                  contentType: fichier.mimetype
+                }
+              ];
+            }
+
+            // Envoi de l'e-mail
+            const info = transporter.sendMail(mailOptions);
+            console.log(`[EMAIL] ✅ E-mail envoyé avec succès ! (ID: ${info.messageId})`);
+          } catch (mailError) {
+            console.error(`[EMAIL] ❌ Échec de l'envoi de l'e-mail :`, mailError);
+            // On ne fait pas planter la requête (return res.status(500)) juste parce que l'e-mail a échoué.
+            // On affiche l'erreur dans la console, mais on confirme la validation côté frontend.
+          }
+        }
       }
     }
 
     return res.status(200).json({
       success: true,
-      message: documentOfficiel
-        ? 'Statut mis à jour et document officiel envoyé avec succès.'
-        : 'Statut de la demande mis à jour avec succès.',
+      message: statut === 'Cloturee' 
+        ? 'Demande marquée comme servée / clôturée avec succès.' 
+        : 'Statut mis à jour et notifications envoyées avec succès.',
       data: updatedDemande,
     });
   } catch (error) {
-    
-    console.error('[Scolarité Demandes] PATCH ERROR:', {
-      message: error.message,
-      code: error.code,
-      meta: error.meta,
-      stack: error.stack,
-    });
-
-    if (error.code === 'P2025') {
-      return res.status(404).json({ success: false, message: 'Demande introuvable.' });
-    }
-
-    if (error instanceof multer.MulterError) {
-      return res.status(400).json({ success: false, message: `Erreur fichier: ${error.message}` });
-    }
-
-    return res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la mise à jour du statut.',
-      details: error.message, 
-    });
+    if (error.code === 'P2025') return res.status(404).json({ success: false, message: 'Demande introuvable.' });
+    if (error instanceof multer.MulterError) return res.status(400).json({ success: false, message: `Erreur fichier: ${error.message}` });
+    return res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du statut.', details: error.message });
   }
 };
-
 
 const downloadDocumentOfficiel = async (req, res) => {
   try {
     const { id } = req.params;
-    const doc = await prisma.document_officiel.findFirst({
+    const doc = await prisma.documentOfficiel.findFirst({
       where: { id_demande: id },
       orderBy: { date_generation: 'desc' },
     });
 
-    if (!doc) {
-      return res.status(404).json({ success: false, message: 'Aucun document officiel trouvé.' });
-    }
+    if (!doc) return res.status(404).json({ success: false, message: 'Aucun document officiel trouvé.' });
 
-    await prisma.document_officiel.update({
+    await prisma.documentOfficiel.update({
       where: { id_document_officiel: doc.id_document_officiel },
-      data: {
-        nombre_telechargements: { increment: 1 },
-        dernier_telechargement: new Date(),
-      },
+      data: { nombre_telechargements: { increment: 1 }, dernier_telechargement: new Date() },
     });
 
     res.setHeader('Content-Type', doc.type || 'application/pdf');
@@ -239,43 +286,22 @@ const downloadDocumentOfficiel = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Erreur de téléchargement.' });
   }
 };
+
 const listDocuments = async (req, res) => {
   try {
     const { id } = req.params;
-
-    const docs = await prisma.document_officiel.findMany({
+    const docs = await prisma.documentOfficiel.findMany({
       where: { id_demande: id },
       orderBy: { date_generation: 'desc' },
       select: {
-        id_document_officiel: true,
-        nom: true,
-        type: true,
-        categorie: true,
-        taille: true,
-        date_generation: true,
-        nombre_telechargements: true,
-        dernier_telechargement: true,
+        id_document_officiel: true, nom: true, type: true, categorie: true,
+        taille: true, date_generation: true, nombre_telechargements: true, dernier_telechargement: true,
       },
     });
-
-    return res.status(200).json({
-      success: true,
-      count: docs.length,
-      data: docs,
-    });
+    return res.status(200).json({ success: true, count: docs.length, data: docs });
   } catch (error) {
-    console.error('[Scolarité] Failed to list documents:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Erreur lors de la récupération des documents.',
-    });
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des documents.' });
   }
 };
 
-module.exports = {
-  getDemandes,
-  updateDemandeStatus,
-  downloadDocumentOfficiel,
-  listDocuments,
-  uploadDocument,
-};
+module.exports = { getDemandes, updateDemandeStatus, downloadDocumentOfficiel, listDocuments, uploadDocument };

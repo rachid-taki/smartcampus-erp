@@ -1,7 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
-import { Briefcase, GraduationCap, Tent, Users, Settings } from 'lucide-react';
-
-import Login from "./pages/Login";
+import { Briefcase, GraduationCap, Tent, Users, Settings, Shield, User, AlertCircle, Bot, MessageSquare } from 'lucide-react';import Login from "./pages/Login";
 
 // ═══════════════════════════════════════════════════════
 // ÉTUDIANT (depuis HEAD)
@@ -69,8 +67,22 @@ function ModuleProtectedRoute({ children, redirectTo }: { children: React.ReactN
 function PortalSelector() {
   const navigate = useNavigate();
 
+  // Vérifie si l'utilisateur actuel est un SUPER_ADMIN
+  const userStr = localStorage.getItem("user");
+  let isSuperAdmin = false;
+  if (userStr) {
+    try {
+      const user = JSON.parse(userStr);
+      isSuperAdmin = user.role === "SUPER_ADMIN";
+    } catch (e) {
+      console.error("Invalid user data in localStorage");
+    }
+  }
+
+  // CORRECTION : Naviguer directement vers le chemin. 
+  // Le ModuleProtectedRoute s'occupera de rediriger vers le login SI NÉCESSAIRE.
   const handleModuleClick = (path: string) => {
-    navigate(`/login?redirect=${encodeURIComponent(path)}`);
+    navigate(path);
   };
 
   return (
@@ -139,6 +151,68 @@ function PortalSelector() {
           <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Configuration</h2>
           <p className="text-sm text-slate-500 dark:text-slate-400">Paramètres globaux et calendrier académique.</p>
         </div>
+
+        {/* Module 2: Portail Étudiant */}
+        <div
+          onClick={() => handleModuleClick('/student/dashboard')}
+          className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 mb-4 group-hover:scale-110 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300">
+            <User className="h-8 w-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Portail Étudiant</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Tableau de bord, demandes et historique.</p>
+        </div>
+
+        {/* Module 3: Réclamations */}
+        <div
+          onClick={() => handleModuleClick('/student/reclamations')}
+          className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 mb-4 group-hover:scale-110 group-hover:bg-orange-600 group-hover:text-white transition-all duration-300">
+            <AlertCircle className="h-8 w-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Réclamations</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Gestion des requêtes de notes et AMO.</p>
+        </div>
+
+        {/* Module 4: Assistant IA */}
+        <div
+          onClick={() => handleModuleClick('/student/assistant')}
+          className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 mb-4 group-hover:scale-110 group-hover:bg-purple-600 group-hover:text-white transition-all duration-300">
+            <Bot className="h-8 w-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Assistant IA</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Chatbot, recherche intelligente et OCR.</p>
+        </div>
+
+        {/* Module 9: Messagerie & Notifications */}
+        <div
+          onClick={() => handleModuleClick('/student/messages')}
+          className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
+        >
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 mb-4 group-hover:scale-110 group-hover:bg-sky-600 group-hover:text-white transition-all duration-300">
+            <MessageSquare className="h-8 w-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Messagerie</h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Conversations internes et alertes.</p>
+        </div>
+
+        {/* NOUVELLE CARTE SUPER ADMIN (Visible uniquement si le rôle est SUPER_ADMIN) */}
+        {isSuperAdmin && (
+          <div
+            onClick={() => handleModuleClick('/admin')}
+            className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer border-red-200 dark:border-red-900/50"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 mb-4 group-hover:scale-110 group-hover:bg-red-600 group-hover:text-white transition-all duration-300">
+              <Shield className="h-8 w-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Administration</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Gestion des utilisateurs, rôles et permissions.</p>
+          </div>
+        )}
       </div>
     </div>
   );

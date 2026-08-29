@@ -1,5 +1,5 @@
 const profileService = require("../services/profile.service");
-
+const auditService = require("../services/audit.service");
 
 
 const getProfile = async (req, res) => {
@@ -25,13 +25,13 @@ const getProfile = async (req, res) => {
 };
 // update profile 
 const updateProfile = async (req, res) => {
-
     try {
-
         const profile = await profileService.updateProfile(
             req.user.id,
             req.body
         );
+
+        // Maintenant auditService est bien reconnu !
         await auditService.log({
             id_utilisateur: req.user.id,
             action: "UPDATE_PROFILE",
@@ -42,23 +42,18 @@ const updateProfile = async (req, res) => {
             user_agent: req.headers["user-agent"],
             donnees_apres: profile
         });
-        const auditService = require("../services/audit.service");
 
         res.json({
             success: true,
             message: "Profil mis à jour avec succès.",
             profile
         });
-
     } catch (error) {
-
         res.status(400).json({
             success: false,
             message: error.message
         });
-
     }
-
 };
 // change password 
 const changePassword = async (req, res) => {

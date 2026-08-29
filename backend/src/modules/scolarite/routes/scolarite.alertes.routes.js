@@ -3,7 +3,7 @@ const {
   getAlertes,
   updateStatut,
   analyze
-} = require('../controllers/alertes.controller');
+} = require('../controllers/scolarite.alertes.controller');
 
 const router = Router();
 

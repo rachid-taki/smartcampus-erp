@@ -1,9 +1,5 @@
 const { Router } = require('express');
-const {
-  getWorkflows,
-  createWorkflow,
-  updateWorkflowStatus,
-} = require('../controllers/scolarite.workflows.controller');
+const { getWorkflows, createWorkflow, updateWorkflowStatus, updateWorkflow, deleteWorkflow } = require('../controllers/scolarite.workflows.controller');
 
 const router = Router();
 
@@ -29,5 +25,8 @@ router.post('/workflows', createWorkflow);
  * @access  Private (Scolarité staff — apply auth/role middleware as needed)
  */
 router.patch('/workflows/:id/status', updateWorkflowStatus);
+
+router.put('/workflows/:id', updateWorkflow);
+router.delete('/workflows/:id', deleteWorkflow);
 
 module.exports = router;

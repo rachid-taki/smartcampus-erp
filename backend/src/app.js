@@ -32,6 +32,10 @@ const scolariteDocumentsRoutes = require('./modules/scolarite/routes/scolarite.d
 const scolaritePdfRoutes = require('./modules/scolarite/routes/scolarite.pdf.routes');
 const scolariteSignatureRoutes = require('./modules/scolarite/routes/scolarite.signature.routes');
 const emploisRoutes = require('./modules/scolarite/routes/emplois.routes');
+const presencesRoutes = require('./modules/scolarite/routes/scolarite.presences.routes');
+const alertesRoutes = require('./modules/scolarite/routes/scolarite.alertes.routes');
+const sessionsRoutes = require('./modules/scolarite/routes/scolarite.sessions.routes');
+
 
 // ═══════════════════════════════════════════════════════
 // RH (depuis feature/scolarite)
@@ -39,8 +43,9 @@ const emploisRoutes = require('./modules/scolarite/routes/emplois.routes');
 const rhEmployesRoutes = require('./modules/rh/routes/rh.employes.routes');
 const rhCongesRoutes = require('./modules/rh/routes/rh.conges.routes');
 const rhAttestationsRoutes = require('./modules/rh/routes/rh.attestations.routes');
-const rhHeuresRoutes = require('./modules/rh/routes/rh.heures.routes');
+//const rhHeuresRoutes = require('./modules/rh/routes/rh.heures.routes');
 const rhDashboardRoutes = require('./modules/rh/routes/rh.dashboard.routes');
+const rhCommunicationRoutes = require('./modules/rh/routes/rh.communication.routes');
 
 // ═══════════════════════════════════════════════════════
 // ENSEIGNANT (depuis feature/scolarite)
@@ -49,6 +54,9 @@ const enseignantReclamationsRoutes = require('./modules/enseignant/routes/enseig
 const enseignantAbsencesRoutes = require('./modules/enseignant/routes/enseignant.absences.routes');
 const enseignantConsultationsRoutes = require('./modules/enseignant/routes/enseignant.consultations.routes');
 const enseignantReservationsRoutes = require('./modules/enseignant/routes/enseignant.reservations.routes');
+const enseignantSeancesRoutes = require('./modules/enseignant/routes/enseignant.seances.routes');
+const enseignantPresencesRoutes = require('./modules/enseignant/routes/enseignant.presences.routes');
+
 
 // ═══════════════════════════════════════════════════════
 // CLUBS & VIE ÉTUDIANTE (depuis feature/scolarite)
@@ -57,10 +65,7 @@ const clubsRoutes = require('./modules/clubs/routes/clubs.routes');
 const presidentsRoutes = require('./modules/clubs/routes/presidents.routes');
 const reservationsRoutes = require('./modules/clubs/routes/reservations.routes');
 const evenementsRoutes = require('./modules/clubs/routes/evenements.routes');
-const presencesRoutes = require('./modules/clubs/routes/presences.routes');
-const alertesRoutes = require('./modules/clubs/routes/alertes.routes');
 const clubsDashboardRoutes = require('./modules/clubs/routes/dashboard.routes');
-const sessionsRoutes = require('./modules/clubs/routes/sessions.routes');
 
 // ═══════════════════════════════════════════════════════
 // CONFIGURATION (depuis feature/scolarite)
@@ -108,28 +113,31 @@ app.use('/api/scolarite', scolariteDocumentsRoutes);
 app.use('/api/scolarite', scolaritePdfRoutes);
 app.use('/api/scolarite', scolariteSignatureRoutes);
 app.use('/api/emplois-ia', emploisRoutes);
+app.use('/api/scolarite/sessions', sessionsRoutes);
+app.use('/api/scolarite/presences', presencesRoutes);
+app.use('/api/scolarite/alertes', alertesRoutes);
 
 // --- RH ---
 app.use('/api/rh', rhEmployesRoutes);
 app.use('/api/rh', rhCongesRoutes);
 app.use('/api/rh', rhAttestationsRoutes);
-app.use('/api/rh', rhHeuresRoutes);
+//app.use('/api/rh', rhHeuresRoutes);
 app.use('/api/rh', rhDashboardRoutes);
+app.use('/api/rh/communications', rhCommunicationRoutes);
 
 // --- Enseignant ---
 app.use('/api/enseignant', enseignantReclamationsRoutes);
-app.use('/api/enseignant', enseignantAbsencesRoutes);
+app.use('/api/enseignant/absences', enseignantAbsencesRoutes);
 app.use('/api/enseignant', enseignantConsultationsRoutes);
-app.use('/api/enseignant', enseignantReservationsRoutes);
+app.use('/api/enseignant/salles-reservations', enseignantReservationsRoutes);
+app.use('/api/enseignant/seances', enseignantSeancesRoutes);
+app.use('/api/enseignant/presences', enseignantPresencesRoutes);
 
 // --- Clubs & Vie Étudiante ---
 app.use('/api/clubs', clubsRoutes);
 app.use('/api/presidents', presidentsRoutes);
 app.use('/api', reservationsRoutes);
 app.use('/api/evenements', evenementsRoutes);
-app.use('/api/sessions', sessionsRoutes);
-app.use('/api/presences', presencesRoutes);
-app.use('/api/alertes', alertesRoutes);
 app.use('/api/clubs-dashboard', clubsDashboardRoutes);
 
 // --- Configuration ---

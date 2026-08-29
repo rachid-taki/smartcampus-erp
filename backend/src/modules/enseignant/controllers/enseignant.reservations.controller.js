@@ -16,6 +16,9 @@ const VALID_RESERVATION_STATUTS = ['Demandee', 'Approuvee', 'Rejetee', 'Annulee'
 // Statuts still eligible for cancellation by the requesting teacher.
 const CANCELLABLE_STATUTS = ['Demandee', 'Approuvee'];
 
+// Récupération sécurisée de l'ID depuis le token
+const getTeacherId = (req) => req.user?.id_utilisateur || req.user?.id;
+
 /**
  * Safely parse a "YYYY-MM-DD" date string into a Date object.
  *
@@ -30,9 +33,7 @@ const parseDateOnly = (value) => {
 
 /**
  * Safely parse a time string ("HH:mm" or "HH:mm:ss") into a valid
- * DateTime for a Prisma `@db.Time` field. Postgres TIME columns are
- * represented by Prisma as DateTime values anchored to an arbitrary
- * base date — only the time-of-day portion is actually persisted.
+ * DateTime for a Prisma `@db.Time` field.
  *
  * @param {string} value
  * @returns {Date|null}
@@ -50,21 +51,17 @@ const parseTimeOnly = (value) => {
 
     if (hours > 23 || minutes > 59 || seconds > 59) return null;
 
-    // Anchor to a fixed arbitrary UTC date — only time-of-day matters
-    // for a @db.Time column; the date portion is ignored by Postgres.
     const anchored = new Date(Date.UTC(1970, 0, 1, hours, minutes, seconds));
     return Number.isNaN(anchored.getTime()) ? null : anchored;
   }
 
-  // Fallback: already a full ISO datetime string
   const parsed = new Date(trimmed);
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 };
 
 /**
  * Build the UTC day-range [startOfDay, endOfDay) for a given parsed
- * date, used to match a `@db.Date` column regardless of any residual
- * time component in storage.
+ * date.
  *
  * @param {Date} parsedDate
  * @returns {{ gte: Date, lt: Date }}
@@ -81,22 +78,6 @@ const buildDayRange = (parsedDate) => {
 
 /**
  * GET /api/enseignant/salles/disponibles
- *
- * Fetch rooms available for a given date + time slot. Returns all
- * active ("Disponible") rooms, excluding any room that already has an
- * overlapping approved ReservationSalle or an overlapping SessionSalle
- * on that date. If the SessionSalle model isn't present on this Prisma
- * client (e.g. schema not yet migrated), that check is silently
- * skipped and only the ReservationSalle overlap is applied.
- *
- * Query params:
- *   - date          (required) "YYYY-MM-DD"
- *   - heure_debut   (required) "HH:mm"
- *   - heure_fin     (required) "HH:mm"
- *   - capacite_min  (optional) minimum room capacity
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const getSallesDisponibles = async (req, res) => {
   try {
@@ -165,7 +146,6 @@ const getSallesDisponibles = async (req, res) => {
       }
     }
 
-    // --- Base pool: all active rooms, optionally filtered by capacity ---
     const salleWhere = { statut: 'Disponible' };
     if (parsedCapaciteMin !== undefined) {
       salleWhere.capacite = { gte: parsedCapaciteMin };
@@ -173,9 +153,6 @@ const getSallesDisponibles = async (req, res) => {
 
     const dayRange = buildDayRange(parsedDate);
 
-    // --- Find room ids already occupied by an approved reservation
-    // whose time window overlaps the requested slot. Overlap condition:
-    // existing.heure_debut < requested.heure_fin AND existing.heure_fin > requested.heure_debut ---
     const conflictingReservations = await prisma.reservationSalle.findMany({
       where: {
         statut: 'Approuvee',
@@ -188,9 +165,6 @@ const getSallesDisponibles = async (req, res) => {
 
     const occupiedSalleIds = new Set(conflictingReservations.map((r) => r.id_salle));
 
-    // --- Bonus: also exclude rooms with an overlapping SessionSalle,
-    // if that model exists on this Prisma client. Wrapped defensively
-    // so a missing/renamed model doesn't break this endpoint. ---
     if (prisma.sessionSalle && typeof prisma.sessionSalle.findMany === 'function') {
       try {
         const conflictingSessions = await prisma.sessionSalle.findMany({
@@ -204,7 +178,6 @@ const getSallesDisponibles = async (req, res) => {
         });
         conflictingSessions.forEach((s) => occupiedSalleIds.add(s.id_salle));
       } catch (sessionError) {
-        // Non-fatal — fall back to reservation-only conflict detection.
         console.warn(
           '[Enseignant Réservations] SessionSalle overlap check skipped:',
           sessionError.message
@@ -237,38 +210,16 @@ const getSallesDisponibles = async (req, res) => {
 
 /**
  * POST /api/enseignant/reservations
- *
- * Create a new room reservation request on behalf of a teacher.
- * Status defaults to 'Demandee'.
- *
- * Body:
- *   - id_salle      (required) UUID of the requested room
- *   - id_demandeur  (required) UUID of the requesting teacher (Utilisateur)
- *   - date          (required) "YYYY-MM-DD"
- *   - heure_debut   (required) "HH:mm"
- *   - heure_fin     (required) "HH:mm"
- *   - motif         (required) reason for the reservation
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const createReservation = async (req, res) => {
   try {
-    const { id_salle, id_demandeur, date, heure_debut, heure_fin, motif } = req.body;
-
-    // --- Validation ---
+    const teacherId = getTeacherId(req);
+    const { id_salle, date, heure_debut, heure_fin, motif } = req.body;
 
     if (!id_salle || !UUID_REGEX.test(id_salle)) {
       return res.status(400).json({
         success: false,
         message: 'Le champ "id_salle" est requis et doit être un UUID valide.',
-      });
-    }
-
-    if (!id_demandeur || !UUID_REGEX.test(id_demandeur)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "id_demandeur" est requis et doit être un UUID valide.',
       });
     }
 
@@ -317,8 +268,6 @@ const createReservation = async (req, res) => {
       });
     }
 
-    // Both times are anchored to the same base date, so a direct
-    // comparison correctly validates chronological order.
     if (parsedHeureFin <= parsedHeureDebut) {
       return res.status(400).json({
         success: false,
@@ -333,7 +282,6 @@ const createReservation = async (req, res) => {
       });
     }
 
-    // --- Verify the room exists before creating the reservation ---
     const salle = await prisma.salle.findUnique({
       where: { id_salle },
     });
@@ -348,7 +296,7 @@ const createReservation = async (req, res) => {
     const newReservation = await prisma.reservationSalle.create({
       data: {
         id_salle,
-        id_demandeur,
+        id_demandeur: teacherId, // Récupéré depuis le token !
         date: parsedDate,
         heure_debut: parsedHeureDebut,
         heure_fin: parsedHeureFin,
@@ -368,12 +316,10 @@ const createReservation = async (req, res) => {
       data: newReservation,
     });
   } catch (error) {
-    // Prisma P2003 = foreign key constraint violation (invalid id_salle
-    // or id_demandeur)
     if (error.code === 'P2003') {
       return res.status(400).json({
         success: false,
-        message: 'Référence invalide: vérifiez "id_salle" et "id_demandeur".',
+        message: 'Référence invalide: vérifiez "id_salle".',
       });
     }
 
@@ -386,30 +332,16 @@ const createReservation = async (req, res) => {
 };
 
 /**
- * GET /api/enseignant/reservations/:id_enseignant
+ * GET /api/enseignant/reservations
  *
- * Fetch the reservation history for a specific teacher, including the
- * room's basic info, ordered by date descending.
- *
- * URL params:
- *   - id_enseignant: id_demandeur (UUID)
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * Fetch the reservation history for the logged in teacher.
  */
 const getReservationsByEnseignant = async (req, res) => {
   try {
-    const { id_enseignant } = req.params;
-
-    if (!id_enseignant || !UUID_REGEX.test(id_enseignant)) {
-      return res.status(400).json({
-        success: false,
-        message: `L'identifiant fourni ("${id_enseignant}") n'est pas un UUID valide.`,
-      });
-    }
+    const teacherId = getTeacherId(req);
 
     const reservations = await prisma.reservationSalle.findMany({
-      where: { id_demandeur: id_enseignant },
+      where: { id_demandeur: teacherId }, // Sécurité: Seulement ses réservations
       include: {
         salle: {
           select: { numero: true, nom: true, type: true },
@@ -434,25 +366,11 @@ const getReservationsByEnseignant = async (req, res) => {
 
 /**
  * PUT /api/enseignant/reservations/:id/annuler
- *
- * Cancel a reservation made by a teacher. Only allowed while the
- * reservation's current statut is 'Demandee' or 'Approuvee'.
- *
- * URL params:
- *   - id: id_reservation (UUID)
- *
- * Body (optional):
- *   - id_demandeur (optional) if provided, enforces that only the
- *     original requester can cancel their own reservation — ideally
- *     sourced from req.user once auth middleware exists
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
  */
 const annulerReservation = async (req, res) => {
   try {
     const { id } = req.params;
-    const { id_demandeur } = req.body || {};
+    const teacherId = getTeacherId(req);
 
     if (!id || !UUID_REGEX.test(id)) {
       return res.status(400).json({
@@ -472,9 +390,7 @@ const annulerReservation = async (req, res) => {
       });
     }
 
-    // Optional ownership check: if the caller supplies id_demandeur,
-    // ensure it matches the reservation's original requester.
-    if (id_demandeur && existingReservation.id_demandeur !== id_demandeur) {
+    if (existingReservation.id_demandeur !== teacherId) {
       return res.status(403).json({
         success: false,
         message: "Vous n'êtes pas autorisé à annuler cette réservation.",

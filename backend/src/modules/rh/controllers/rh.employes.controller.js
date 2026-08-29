@@ -148,21 +148,8 @@ const getEmployeById = async (req, res) => {
 const createEmploye = async (req, res) => {
   try {
     const {
-      // utilisateur fields
-      nom,
-      prenom,
-      email,
-      telephone,
-      id_role,
-      mot_de_passe,
-      // employe fields
-      matricule,
-      fonction,
-      departement,
-      grade,
-      date_embauche,
-      statut,
-      id_rh_gestionnaire,
+      nom, prenom, email, telephone, id_role, mot_de_passe, // utilisateur
+      matricule, fonction, departement, grade, date_embauche, statut, id_rh_gestionnaire, // employe
     } = req.body;
 
     // --- Validation: utilisateur fields ---
@@ -174,9 +161,6 @@ const createEmploye = async (req, res) => {
     }
     if (!email || typeof email !== 'string' || !email.trim()) {
       return res.status(400).json({ success: false, message: 'Le champ "email" est requis.' });
-    }
-    if (!id_role) {
-      return res.status(400).json({ success: false, message: 'Le champ "id_role" est requis.' });
     }
 
     // --- Validation: employe fields ---
@@ -193,19 +177,36 @@ const createEmploye = async (req, res) => {
     if (statut && !VALID_STATUTS.includes(statut)) {
       return res.status(400).json({
         success: false,
-        message: `Statut invalide: "${statut}". Valeurs autorisées: ${VALID_STATUTS.join(', ')}.`,
+        message: `Statut invalide. Valeurs autorisées: ${VALID_STATUTS.join(', ')}.`,
       });
     }
 
-    // --- Hash the password (provided or default onboarding password) ---
+    // --- Gestion du Rôle (Auto-assignation si absent) ---
+    let finalRoleId = id_role;
+    if (!finalRoleId) {
+      // On cherche un rôle par défaut (ex: 'Employe' ou 'Utilisateur')
+      const defaultRole = await prisma.role.findFirst({
+        where: { nom_role: { in: ['Employe', 'Employé', 'Utilisateur', 'User'] } }
+      });
+      
+      if (!defaultRole) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Aucun rôle par défaut n'a été trouvé dans la base. Le superadmin doit créer un rôle 'Employe'." 
+        });
+      }
+      finalRoleId = defaultRole.id_role;
+    }
+
+    // --- Hash the password ---
     const passwordToHash = mot_de_passe || DEFAULT_PASSWORD;
     const hashedPassword = await bcrypt.hash(passwordToHash, SALT_ROUNDS);
 
-    // --- Transaction: create utilisateur, then employe using its id ---
+    // --- Transaction ---
     const newEmploye = await prisma.$transaction(async (tx) => {
       const newUtilisateur = await tx.utilisateur.create({
         data: {
-          id_role,
+          id_role: finalRoleId,
           nom: nom.trim(),
           prenom: prenom.trim(),
           email: email.trim().toLowerCase(),
@@ -215,7 +216,7 @@ const createEmploye = async (req, res) => {
         },
       });
 
-      const createdEmploye = await tx.employe.create({
+      return tx.employe.create({
         data: {
           id_employe: newUtilisateur.id_utilisateur,
           matricule: matricule.trim(),
@@ -228,53 +229,19 @@ const createEmploye = async (req, res) => {
         },
         include: {
           utilisateur: {
-            select: {
-              id_utilisateur: true,
-              nom: true,
-              prenom: true,
-              email: true,
-              telephone: true,
-              actif: true,
-              date_creation: true,
-            },
+            select: { id_utilisateur: true, nom: true, prenom: true, email: true, telephone: true, actif: true },
           },
         },
       });
-
-      return createdEmploye;
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Employé créé avec succès.',
-      data: newEmploye,
-    });
+    return res.status(201).json({ success: true, message: 'Employé créé avec succès.', data: newEmploye });
   } catch (error) {
-    // Prisma P2002 = unique constraint violation (email or matricule already exists)
     if (error.code === 'P2002') {
-      const target = Array.isArray(error.meta?.target)
-        ? error.meta.target.join(', ')
-        : error.meta?.target || 'champ unique';
-
-      return res.status(409).json({
-        success: false,
-        message: `Un enregistrement existe déjà avec cette valeur (${target}). Vérifiez l'email ou le matricule.`,
-      });
+      return res.status(409).json({ success: false, message: "L'email ou le matricule existe déjà." });
     }
-
-    // Prisma P2003 = foreign key constraint violation (e.g. invalid id_role)
-    if (error.code === 'P2003') {
-      return res.status(400).json({
-        success: false,
-        message: 'Référence invalide: vérifiez que "id_role" (et "id_rh_gestionnaire" le cas échéant) existent bien.',
-      });
-    }
-
     console.error('[RH Employés] Failed to create employee:', error);
-    return res.status(500).json({
-      success: false,
-      message: "Une erreur est survenue lors de la création de l'employé.",
-    });
+    return res.status(500).json({ success: false, message: "Erreur lors de la création de l'employé." });
   }
 };
 

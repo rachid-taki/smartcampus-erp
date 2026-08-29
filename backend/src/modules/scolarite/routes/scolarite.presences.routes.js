@@ -3,7 +3,7 @@ const {
   getPresences,
   createPresence,
   updatePresenceStatut
-} = require('../controllers/presences.controller');
+} = require('../controllers/scolarite.presences.controller');
 
 const router = Router();
 

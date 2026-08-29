@@ -192,11 +192,18 @@ function ProcessReclamationModal({
     setSaving(true);
 
     try {
+      // 1. Récupérer le token
+      const token = localStorage.getItem('token');
+      
       const response = await fetch(
         `${API_BASE}/reclamations/${reclamation.idReclamation}/repondre`,
         {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            // 2. Ajouter l'en-tête d'autorisation
+            'Authorization': `Bearer ${token}` 
+          },
           body: JSON.stringify({
             statut: selectedStatut,
             reponse: reponse.trim(),
@@ -487,7 +494,16 @@ export default function ReclamationsNotes() {
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/reclamations`, { signal });
+      // 1. Récupérer le token
+      const token = localStorage.getItem('token');
+      
+      // 2. L'ajouter à la requête GET
+      const response = await fetch(`${API_BASE}/reclamations`, { 
+        signal,
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
       if (!response.ok) {
         throw new Error(`Erreur serveur (code ${response.status})`);

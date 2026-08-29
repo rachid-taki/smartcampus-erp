@@ -5,7 +5,7 @@ const {
   updateSessionStatut,
   getCours,
   getProfesseurs
-} = require('../controllers/sessions.controller');
+} = require('../controllers/scolarite.sessions.controller');
 
 const router = Router();
 

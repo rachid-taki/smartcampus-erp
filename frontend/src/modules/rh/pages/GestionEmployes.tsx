@@ -1,64 +1,47 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
-  Calendar,
-  CheckCircle,
-  XCircle,
   Search,
-  Clock,
-  FileText,
-  Loader2,
   Plus,
+  Mail,
+  Phone,
+  Briefcase,
+  Building2,
+  BadgeCheck,
   X,
+  Loader2,
   AlertTriangle,
-  ArrowRight,
-  Palmtree,
-  User,
-  MessageSquare,
+  Users,
+  MoreHorizontal,
+  ChevronRight
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
 // TypeScript Interfaces
 // ─────────────────────────────────────────────────────────────
 
-type TypeConge = 'Conge_Normal' | 'Conge_Exceptionnel' | 'Conge_Maladie';
-type StatutConge = 'Soumise' | 'En_Traitement' | 'Validee' | 'Rejetee';
-
 interface Utilisateur {
   id_utilisateur: string;
   nom: string;
   prenom: string;
-  email?: string;
+  email: string;
+  telephone: string | null;
+  actif: boolean;
 }
 
 interface Employe {
   id_employe: string;
+  matricule: string;
+  fonction: string;
+  departement: string;
+  grade: string | null;
+  statut: 'Actif' | 'Inactif' | 'Conge';
   utilisateur: Utilisateur;
-}
-
-interface Conge {
-  id_demande_rh: string;
-  type: TypeConge;
-  statut: StatutConge;
-  date_demande: string;
-  date_debut: string;
-  date_fin: string;
-  duree: number;
-  motif: string;
-  commentaires_rh: string | null;
-  justificatif?: string | null;
-  employe: Employe;
 }
 
 interface ApiListResponse {
   success: boolean;
   count: number;
-  data: Conge[];
-}
-
-interface ApiSingleResponse {
-  success: boolean;
-  message?: string;
-  data: Conge;
+  data: Employe[];
 }
 
 interface Toast {
@@ -69,74 +52,11 @@ interface Toast {
 
 const API_BASE = 'http://localhost:3000/api/rh';
 
-const STATUT_OPTIONS: StatutConge[] = ['Soumise', 'En_Traitement', 'Validee', 'Rejetee'];
-const TYPE_OPTIONS: TypeConge[] = ['Conge_Normal', 'Conge_Exceptionnel', 'Conge_Maladie'];
-
-// ─────────────────────────────────────────────────────────────
-// Helpers
-// ─────────────────────────────────────────────────────────────
-
-const formatDateFr = (isoDate: string): string => {
-  try {
-    return new Date(isoDate).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    });
-  } catch {
-    return isoDate;
-  }
-};
-
-const formatTypeLabel = (type: TypeConge): string => {
-  const map: Record<TypeConge, string> = {
-    Conge_Normal: 'Congé Normal',
-    Conge_Exceptionnel: 'Congé Exceptionnel',
-    Conge_Maladie: 'Congé Maladie',
-  };
-  return map[type] ?? type.replace(/_/g, ' ');
-};
-
-const formatStatutLabel = (statut: StatutConge): string => {
-  const map: Record<StatutConge, string> = {
-    Soumise: 'Soumise',
-    En_Traitement: 'En traitement',
-    Validee: 'Validée',
-    Rejetee: 'Rejetée',
-  };
-  return map[statut] ?? statut.replace(/_/g, ' ');
-};
-
-const getStatutBadgeClasses = (statut: StatutConge): string => {
-  const map: Record<StatutConge, string> = {
-    Soumise: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
-    En_Traitement: 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800',
-    Validee: 'bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border border-green-200 dark:border-green-800',
-    Rejetee: 'bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800',
-  };
-  return map[statut] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
-};
-
-const getTypeBadgeClasses = (type: TypeConge): string => {
-  const map: Record<TypeConge, string> = {
-    Conge_Normal: 'bg-primary-50 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800',
-    Conge_Exceptionnel: 'bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800',
-    Conge_Maladie: 'bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 border border-orange-200 dark:border-orange-800',
-  };
-  return map[type] ?? 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700';
-};
-
 // ─────────────────────────────────────────────────────────────
 // Toast Container
 // ─────────────────────────────────────────────────────────────
 
-function ToastContainer({
-  toasts,
-  onDismiss,
-}: {
-  toasts: Toast[];
-  onDismiss: (id: number) => void;
-}) {
+function ToastContainer({ toasts, onDismiss }: { toasts: Toast[]; onDismiss: (id: number) => void }) {
   if (toasts.length === 0) return null;
 
   return (
@@ -152,7 +72,7 @@ function ToastContainer({
         >
           {toast.type === 'success' ? (
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5">
-              <CheckCircle className="h-4 w-4" />
+              <BadgeCheck className="h-4 w-4" />
             </div>
           ) : (
             <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
@@ -173,496 +93,29 @@ function ToastContainer({
 }
 
 // ─────────────────────────────────────────────────────────────
-// Processing Modal ("Traiter la demande")
-// ─────────────────────────────────────────────────────────────
-
-function ProcessCongeModal({
-  conge,
-  onClose,
-  onSaved,
-  pushToast,
-}: {
-  conge: Conge;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-  pushToast: (type: Toast['type'], message: string) => void;
-}) {
-  const [selectedStatut, setSelectedStatut] = useState<StatutConge>(conge.statut);
-  const [commentairesRh, setCommentairesRh] = useState<string>(conge.commentaires_rh || '');
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  const { nom, prenom } = conge.employe.utilisateur;
-
-  const handleSubmit = async () => {
-    setFormError(null);
-    setSaving(true);
-
-    try {
-      const response = await fetch(
-        `${API_BASE}/conges/${conge.id_demande_rh}/statut`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            statut: selectedStatut,
-            commentaires_rh: commentairesRh || undefined,
-          }),
-        }
-      );
-
-      const json: ApiSingleResponse = await response.json();
-
-      if (!response.ok || !json.success) {
-        throw new Error(
-          (json as any).message || `Erreur serveur (code ${response.status})`
-        );
-      }
-
-      pushToast('success', json.message || 'Statut mis à jour avec succès.');
-      await onSaved();
-      onClose();
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Une erreur est survenue lors de la mise à jour du statut.';
-      setFormError(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
-      onClick={() => !saving && onClose()}
-    >
-      <div
-        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
-              Traiter la demande de congé
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              {prenom} {nom}
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="px-6 py-5 space-y-5">
-          {formError && (
-            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-3 w-3" />
-              </div>
-              <span>{formError}</span>
-            </div>
-          )}
-
-          {/* Request details */}
-          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Type
-              </span>
-              <span
-                className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeBadgeClasses(
-                  conge.type
-                )}`}
-              >
-                {formatTypeLabel(conge.type)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Période
-              </span>
-              <span className="text-sm text-slate-700 dark:text-slate-300 flex items-center gap-1.5 tabular-nums">
-                {formatDateFr(conge.date_debut)}
-                <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
-                  <ArrowRight className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                </div>
-                {formatDateFr(conge.date_fin)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">
-                Durée
-              </span>
-              <span className="text-sm text-slate-700 dark:text-slate-300 tabular-nums">
-                {conge.duree} jour{conge.duree > 1 ? 's' : ''}
-              </span>
-            </div>
-
-            <div>
-              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide block mb-1">
-                Motif
-              </span>
-              <p className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">{conge.motif}</p>
-            </div>
-          </div>
-
-          <hr className="border-slate-200/70 dark:border-slate-800" />
-
-          {/* New status selector */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-              Nouveau statut
-            </label>
-            <select
-              value={selectedStatut}
-              onChange={(e) => setSelectedStatut(e.target.value as StatutConge)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              {STATUT_OPTIONS.map((s) => (
-                <option key={s} value={s}>
-                  {formatStatutLabel(s)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Quick action buttons */}
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setSelectedStatut('Validee')}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-3 py-2 text-sm font-medium hover:bg-green-100 dark:hover:bg-green-900/40 transition-colors"
-            >
-              <CheckCircle className="h-4 w-4" />
-              Valider
-            </button>
-            <button
-              type="button"
-              onClick={() => setSelectedStatut('Rejetee')}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-3 py-2 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors"
-            >
-              <XCircle className="h-4 w-4" />
-              Rejeter
-            </button>
-          </div>
-
-          {/* Comments */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">
-              Commentaires RH{' '}
-              <span className="normal-case font-normal text-slate-400 dark:text-slate-500">
-                (motif de refus ou commentaire d'approbation)
-              </span>
-            </label>
-            <textarea
-              value={commentairesRh}
-              onChange={(e) => setCommentairesRh(e.target.value)}
-              rows={4}
-              placeholder="Ajouter un commentaire..."
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Sauvegarder
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
-// Simulation Modal ("Simuler une demande")
-// ─────────────────────────────────────────────────────────────
-
-function SimulateCongeModal({
-  onClose,
-  onCreated,
-  pushToast,
-}: {
-  onClose: () => void;
-  onCreated: () => Promise<void>;
-  pushToast: (type: Toast['type'], message: string) => void;
-}) {
-  const [employes, setEmployes] = useState<Employe[]>([]);
-  const [loadingEmployes, setLoadingEmployes] = useState(true);
-
-  const [idEmploye, setIdEmploye] = useState('');
-  const [type, setType] = useState<TypeConge>('Conge_Normal');
-  const [dateDebut, setDateDebut] = useState('');
-  const [dateFin, setDateFin] = useState('');
-  const [motif, setMotif] = useState('');
-  const [saving, setSaving] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
-
-  // Charger la liste des employés au montage de la modale
-  useEffect(() => {
-    const fetchEmployes = async () => {
-      try {
-        const response = await fetch(`${API_BASE}/employes`);
-        const json = await response.json();
-        if (json.success && json.data) {
-          setEmployes(json.data);
-          // Auto-sélectionner le premier employé de la liste s'il y en a
-          if (json.data.length > 0) {
-            setIdEmploye(json.data[0].id_employe);
-          }
-        }
-      } catch (err) {
-        console.error("Impossible de charger les employés", err);
-        setFormError("Impossible de charger la liste des employés.");
-      } finally {
-        setLoadingEmployes(false);
-      }
-    };
-    
-    fetchEmployes();
-  }, []);
-
-  const handleSubmit = async () => {
-    setFormError(null);
-
-    if (!idEmploye.trim()) {
-      setFormError("Veuillez sélectionner un employé.");
-      return;
-    }
-    if (!dateDebut || !dateFin) {
-      setFormError('Les dates de début et de fin sont requises.');
-      return;
-    }
-    if (new Date(dateFin) < new Date(dateDebut)) {
-      setFormError('La date de fin ne peut pas être antérieure à la date de début.');
-      return;
-    }
-    if (!motif.trim()) {
-      setFormError('Le motif est requis.');
-      return;
-    }
-
-    setSaving(true);
-
-    try {
-      const response = await fetch(`${API_BASE}/conges`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id_employe: idEmploye.trim(),
-          type,
-          date_debut: dateDebut,
-          date_fin: dateFin,
-          motif: motif.trim(),
-        }),
-      });
-
-      const json: ApiSingleResponse = await response.json();
-
-      if (!response.ok || !json.success) {
-        throw new Error(
-          (json as any).message || `Erreur serveur (code ${response.status})`
-        );
-      }
-
-      pushToast('success', 'Demande de congé simulée avec succès.');
-      await onCreated();
-      onClose();
-    } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Une erreur est survenue lors de la création de la demande.';
-      setFormError(message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div
-      className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
-      onClick={() => !saving && onClose()}
-    >
-      <div
-        className="card p-0 w-full max-w-lg max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Modal Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark rounded-t-card z-10">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">
-              Simuler une demande de congé
-            </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-              Utile pour tester le flux de validation RH.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors disabled:opacity-50 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800"
-          >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Modal Body */}
-        <div className="px-6 py-5 space-y-4">
-          {formError && (
-            <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
-              <div className="flex h-5 w-5 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5">
-                <AlertTriangle className="h-3 w-3" />
-              </div>
-              <span>{formError}</span>
-            </div>
-          )}
-
-          {/* Menu déroulant pour l'employé */}
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-              Employé <span className="text-red-500">*</span>
-            </label>
-            {loadingEmployes ? (
-              <div className="flex items-center gap-2 text-sm text-slate-500 py-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Chargement des employés...
-              </div>
-            ) : (
-              <select
-                value={idEmploye}
-                onChange={(e) => setIdEmploye(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              >
-                <option value="" disabled>Sélectionnez un employé...</option>
-                {employes.map((emp) => (
-                  <option key={emp.id_employe} value={emp.id_employe}>
-                    {emp.utilisateur?.prenom} {emp.utilisateur?.nom}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-              Type de congé
-            </label>
-            <select
-              value={type}
-              onChange={(e) => setType(e.target.value as TypeConge)}
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-            >
-              {TYPE_OPTIONS.map((t) => (
-                <option key={t} value={t}>
-                  {formatTypeLabel(t)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-                Date de début <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-                Date de fin <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-                className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
-              Motif <span className="text-red-500">*</span>
-            </label>
-            <textarea
-              value={motif}
-              onChange={(e) => setMotif(e.target.value)}
-              rows={3}
-              placeholder="Ex: Congé annuel, visite médicale, événement familial..."
-              className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark px-3 py-2 text-sm text-slate-800 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent resize-none"
-            />
-          </div>
-        </div>
-
-        {/* Modal Footer */}
-        <div className="flex justify-end gap-3 px-6 py-4 border-t border-slate-200/70 dark:border-slate-800 sticky bottom-0 bg-card dark:bg-card-dark rounded-b-card">
-          <button
-            onClick={onClose}
-            disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors disabled:opacity-50"
-          >
-            Annuler
-          </button>
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            Créer la demande
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────
 // Main Page Component
 // ─────────────────────────────────────────────────────────────
 
-export default function GestionConges() {
-  const [conges, setConges] = useState<Conge[]>([]);
+export default function GestionEmployes() {
+  const [employes, setEmployes] = useState<Employe[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   const [searchInput, setSearchInput] = useState('');
-  const [statutFilter, setStatutFilter] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  
+  // Modals state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [selectedEmploye, setSelectedEmploye] = useState<Employe | null>(null);
 
-  const [selectedConge, setSelectedConge] = useState<Conge | null>(null);
-  const [showSimulateModal, setShowSimulateModal] = useState(false);
+  // Form state
+  const [formData, setFormData] = useState({
+    nom: '', prenom: '', email: '', telephone: '',
+    matricule: '', fonction: '', departement: '', grade: ''
+  });
+  const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
+  // Toasts
   const [toasts, setToasts] = useState<Toast[]>([]);
   const toastIdRef = useRef(0);
 
@@ -678,13 +131,13 @@ export default function GestionConges() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
-  // ── Fetch leave requests ──
-  const fetchConges = useCallback(async (signal?: AbortSignal) => {
+  // ── Fetch employees ──
+  const fetchEmployes = useCallback(async (signal?: AbortSignal) => {
     setLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`${API_BASE}/conges`, { signal });
+      const response = await fetch(`${API_BASE}/employes`, { signal });
 
       if (!response.ok) {
         throw new Error(`Erreur serveur (code ${response.status})`);
@@ -696,13 +149,10 @@ export default function GestionConges() {
         throw new Error('La requête a échoué côté serveur.');
       }
 
-      setConges(json.data);
+      setEmployes(json.data);
     } catch (err) {
       if (err instanceof DOMException && err.name === 'AbortError') return;
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Impossible de contacter le serveur. Vérifiez que le backend est démarré.';
+      const message = err instanceof Error ? err.message : 'Impossible de contacter le serveur.';
       setError(message);
     } finally {
       setLoading(false);
@@ -711,44 +161,76 @@ export default function GestionConges() {
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchConges(controller.signal);
+    fetchEmployes(controller.signal);
     return () => controller.abort();
-  }, [fetchConges]);
+  }, [fetchEmployes]);
+
+  // ── Create employee ──
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError(null);
+    setSaving(true);
+
+    try {
+      const response = await fetch(`${API_BASE}/employes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      const json = await response.json();
+
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || `Erreur serveur (code ${response.status})`);
+      }
+
+      pushToast('success', 'Employé intégré avec succès.');
+      setShowAddModal(false);
+      setFormData({ nom: '', prenom: '', email: '', telephone: '', matricule: '', fonction: '', departement: '', grade: '' });
+      fetchEmployes();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Erreur lors de la création.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   // ── Client-side filtering ──
-  const filteredConges = conges.filter((conge) => {
-    const fullName = `${conge.employe.utilisateur.prenom} ${conge.employe.utilisateur.nom}`.toLowerCase();
-    const matchesSearch = !searchInput.trim() || fullName.includes(searchInput.trim().toLowerCase());
-    const matchesStatut = !statutFilter || conge.statut === statutFilter;
-    const matchesType = !typeFilter || conge.type === typeFilter;
-    return matchesSearch && matchesStatut && matchesType;
+  const filteredEmployes = employes.filter((emp) => {
+    const term = searchInput.trim().toLowerCase();
+    if (!term) return true;
+    
+    const fullName = `${emp.utilisateur.prenom} ${emp.utilisateur.nom}`.toLowerCase();
+    const matricule = emp.matricule.toLowerCase();
+    return fullName.includes(term) || matricule.includes(term);
   });
 
   return (
     <div className="sc-portal min-h-screen p-6 md:p-8 animate-fade-in">
       <div className="max-w-7xl mx-auto">
+        
         {/* Header */}
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary-50 dark:bg-primary-900/30">
-              <Palmtree className="h-5 w-5 text-primary-600 dark:text-primary-400" />
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-900/30">
+              <Users className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
             </div>
             <div>
               <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white tracking-tight">
-                Gestion des Congés
+                Gestion des Employés
               </h1>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                Consultez, filtrez et traitez les demandes de congé des employés.
+                Annuaire, intégration et gestion du personnel.
               </p>
             </div>
           </div>
 
           <button
-            onClick={() => setShowSimulateModal(true)}
-            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
+            onClick={() => setShowAddModal(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all whitespace-nowrap"
           >
             <Plus className="h-4 w-4" />
-            Simuler une demande
+            Nouvel Employé
           </button>
         </header>
 
@@ -760,36 +242,10 @@ export default function GestionConges() {
               type="text"
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Rechercher par nom d'employé..."
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
+              placeholder="Rechercher par nom, prénom ou matricule..."
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white placeholder-slate-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent"
             />
           </div>
-
-          <select
-            value={statutFilter}
-            onChange={(e) => setStatutFilter(e.target.value)}
-            className="md:w-52 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-          >
-            <option value="">Tous les statuts</option>
-            {STATUT_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {formatStatutLabel(s)}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="md:w-56 px-3 py-2 text-sm border border-slate-200 dark:border-slate-700 bg-card dark:bg-card-dark text-slate-800 dark:text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-400 focus:border-transparent"
-          >
-            <option value="">Tous les types</option>
-            {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {formatTypeLabel(t)}
-              </option>
-            ))}
-          </select>
         </div>
 
         {/* Error state */}
@@ -808,122 +264,86 @@ export default function GestionConges() {
             <table className="min-w-full divide-y divide-slate-200/70 dark:divide-slate-800">
               <thead className="bg-surface dark:bg-surface-dark/50">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Employé
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Type de congé
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Période
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Durée
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Statut
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    Actions
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Employé</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Matricule</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Département</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fonction</th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Statut</th>
+                  <th className="px-6 py-3 text-right text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-200/70 dark:divide-slate-800">
                 {loading ? (
-                  Array.from({ length: 6 }).map((_, i) => (
+                  Array.from({ length: 5 }).map((_, i) => (
                     <tr key={i}>
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="h-8 w-8 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
-                          <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-                        </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-6 w-28 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-4 w-14 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-6 w-20 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" />
-                      </td>
-                      <td className="px-6 py-4">
-                        <div className="h-4 w-16 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" />
-                      </td>
+                      <td className="px-6 py-4"><div className="flex items-center gap-3"><div className="h-10 w-10 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" /><div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></div></td>
+                      <td className="px-6 py-4"><div className="h-4 w-20 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-24 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-32 bg-slate-100 dark:bg-slate-800 rounded animate-pulse" /></td>
+                      <td className="px-6 py-4"><div className="h-6 w-16 bg-slate-100 dark:bg-slate-800 rounded-full animate-pulse" /></td>
+                      <td className="px-6 py-4"><div className="h-4 w-8 bg-slate-100 dark:bg-slate-800 rounded animate-pulse ml-auto" /></td>
                     </tr>
                   ))
-                ) : filteredConges.length === 0 ? (
+                ) : filteredEmployes.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-50 dark:bg-primary-900/30 mx-auto mb-2">
-                        <Calendar className="h-6 w-6 text-primary-600 dark:text-primary-400" />
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-50 dark:bg-indigo-900/30 mx-auto mb-2">
+                        <Users className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
                       </div>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        Aucune demande de congé ne correspond aux critères sélectionnés.
-                      </p>
+                      <p className="text-sm text-slate-500 dark:text-slate-400">Aucun employé trouvé.</p>
                     </td>
                   </tr>
                 ) : (
-                  filteredConges.map((conge) => {
-                    const { nom, prenom } = conge.employe.utilisateur;
+                  filteredEmployes.map((emp) => {
+                    const { nom, prenom, email } = emp.utilisateur;
                     return (
-                      <tr key={conge.id_demande_rh} className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                      <tr 
+                        key={emp.id_employe} 
+                        onClick={() => setSelectedEmploye(emp)}
+                        className="hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
+                      >
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center gap-2.5">
-                            <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary-100 dark:bg-primary-900/40 text-primary-700 dark:text-primary-300 text-xs font-bold">
-                              {prenom?.[0]}
-                              {nom?.[0]}
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-xs font-bold shadow-sm">
+                              {prenom?.[0]}{nom?.[0]}
                             </div>
-                            <span className="text-sm font-medium text-slate-800 dark:text-white">
-                              {prenom} {nom}
-                            </span>
+                            <div>
+                              <span className="text-sm font-medium text-slate-800 dark:text-white block group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                {prenom} {nom}
+                              </span>
+                              <span className="text-xs text-slate-500 dark:text-slate-400">
+                                {email}
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 font-mono">
+                          {emp.matricule}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center gap-2">
+                            <Building2 className="h-4 w-4 text-slate-400" />
+                            {emp.departement}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300">
+                          <div className="flex items-center gap-2">
+                            <Briefcase className="h-4 w-4 text-slate-400" />
+                            {emp.fonction}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getTypeBadgeClasses(
-                              conge.type
-                            )}`}
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wide
+                            ${emp.statut === 'Actif' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                              emp.statut === 'Conge' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
+                              'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'}`}
                           >
-                            {formatTypeLabel(conge.type)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums">
-                          <span className="flex items-center gap-1.5">
-                            {formatDateFr(conge.date_debut)}
-                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
-                              <ArrowRight className="h-3 w-3 text-slate-400 dark:text-slate-500" />
-                            </div>
-                            {formatDateFr(conge.date_fin)}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums">
-                          <span className="flex items-center gap-1.5">
-                            <div className="flex h-5 w-5 items-center justify-center rounded bg-slate-100 dark:bg-slate-800">
-                              <Clock className="h-3.5 w-3.5 text-slate-400 dark:text-slate-500" />
-                            </div>
-                            {conge.duree} j
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${getStatutBadgeClasses(
-                              conge.statut
-                            )}`}
-                          >
-                            {formatStatutLabel(conge.statut)}
+                            {emp.statut}
                           </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <button
-                            onClick={() => setSelectedConge(conge)}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-primary-600 dark:text-primary-400 hover:bg-primary-50 dark:hover:bg-primary-900/20 rounded-lg transition-colors"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                            Traiter
+                          <button className="text-slate-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            <ChevronRight className="h-5 w-5" />
                           </button>
                         </td>
                       </tr>
@@ -936,23 +356,165 @@ export default function GestionConges() {
         </div>
       </div>
 
-      {/* Processing Modal */}
-      {selectedConge && (
-        <ProcessCongeModal
-          conge={selectedConge}
-          onClose={() => setSelectedConge(null)}
-          onSaved={() => fetchConges()}
-          pushToast={pushToast}
-        />
+      {/* ── Modal d'affichage du profil de l'employé ── */}
+      {selectedEmploye && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => setSelectedEmploye(null)}>
+          <div className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-lg overflow-hidden shadow-xl border border-slate-200 dark:border-slate-800" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">Détails de l'employé</h2>
+              <button onClick={() => setSelectedEmploye(null)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 p-1.5 rounded-lg transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 space-y-8">
+              {/* En-tête Profil */}
+              <div className="flex items-center gap-5">
+                <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-700 text-white text-2xl font-bold shadow-md">
+                  {selectedEmploye.utilisateur.prenom[0]}{selectedEmploye.utilisateur.nom[0]}
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-slate-900 dark:text-white leading-tight">
+                    {selectedEmploye.utilisateur.prenom} {selectedEmploye.utilisateur.nom}
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500 mt-1">
+                    {selectedEmploye.fonction} • {selectedEmploye.departement}
+                  </p>
+                  <span className={`inline-flex mt-2 items-center px-2.5 py-0.5 rounded-md text-[10px] uppercase font-bold tracking-wide ${
+                    selectedEmploye.statut === 'Actif' ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 
+                    selectedEmploye.statut === 'Conge' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400' : 
+                    'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-400'
+                  }`}>
+                    {selectedEmploye.statut}
+                  </span>
+                </div>
+              </div>
+
+              {/* Infos Contact */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Contact</h4>
+                <div className="space-y-3 bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+                    <Mail className="h-4 w-4 text-slate-400" /> {selectedEmploye.utilisateur.email}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm text-slate-700 dark:text-slate-300">
+                    <Phone className="h-4 w-4 text-slate-400" /> {selectedEmploye.utilisateur.telephone || <span className="text-slate-400 italic">Non renseigné</span>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Infos Pro */}
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Informations Professionnelles</h4>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Matricule</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white font-mono">{selectedEmploye.matricule}</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                    <p className="text-[11px] font-medium text-slate-500 uppercase tracking-wide mb-1">Grade</p>
+                    <p className="text-sm font-bold text-slate-800 dark:text-white">{selectedEmploye.grade || <span className="text-slate-400 font-normal italic">Non spécifié</span>}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Info Système */}
+              <div className="flex items-center gap-2 text-xs text-slate-400 bg-slate-50 dark:bg-slate-800/30 p-3 rounded-lg">
+                <Users className="h-4 w-4" /> 
+                Compte système {selectedEmploye.utilisateur.actif ? 'actif' : 'désactivé'}
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+              <button className="px-4 py-2 text-sm font-bold text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-xl transition-colors">
+                Modifier
+              </button>
+              <button onClick={() => setSelectedEmploye(null)} className="px-4 py-2 text-sm font-bold text-white bg-slate-800 hover:bg-slate-900 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-xl transition-colors">
+                Fermer
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Simulation Modal */}
-      {showSimulateModal && (
-        <SimulateCongeModal
-          onClose={() => setShowSimulateModal(false)}
-          onCreated={() => fetchConges()}
-          pushToast={pushToast}
-        />
+      {/* ── Modal d'ajout d'employé ── */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 animate-fade-in" onClick={() => !saving && setShowAddModal(false)}>
+          <div className="card p-0 w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200/70 dark:border-slate-800 sticky top-0 bg-card dark:bg-card-dark z-10">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-800 dark:text-white tracking-tight">Intégrer un employé</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">Le profil utilisateur sera généré automatiquement.</p>
+              </div>
+              <button onClick={() => setShowAddModal(false)} disabled={saving} className="text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 p-1 rounded-md transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-6">
+              {formError && (
+                <div className="flex items-start gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-700 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <span>{formError}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="col-span-1 md:col-span-2"><p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Identité & Contact</p></div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Prénom *</label>
+                  <input required value={formData.prenom} onChange={e => setFormData({...formData, prenom: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Nom *</label>
+                  <input required value={formData.nom} onChange={e => setFormData({...formData, nom: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Email Professionnel *</label>
+                  <input required type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Téléphone</label>
+                  <input value={formData.telephone} onChange={e => setFormData({...formData, telephone: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+
+                <div className="col-span-1 md:col-span-2 mt-2"><p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wide">Informations Professionnelles</p></div>
+                
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Matricule *</label>
+                  <input required value={formData.matricule} onChange={e => setFormData({...formData, matricule: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono uppercase" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Département *</label>
+                  <input required value={formData.departement} onChange={e => setFormData({...formData, departement: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Fonction *</label>
+                  <input required value={formData.fonction} onChange={e => setFormData({...formData, fonction: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1.5">Grade (Optionnel)</label>
+                  <input value={formData.grade} onChange={e => setFormData({...formData, grade: e.target.value})} className="w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-card dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                </div>
+              </div>
+
+              <div className="bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 text-indigo-800 dark:text-indigo-300 text-xs p-3 rounded-lg flex gap-3 mt-4">
+                <BadgeCheck className="h-5 w-5 shrink-0 text-indigo-500" />
+                <p>Le mot de passe par défaut <b>ChangeMe123!</b> sera assigné au compte de l'employé. Les permissions exactes de la plateforme seront assignées ultérieurement par l'administrateur système.</p>
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200/70 dark:border-slate-800 mt-6 sticky bottom-0 bg-card dark:bg-card-dark">
+                <button type="button" onClick={() => setShowAddModal(false)} disabled={saving} className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors">
+                  Annuler
+                </button>
+                <button type="submit" disabled={saving} className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-soft hover:shadow-soft-hover transition-all disabled:opacity-60 disabled:cursor-not-allowed">
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />} Intégrer l'employé
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Toasts */}

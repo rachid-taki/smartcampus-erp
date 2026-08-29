@@ -556,4 +556,565 @@ INSERT INTO "cours" (id_cours, code, nom, credits, coefficient) VALUES
 ('c3333333-3333-3333-3333-333333333307', 'M242', 'IoT et Cloud computing', 6, 3),
 ('c3333333-3333-3333-3333-333333333308', 'M243', 'Droit numérique et droits de propriété intellectuelle IT', 2, 1);
 
-SELECT * FROM "role";
+-- 1. Insérer les rôles
+INSERT INTO "role" ("id_role", "nom_role", "description", "created_at", "updated_at")
+VALUES
+  ('85a81db1-2a90-4c7b-b38c-85a210dc01b7', 'SuperAdmin', 'Administrateur système avec accès total', NOW(), NOW()),
+  ('d83e29f4-1875-4309-8472-35105221dc2a', 'ScolariteStaff', 'Personnel de la scolarité', NOW(), NOW()),
+  ('4f8c9b2d-6e1a-4d3b-9a0f-5c7e8d1a2b3c', 'Professeur', 'Corps enseignant', NOW(), NOW()),
+  ('b7a1d5c2-3e4f-4a6b-8c9d-0e1f2a3b4c5d', 'Etudiant', 'Étudiant de l''établissement', NOW(), NOW()),
+  ('e9c4b2a1-d5f6-4e7b-9a8c-7d6e5f4a3b2c', 'RH', 'Responsable des ressources humaines', NOW(), NOW())
+ON CONFLICT ("nom_role") DO NOTHING;
+
+-- 2. Insérer les permissions
+INSERT INTO "permission" ("id_permission", "nom", "module", "description")
+VALUES
+  ('c3d2e1f0-a4b5-4c6d-8e7f-9a0b1c2d3e4f', 'MANAGE_USERS', 'AUTH', 'Créer, modifier, supprimer des utilisateurs'),
+  ('1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d', 'MANAGE_ROLES', 'RBAC', 'Gérer les rôles et permissions'),
+  ('f5d4c3b2-a1e0-4f9d-8c7b-6a5b4c3d2e1f', 'VIEW_DASHBOARD', 'CORE', 'Accéder au tableau de bord principal'),
+  ('7c9e6679-7425-40de-944b-e07fc1f90ae7', 'MANAGE_DEMANDES', 'SCOLARITE', 'Gérer les demandes étudiantes')
+ON CONFLICT ("nom", "module") DO NOTHING;
+
+-- 3. Attribuer les permissions au rôle SuperAdmin
+INSERT INTO "role_permission" ("id_role", "id_permission")
+VALUES
+  ('85a81db1-2a90-4c7b-b38c-85a210dc01b7', 'c3d2e1f0-a4b5-4c6d-8e7f-9a0b1c2d3e4f'),
+  ('85a81db1-2a90-4c7b-b38c-85a210dc01b7', '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5d'),
+  ('85a81db1-2a90-4c7b-b38c-85a210dc01b7', 'f5d4c3b2-a1e0-4f9d-8c7b-6a5b4c3d2e1f'),
+  ('85a81db1-2a90-4c7b-b38c-85a210dc01b7', '7c9e6679-7425-40de-944b-e07fc1f90ae7')
+ON CONFLICT ("id_role", "id_permission") DO NOTHING;
+
+-- 4. Créer l'utilisateur SuperAdmin
+INSERT INTO "utilisateur" (
+  "id_utilisateur", 
+  "id_role", 
+  "nom", 
+  "prenom", 
+  "email", 
+  "mot_de_passe",
+  "actif", 
+  "date_creation", 
+  "updated_at",
+  "notif_email", 
+  "notif_demandes", 
+  "notif_documents", 
+  "notif_calendrier"
+)
+VALUES (
+  '3b8d4f21-9e7a-4c5b-8d1e-2f3a4b5c6d7e',
+  '85a81db1-2a90-4c7b-b38c-85a210dc01b7', 
+  'Admin',
+  'Super',
+  'superadmin@test.com',
+  '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjPGGa.PQC', 
+  true, 
+  NOW(), 
+  NOW(),
+  true, 
+  true, 
+  true, 
+  false
+)
+ON CONFLICT ("email") DO NOTHING;
+
+UPDATE "utilisateur"
+SET "mot_de_passe" = '$2b$10$X7vW0cK5J3e2M6s8Q1v9g.Pq8K2X7vW0cK5J3e2M6s8Q1v9g.Pq'
+WHERE "email" = 'superadmin@test.com';
+DELETE FROM "utilisateur" WHERE "email" = 'superadmin@test.com';
+
+
+INSERT INTO "utilisateur" (
+  "id_utilisateur", "id_role", "nom", "prenom", "email", "mot_de_passe", 
+  "actif", "date_creation", "updated_at", "notif_email", "notif_demandes", "notif_documents", "notif_calendrier"
+) 
+VALUES (
+  gen_random_uuid(), 
+  '85a81db1-2a90-4c7b-b38c-85a210dc01b7', 
+  'Admin', 'Super', 'admin@smartcampus.ma', '$2b$10$00LW1yfNbXaJu2qm/3YOT.S1sPy8udu7hzL6ZPuk8X7h3B3/P4nEm', 
+  true, NOW(), NOW(), true, true, true, false
+) 
+ON CONFLICT ("email") DO UPDATE 
+SET "mot_de_passe" = '$2b$10$00LW1yfNbXaJu2qm/3YOT.S1sPy8udu7hzL6ZPuk8X7h3B3/P4nEm', "id_role" = '85a81db1-2a90-4c7b-b38c-85a210dc01b7';
+
+INSERT INTO "role" (id_role, nom_role, description) 
+VALUES ('44444444-0000-0000-0000-000000000001', 'SUPER_ADMIN', 'Administrateur système complet')
+ON CONFLICT (nom_role) DO NOTHING;
+
+UPDATE "utilisateur" 
+SET email = 'hriziilyass@gmail.com'
+WHERE id_utilisateur = '77777777-0000-0000-0000-000000000002';
+
+-- 1. Insérer les Workflows
+INSERT INTO workflow (id_workflow, nom, description, statut) VALUES
+('88888888-8888-8888-8888-888888888881', 'Workflow Conventions', 'Gestion des conventions de stage et PFE', 'Actif'),
+('88888888-8888-8888-8888-888888888882', 'Workflow Scolarité', 'Demandes de documents de scolarité classiques', 'Actif'),
+('88888888-8888-8888-8888-888888888883', 'Workflow Absences', 'Gestion des absences et justifications', 'Actif'),
+('88888888-8888-8888-8888-888888888884', 'Workflow Cartes', 'Renouvellement et création de cartes', 'Actif'),
+('88888888-8888-8888-8888-888888888885', 'Workflow Pédagogique', 'Demandes à caractère pédagogique', 'Actif'),
+('88888888-8888-8888-8888-888888888886', 'Workflow Salles', 'Réservations et accès aux salles', 'Actif'),
+('88888888-8888-8888-8888-888888888887', 'Workflow Documents Originaux', 'Retrait de documents originaux (Bac, etc.)', 'Actif');
+
+-- 2. Insérer les Types de Demande
+INSERT INTO type_demande (id_type, libelle, code, description, id_workflow, delai_traitement) VALUES
+('77777777-7777-7777-7777-777777777771', 'Convention de stage', 'CONV-STG', 'Demande de convention', '88888888-8888-8888-8888-888888888881', 3),
+('77777777-7777-7777-7777-777777777772', 'Attestation de stage', 'ATT-STG', 'Demande d''attestation de stage', '88888888-8888-8888-8888-888888888881', 2),
+('77777777-7777-7777-7777-777777777773', 'Relevé de notes', 'REL-NOT', 'Demande de relevé', '88888888-8888-8888-8888-888888888882', 1),
+('77777777-7777-7777-7777-777777777774', 'Attestation de scolarité', 'ATT-SCOL', 'Attestation de scolarité', '88888888-8888-8888-8888-888888888882', 1),
+('77777777-7777-7777-7777-777777777775', 'Justificatif d''absence', 'JUST-ABS', 'Justifier une absence', '88888888-8888-8888-8888-888888888883', 2),
+('77777777-7777-7777-7777-777777777776', 'Carte d''étudiant', 'CART-ETU', 'Renouvellement carte', '88888888-8888-8888-8888-888888888884', 5),
+('77777777-7777-7777-7777-777777777777', 'Dérogation', 'DEROG', 'Demande exceptionnelle', '88888888-8888-8888-8888-888888888885', 7),
+('77777777-7777-7777-7777-777777777778', 'Demande de salle', 'DEM-SAL', 'Réservation ponctuelle', '88888888-8888-8888-8888-888888888886', 1),
+('77777777-7777-7777-7777-777777777779', 'Retrait provisoire', 'RET-PROV', 'Retrait du bac', '88888888-8888-8888-8888-888888888887', 2);
+
+-- 3. Exécuter maintenant l'insertion des demandes que je vous avais fournie précédemment.
+INSERT INTO demande (
+    id_demande, 
+    numero, 
+    id_etudiant, 
+    id_type, 
+    id_workflow, 
+    id_traite_par, 
+    objet, 
+    description, 
+    statut, 
+    priorite
+) VALUES 
+-- 1. Convention pour le projet de fin d'année
+('a1111111-1111-1111-1111-111111111111', 'DEM-2026-0001', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777771', '88888888-8888-8888-8888-888888888881', NULL, 'Convention de stage PFA', 'Demande de convention pour le projet de plateforme de dématérialisation administrative.', 'Validee', 'Haute'),
+
+-- 2. Stage d'été
+('a2222222-2222-2222-2222-222222222222', 'DEM-2026-0002', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777772', '88888888-8888-8888-8888-888888888881', NULL, 'Attestation de stage d''été', 'Document nécessaire pour finaliser le dossier de stage d''été en ingénierie des systèmes d''information (spécialité CRM/Odoo).', 'Cloturee', 'Normale'),
+
+-- 3. Relevé de notes
+('a3333333-3333-3333-3333-333333333333', 'DEM-2026-0003', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777773', '88888888-8888-8888-8888-888888888882', NULL, 'Relevé de notes - S3', 'Besoin du relevé de notes officiel de la filière MGSI pour le dossier de candidature de stage.', 'Soumise', 'Urgente'),
+
+-- 4. Convention PFE
+('a4444444-4444-4444-4444-444444444444', 'DEM-2026-0004', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777771', '88888888-8888-8888-8888-888888888881', NULL, 'Convention de PFE - Oracle R&D', 'Signature de la convention suite à la réussite du test technique pour le stage de fin d''études au centre R&D.', 'En_Traitement', 'Haute'),
+
+-- 5. Attestation de scolarité
+('a5555555-5555-5555-5555-555555555555', 'DEM-2026-0005', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777774', '88888888-8888-8888-8888-888888888882', NULL, 'Attestation de scolarité - 2ème Année', 'Demande standard d''attestation pour l''année en cours.', 'Brouillon', 'Normale'),
+
+-- 6. Justificatif d'absence
+('a6666666-6666-6666-6666-666666666666', 'DEM-2026-0006', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777775', '88888888-8888-8888-8888-888888888883', NULL, 'Justification d''absence (Hackathon)', 'Absence justifiée lors du passage de l''évaluation pour l''événement Business Show Agadir.', 'Rejetee', 'Basse'),
+
+-- 7. Carte d'étudiant
+('a7777777-7777-7777-7777-777777777777', 'DEM-2026-0007', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777776', '88888888-8888-8888-8888-888888888884', NULL, 'Renouvellement carte d''étudiant', 'La puce RFID de la carte actuelle ne fonctionne plus aux portiques.', 'Soumise', 'Normale'),
+
+-- 8. Demande de dérogation
+('a8888888-8888-8888-8888-888888888888', 'DEM-2026-0008', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777777', '88888888-8888-8888-8888-888888888885', NULL, 'Dérogation pour module additionnel', 'Demande de validation d''un module optionnel orienté Python/Data Science (Clustering K-means).', 'En_Traitement', 'Normale'),
+
+-- 9. Demande de salle (Club)
+('a9999999-9999-9999-9999-999999999999', 'DEM-2026-0009', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777778', '88888888-8888-8888-8888-888888888886', NULL, 'Réservation amphithéâtre', 'Présentation du module de gestion de scolarité ERP/Odoo devant la promotion.', 'Validee', 'Haute'),
+
+-- 10. Retrait provisoire
+('a0000000-0000-0000-0000-000000000000', 'DEM-2026-0010', '66666666-6666-6666-6666-666666666661', '77777777-7777-7777-7777-777777777779', '88888888-8888-8888-8888-888888888887', NULL, 'Retrait provisoire du baccalauréat', 'Besoin de l''original du baccalauréat pour le renouvellement du passeport/CNIE.', 'Cloturee', 'Normale');
+
+INSERT INTO demande (
+    id_demande, 
+    numero, 
+    id_etudiant, 
+    id_type, 
+    id_workflow, 
+    id_traite_par, 
+    objet, 
+    description, 
+    statut, 
+    priorite
+) VALUES 
+-- 11. Attestation de réussite (Certificate of Success)
+('b1111111-1111-1111-1111-111111111111', 'DEM-2026-0011', '66666666-6666-6666-6666-666666666661', (SELECT id_type FROM type_demande LIMIT 1), (SELECT id_workflow FROM workflow LIMIT 1), NULL, 'Attestation de réussite', 'Demande d''attestation de réussite pour l''année universitaire précédente.', 'Soumise', 'Normale'),
+
+-- 12. Attestation d'inscription (Enrollment Certificate)
+('b2222222-2222-2222-2222-222222222222', 'DEM-2026-0012', '66666666-6666-6666-6666-666666666661', (SELECT id_type FROM type_demande LIMIT 1), (SELECT id_workflow FROM workflow LIMIT 1), NULL, 'Attestation d''inscription', 'Document requis pour le renouvellement du dossier d''assurance maladie et de bourse.', 'Soumise', 'Haute'),
+
+-- 13. Attestation de bonne conduite (Certificate of Good Conduct)
+('b3333333-3333-3333-3333-333333333333', 'DEM-2026-0013', '66666666-6666-6666-6666-666666666661', (SELECT id_type FROM type_demande LIMIT 1), (SELECT id_workflow FROM workflow LIMIT 1), NULL, 'Attestation de bonne conduite', 'Demande pour constitution d''un dossier administratif pour un stage à l''étranger.', 'Soumise', 'Normale'),
+
+-- 14. Relevé de notes global (Global Transcripts)
+('b4444444-4444-4444-4444-444444444444', 'DEM-2026-0014', '66666666-6666-6666-6666-666666666661', (SELECT id_type FROM type_demande LIMIT 1), (SELECT id_workflow FROM workflow LIMIT 1), NULL, 'Relevé de notes global', 'Demande de l''historique complet des relevés de notes certifiés depuis la 1ère année.', 'Soumise', 'Urgente'),
+
+-- 15. Certificat de présence (Certificate of Attendance)
+('b5555555-5555-5555-5555-555555555555', 'DEM-2026-0015', '66666666-6666-6666-6666-666666666661', (SELECT id_type FROM type_demande LIMIT 1), (SELECT id_workflow FROM workflow LIMIT 1), NULL, 'Certificat de présence aux examens', 'Justificatif officiel de présence requis pour l''employeur durant la période des examens finaux.', 'Soumise', 'Normale');
+
+
+
+
+
+
+
+
+
+
+
+
+DO $$
+DECLARE
+  v_workflow_id UUID;
+BEGIN
+  -- 1. Récupérer un workflow existant ou en créer un minimaliste
+  SELECT id_workflow INTO v_workflow_id FROM "workflow" LIMIT 1;
+
+  IF v_workflow_id IS NULL THEN
+    v_workflow_id := '99999999-9999-4000-8000-000000000001';
+    INSERT INTO "workflow" ("id_workflow", "nom", "description")
+    VALUES (
+      v_workflow_id,
+      'Workflow Demandes Standard',
+      'Workflow générique pour le traitement des demandes administratives'
+    );
+  END IF;
+
+  -- 2. Insertion / Mise à jour des types de demandes
+  INSERT INTO "type_demande" ("id_type", "code", "libelle")
+  VALUES 
+    ('11111111-aaaa-4000-8000-000000000001', 'ATTESTATION_SCOLARITE', 'Attestation de Scolarité'),
+    ('11111111-aaaa-4000-8000-000000000002', 'RELEVE_NOTES', 'Relevé de Notes'),
+    ('11111111-aaaa-4000-8000-000000000003', 'CONVENTION_STAGE', 'Convention de Stage'),
+    ('11111111-aaaa-4000-8000-000000000004', 'AUTRE', 'Demande Administrative Libre')
+  ON CONFLICT ("id_type") DO UPDATE 
+  SET "code" = EXCLUDED."code", "libelle" = EXCLUDED."libelle";
+
+  -- 3. Insertion du jeu de test complet
+  INSERT INTO "demande" (
+    "id_demande",
+    "numero",
+    "id_etudiant",
+    "id_type",
+    "id_workflow",
+    "objet",
+    "description",
+    "statut",
+    "date_creation"
+  )
+  VALUES 
+    -- Cas 1 : Nouvelle demande d'attestation à valider et envoyer par e-mail
+    (
+      'a1b2c3d4-0001-4000-8000-111111111111',
+      'DEM-2026-0101',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000001',
+      v_workflow_id,
+      'Demande d attestation de scolarité (Année en cours)',
+      'J ai besoin de mon attestation de scolarité pour le renouvellement de mon dossier de bourse.',
+      'Soumise',
+      NOW() - INTERVAL '2 hours'
+    ),
+
+    -- Cas 2 : Relevé de notes en cours de traitement
+    (
+      'a1b2c3d4-0002-4000-8000-222222222222',
+      'DEM-2026-0102',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000002',
+      v_workflow_id,
+      'Relevé de notes du Semestre 1',
+      'Relevé nécessaire pour ma candidature à un programme d échange académique.',
+      'En_Traitement',
+      NOW() - INTERVAL '1 day'
+    ),
+
+    -- Cas 3 : Demande Validée prête à être servée / clôturée
+    (
+      'a1b2c3d4-0003-4000-8000-333333333333',
+      'DEM-2026-0103',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000001',
+      v_workflow_id,
+      'Attestation de scolarité pour visa',
+      'Document requis par le consulat pour mon dossier de visa étudiant.',
+      'Validee',
+      NOW() - INTERVAL '3 days'
+    ),
+
+    -- Cas 4 : Demande libre sans pièce officielle requise
+    (
+      'a1b2c3d4-0004-4000-8000-444444444444',
+      'DEM-2026-0104',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000004',
+      v_workflow_id,
+      'Changement de groupe de TD (Section B vers A)',
+      'Conflit d emploi du temps justifié par une attestation de transport.',
+      'Soumise',
+      NOW() - INTERVAL '4 hours'
+    ),
+
+    -- Cas 5 : Demande Servée & Clôturée (Historique)
+    (
+      'a1b2c3d4-0005-4000-8000-555555555555',
+      'DEM-2026-0105',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000001',
+      v_workflow_id,
+      'Attestation d inscription annuelle',
+      'Document récupéré en mains propres par l étudiant.',
+      'Cloturee',
+      NOW() - INTERVAL '10 days'
+    ),
+
+    -- Cas 6 : Demande Rejetée (Historique)
+    (
+      'a1b2c3d4-0006-4000-8000-666666666666',
+      'DEM-2026-0106',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000002',
+      v_workflow_id,
+      'Relevé de notes global non officiel',
+      'Rejeté : Les délibérations du semestre ne sont pas encore finalisées.',
+      'Rejetee',
+      NOW() - INTERVAL '15 days'
+    ),
+
+    -- Cas 7 : Brouillon
+    (
+      'a1b2c3d4-0007-4000-8000-777777777777',
+      'DEM-2026-0107',
+      '66666666-6666-6666-6666-666666666661',
+      '11111111-aaaa-4000-8000-000000000004',
+      v_workflow_id,
+      'Demande de duplicata de carte d étudiant',
+      'Brouillon en attente de la déclaration de perte.',
+      'Brouillon',
+      NOW() - INTERVAL '1 hour'
+    )
+  ON CONFLICT ("id_demande") DO NOTHING;
+
+END $$;
+
+INSERT INTO "notification" (
+  "id_notification", 
+  "id_utilisateur", 
+  "titre", 
+  "message", 
+  "type", 
+  "date_envoi", 
+  "lu", 
+  "priorite"
+)
+VALUES
+-- 1. Notification standard non lue (Nouvelle Demande)
+(
+  gen_random_uuid(),
+  (SELECT id_utilisateur FROM "utilisateur" WHERE email = 'admin@smartcampus.ma'),
+  'Nouvelle demande reçue',
+  'Une nouvelle demande d''attestation a été soumise par un étudiant et nécessite votre validation.',
+  'Demande',
+  NOW(),
+  false,
+  'Info'
+),
+
+-- 2. Alerte non lue (Conflit détecté par l'IA)
+(
+  gen_random_uuid(),
+  (SELECT id_utilisateur FROM "utilisateur" WHERE email = 'admin@smartcampus.ma'),
+  'Conflit de planification détecté',
+  'L''IA a détecté une double réservation pour l''Amphithéâtre principal ce jeudi à 10h00.',
+  'Alerte',
+  NOW() - INTERVAL '1 hour',
+  false,
+  'Warning'
+),
+
+-- 3. Message Urgent non lu (Système)
+(
+  gen_random_uuid(),
+  (SELECT id_utilisateur FROM "utilisateur" WHERE email = 'admin@smartcampus.ma'),
+  'Maintenance système urgente',
+  'Le serveur sera redémarré dans 30 minutes pour une mise à jour de sécurité critique.',
+  'Systeme',
+  NOW() - INTERVAL '5 minutes',
+  false,
+  'Urgent'
+),
+
+-- 4. Notification déjà lue (Succès Document)
+(
+  gen_random_uuid(),
+  (SELECT id_utilisateur FROM "utilisateur" WHERE email = 'admin@smartcampus.ma'),
+  'Document officiel généré',
+  'Le relevé de notes a été généré et signé électroniquement avec succès.',
+  'Document',
+  NOW() - INTERVAL '1 day',
+  true,
+  'Info'
+);
+
+
+
+
+
+
+
+INSERT INTO role (id_role, nom_role)
+VALUES (gen_random_uuid(), 'Employe')
+ON CONFLICT DO NOTHING;
+DO $$
+DECLARE
+    -- Génération d'un UUID unique pour l'employé
+    nouvel_id UUID := gen_random_uuid();
+    -- Variable pour stocker l'ID du rôle
+    role_id UUID;
+BEGIN
+    -- 1. Récupérer l'ID du rôle "Employe" (Ajustez 'Employe' si votre rôle s'appelle autrement)
+    SELECT id_role INTO role_id FROM role WHERE nom_role IN ('Employe', 'Employé', 'User') LIMIT 1;
+
+    -- Si vous n'avez pas de rôle, on arrête le script
+    IF role_id IS NULL THEN
+        RAISE EXCEPTION 'Aucun rôle "Employe" trouvé dans la table role.';
+    END IF;
+
+    -- 2. Création de l'utilisateur
+    INSERT INTO utilisateur (
+        id_utilisateur, 
+        id_role, 
+        nom, 
+        prenom, 
+        email, 
+        mot_de_passe, 
+        telephone, 
+        actif,
+        notif_email,
+        notif_demandes,
+        notif_documents
+    )
+    VALUES (
+        nouvel_id,
+        role_id,
+        'Testeur',          -- Nom
+        'Email',            -- Prénom
+        'ilyas4test@gmail.com',  -- 👈 METTEZ VOTRE VRAI EMAIL ICI
+        '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjGsGZ0lY2', -- Hash bcrypt pour le mot de passe 'ChangeMe123!'
+        '0600000000',
+        true,
+        true,
+        true,
+        true
+    );
+
+    -- 3. Création du profil Employé (lié au même ID)
+    INSERT INTO employe (
+        id_employe, 
+        matricule, 
+        fonction, 
+        departement, 
+        date_embauche, 
+        statut, 
+        grade
+    )
+    VALUES (
+        nouvel_id,
+        'EMP-TEST-001',
+        'Ingénieur Test',
+        'Développement',
+        CURRENT_DATE,
+        'Actif',
+        'Cadre'
+    );
+
+    RAISE NOTICE 'Employé de test créé avec succès !';
+END $$;
+
+
+
+
+
+
+
+
+
+
+
+
+DO $$
+DECLARE
+    -- Variables pour récupérer les rôles
+    v_role_prof UUID;
+    v_role_etu UUID;
+    
+    -- UUIDs valides en hexadécimal (0-9, a-f)
+    v_id_prof UUID := 'b0000000-0000-0000-0000-000000000001';
+    v_id_etu1 UUID := 'e1000000-0000-0000-0000-000000000001';
+    v_id_etu2 UUID := 'e1000000-0000-0000-0000-000000000002';
+    
+    v_id_fil1 UUID := 'f1000000-0000-0000-0000-000000000001';
+    v_id_fil2 UUID := 'f1000000-0000-0000-0000-000000000002';
+    
+    v_id_cours1 UUID := 'c1000000-0000-0000-0000-000000000001';
+    v_id_cours2 UUID := 'c1000000-0000-0000-0000-000000000002';
+    
+    v_id_salle UUID := 'a1000000-0000-0000-0000-000000000001';
+BEGIN
+    -- 1. Récupération ou Création des Rôles
+    INSERT INTO role (id_role, nom_role) VALUES (gen_random_uuid(), 'Professeur') ON CONFLICT (nom_role) DO NOTHING;
+    INSERT INTO role (id_role, nom_role) VALUES (gen_random_uuid(), 'Etudiant') ON CONFLICT (nom_role) DO NOTHING;
+
+    SELECT id_role INTO v_role_prof FROM role WHERE nom_role = 'Professeur' LIMIT 1;
+    SELECT id_role INTO v_role_etu FROM role WHERE nom_role = 'Etudiant' LIMIT 1;
+
+    -- 2. Création de l'Enseignant
+    INSERT INTO utilisateur (id_utilisateur, id_role, nom, prenom, email, mot_de_passe, actif)
+    VALUES (v_id_prof, v_role_prof, 'Dubois', 'Jean', 'prof.test@smartcampus.ma', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjGsGZ0lY2', true)
+    ON CONFLICT (email) DO NOTHING;
+
+    INSERT INTO employe (id_employe, matricule, fonction, date_embauche, statut)
+    VALUES (v_id_prof, 'PROF-TEST-01', 'Enseignant Chercheur', CURRENT_DATE, 'Actif'::enum_statut_employe)
+    ON CONFLICT (matricule) DO NOTHING;
+
+    INSERT INTO professeur (id_professeur, specialite, heures_hebdomadaires)
+    VALUES (v_id_prof, 'Informatique & Base de Données', 14)
+    ON CONFLICT DO NOTHING;
+
+    -- 3. Création des Filières
+    INSERT INTO filiere (id_filiere, nom, code) VALUES (v_id_fil1, 'Génie Informatique', 'GINF') ON CONFLICT DO NOTHING;
+    INSERT INTO filiere (id_filiere, nom, code) VALUES (v_id_fil2, 'Génie Civil', 'GCIV') ON CONFLICT DO NOTHING;
+
+    -- 4. Création de 2 Étudiants
+    INSERT INTO utilisateur (id_utilisateur, id_role, nom, prenom, email, mot_de_passe, actif)
+    VALUES (v_id_etu1, v_role_etu, 'Martin', 'Lucas', 'lucas.martin@smartcampus.ma', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjGsGZ0lY2', true) ON CONFLICT (email) DO NOTHING;
+    INSERT INTO etudiant (id_etudiant, id_filiere, cne, cin, date_inscription, statut)
+    VALUES (v_id_etu1, v_id_fil1, 'CNE-TEST-1', 'CIN-TEST-1', CURRENT_DATE, 'Actif'::enum_statut_etudiant) ON CONFLICT (cne) DO NOTHING;
+
+    INSERT INTO utilisateur (id_utilisateur, id_role, nom, prenom, email, mot_de_passe, actif)
+    VALUES (v_id_etu2, v_role_etu, 'Dupont', 'Sophie', 'sophie.dupont@smartcampus.ma', '$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6Lruj3vjGsGZ0lY2', true) ON CONFLICT (email) DO NOTHING;
+    INSERT INTO etudiant (id_etudiant, id_filiere, cne, cin, date_inscription, statut)
+    VALUES (v_id_etu2, v_id_fil2, 'CNE-TEST-2', 'CIN-TEST-2', CURRENT_DATE, 'Actif'::enum_statut_etudiant) ON CONFLICT (cne) DO NOTHING;
+
+    -- 5. Création des Cours enseignés par le Professeur
+    INSERT INTO cours (id_cours, code, nom, credits, coefficient) VALUES (v_id_cours1, 'DEV101', 'Développement Web', 4, 2) ON CONFLICT (code) DO NOTHING;
+    INSERT INTO cours (id_cours, code, nom, credits, coefficient) VALUES (v_id_cours2, 'BDD201', 'Bases de Données Avancées', 4, 2) ON CONFLICT (code) DO NOTHING;
+
+    INSERT INTO cours_professeur (id_cours, id_professeur) VALUES (v_id_cours1, v_id_prof) ON CONFLICT DO NOTHING;
+    INSERT INTO cours_professeur (id_cours, id_professeur) VALUES (v_id_cours2, v_id_prof) ON CONFLICT DO NOTHING;
+
+    -- 6. Création d'une Salle
+    INSERT INTO salle (id_salle, numero, nom, capacite, type, statut)
+    VALUES (v_id_salle, 'A-100', 'Amphi Central', 150, 'Amphitheatre'::enum_type_salle, 'Disponible'::enum_statut_salle)
+    ON CONFLICT (numero) DO NOTHING;
+
+    -- 7. Nettoyage des séances précédentes de ce professeur
+    DELETE FROM session_salle WHERE id_professeur = v_id_prof;
+
+    -- 8. Insertion des cas de tests pour les séances
+    -- Cas A : Séance Normale (Demain)
+    INSERT INTO session_salle (id_session, id_salle, id_cours, id_professeur, id_filiere, date, heure_debut, heure_fin, statut)
+    VALUES (gen_random_uuid(), v_id_salle, v_id_cours1, v_id_prof, v_id_fil1, CURRENT_DATE + INTERVAL '1 day', '08:30:00'::time, '10:30:00'::time, 'Planifiee'::enum_statut_session);
+
+    -- Cas B : Deux séances en conflit à la même heure (Dans 2 jours)
+    INSERT INTO session_salle (id_session, id_salle, id_cours, id_professeur, id_filiere, date, heure_debut, heure_fin, statut)
+    VALUES (gen_random_uuid(), v_id_salle, v_id_cours1, v_id_prof, v_id_fil1, CURRENT_DATE + INTERVAL '2 days', '10:00:00'::time, '12:00:00'::time, 'Planifiee'::enum_statut_session);
+
+    INSERT INTO session_salle (id_session, id_salle, id_cours, id_professeur, id_filiere, date, heure_debut, heure_fin, statut)
+    VALUES (gen_random_uuid(), v_id_salle, v_id_cours2, v_id_prof, v_id_fil2, CURRENT_DATE + INTERVAL '2 days', '10:00:00'::time, '12:00:00'::time, 'Planifiee'::enum_statut_session);
+
+    -- Cas C : Séance dans le futur (Dans 30 jours, pour tester la clôture anticipée)
+    INSERT INTO session_salle (id_session, id_salle, id_cours, id_professeur, id_filiere, date, heure_debut, heure_fin, statut)
+    VALUES (gen_random_uuid(), v_id_salle, v_id_cours1, v_id_prof, v_id_fil1, CURRENT_DATE + INTERVAL '30 days', '14:00:00'::time, '16:00:00'::time, 'Planifiee'::enum_statut_session);
+
+    RAISE NOTICE 'Données de test insérées avec succès !';
+END $$;
+
+
+UPDATE utilisateur 
+SET mot_de_passe = '$2b$10$u9.E4r5JYrxRXgovx3Wp/uxMHctx2K/hg5mTZqN5YGKqrrT4ZewhC'
+WHERE email = 'prof.test@smartcampus.ma';

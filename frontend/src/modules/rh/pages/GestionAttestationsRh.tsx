@@ -12,6 +12,12 @@ import {
   ArrowRight,
   Pencil,
   ScrollText,
+  // --- Nouveaux imports ---
+  Mail,
+  Bell,
+  User,
+  Building2,
+  Briefcase
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────
@@ -30,6 +36,9 @@ interface Utilisateur {
 
 interface Employe {
   id_employe: string;
+  matricule?: string;     // Ajouté
+  fonction?: string;      // Ajouté
+  departement?: string;   // Ajouté
   utilisateur: Utilisateur;
 }
 
@@ -184,7 +193,7 @@ function ProcessAttestationModal({
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  const { nom, prenom } = attestation.employe.utilisateur;
+  const { nom, prenom, email } = attestation.employe.utilisateur;
 
   const handleSubmit = async () => {
     setFormError(null);
@@ -320,6 +329,24 @@ function ProcessAttestationModal({
             </select>
           </div>
 
+          {/* --- NOUVEAU : Encadré d'information d'automatisation --- */}
+          {selectedStatut === 'Validee' && (
+            <div className="flex flex-col gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-800/50 dark:bg-emerald-900/10">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-emerald-800 dark:text-emerald-400">
+                Actions automatiques à la validation :
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <Mail className="h-4 w-4 shrink-0" />
+                <span>Envoi du PDF e-signé à : {email || "l'employé"}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300">
+                <Bell className="h-4 w-4 shrink-0" />
+                <span>Notification In-App pour le retrait du document imprimé</span>
+              </div>
+            </div>
+          )}
+          {/* -------------------------------------------------------- */}
+
           {/* Quick action buttons */}
           <div className="flex gap-2">
             <button
@@ -411,7 +438,6 @@ function SimulateAttestationModal({
         const json = await response.json();
         if (json.success && json.data) {
           setEmployes(json.data);
-          // Auto-sélectionner le premier employé de la liste s'il y en a
           if (json.data.length > 0) {
             setIdEmploye(json.data[0].id_employe);
           }
@@ -470,6 +496,9 @@ function SimulateAttestationModal({
     }
   };
 
+  // --- NOUVEAU : Récupérer les détails de l'employé sélectionné ---
+  const selectedEmpDetails = employes.find((e) => e.id_employe === idEmploye);
+
   return (
     <div
       className="fixed inset-0 z-40 flex items-center justify-center bg-surface-dark/60 backdrop-blur-sm p-4 animate-fade-in"
@@ -509,7 +538,7 @@ function SimulateAttestationModal({
             </div>
           )}
 
-          {/* Menu déroulant pour l'employé au lieu du champ texte */}
+          {/* Menu déroulant pour l'employé */}
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
               Employé <span className="text-red-500">*</span>
@@ -534,6 +563,26 @@ function SimulateAttestationModal({
               </select>
             )}
           </div>
+
+          {/* --- NOUVEAU : Carte de résumé de l'employé sélectionné --- */}
+          {selectedEmpDetails && (
+            <div className="flex flex-col gap-2 rounded-xl border border-primary-100 bg-primary-50/50 p-4 dark:border-primary-900/30 dark:bg-primary-900/10">
+              <div className="flex items-center gap-2 text-sm font-medium text-primary-900 dark:text-primary-300">
+                <User className="h-4 w-4 opacity-70" /> {selectedEmpDetails.utilisateur?.email || 'N/A'}
+              </div>
+              {selectedEmpDetails.departement && (
+                <div className="flex items-center gap-2 text-sm font-medium text-primary-900 dark:text-primary-300">
+                  <Building2 className="h-4 w-4 opacity-70" /> {selectedEmpDetails.departement}
+                </div>
+              )}
+              {selectedEmpDetails.fonction && (
+                <div className="flex items-center gap-2 text-sm font-medium text-primary-900 dark:text-primary-300">
+                  <Briefcase className="h-4 w-4 opacity-70" /> {selectedEmpDetails.fonction}
+                </div>
+              )}
+            </div>
+          )}
+          {/* ---------------------------------------------------------- */}
 
           <div>
             <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5">
@@ -879,7 +928,7 @@ export default function GestionAttestationsRh() {
                             {formatTypeLabel(attestation.type)}
                           </span>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500 dark:text-slate-400 tabular-nums">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-300 tabular-nums">
                           {formatDateFr(attestation.date_demande)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">

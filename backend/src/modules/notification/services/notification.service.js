@@ -124,10 +124,45 @@ const getPreferences = async (idUtilisateur) => {
     };
 };
 
+const getDbNotifications = async (idUtilisateur) => {
+    const { rows } = await pool.query(
+        `SELECT * FROM notification 
+         WHERE id_utilisateur = $1 
+         ORDER BY date_envoi DESC 
+         LIMIT 50`,
+        [idUtilisateur]
+    );
+    return rows;
+};
+
+const markAsRead = async (idUtilisateur, idNotification) => {
+    const { rows } = await pool.query(
+        `UPDATE notification
+         SET lu = TRUE
+         WHERE id_notification = $1 AND id_utilisateur = $2
+         RETURNING *`,
+        [idNotification, idUtilisateur]
+    );
+    return rows[0] || null;
+};
+
+const markAllAsRead = async (idUtilisateur) => {
+    const { rowCount } = await pool.query(
+        `UPDATE notification
+         SET lu = TRUE
+         WHERE id_utilisateur = $1 AND lu = FALSE`,
+        [idUtilisateur]
+    );
+    return rowCount;
+};
+
 module.exports = {
     notifyDemandeSoumise,
     notifyStatutDemande,
     notifyDocumentDisponible,
     updatePreferences,
     getPreferences,
+    getDbNotifications,
+    markAsRead,
+    markAllAsRead
 };

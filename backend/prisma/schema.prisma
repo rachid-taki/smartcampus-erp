@@ -546,6 +546,7 @@ model Reclamation {
   statut                enum_statut_reclamation @default(Soumise)
   priorite              enum_priorite           @default(Normale)
   nombre_traitement     Int                     @default(0)
+  reponse   String?   @db.Text
 
   etudiant         Etudiant           @relation(fields: [id_etudiant], references: [id_etudiant], onDelete: Cascade)
   type_reclamation TypeReclamation    @relation(fields: [id_type], references: [id_type], onDelete: Restrict)

@@ -9,19 +9,8 @@ const pool = new Pool({ connectionString: cleanUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-// Valid values for enum_statut_workflow
 const VALID_WORKFLOW_STATUTS = ['Actif', 'Inactif'];
 
-/**
- * GET /api/scolarite/workflows
- *
- * Fetch all workflow blueprints along with their nested etapes.
- * Workflows are ordered by date_creation descending (newest first).
- * Nested etapes are ordered by ordre ascending (step 1, 2, 3...).
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 const getWorkflows = async (req, res) => {
   try {
     const workflows = await prisma.workflow.findMany({
@@ -30,84 +19,27 @@ const getWorkflows = async (req, res) => {
         etapes: {
           orderBy: { ordre: 'asc' },
         },
+        // Ajout : On compte le nombre de demandes et types de demandes liés
+        _count: {
+          select: { demandes: true, types_demande: true }
+        }
       },
     });
 
-    return res.status(200).json({
-      success: true,
-      count: workflows.length,
-      data: workflows,
-    });
+    return res.status(200).json({ success: true, count: workflows.length, data: workflows });
   } catch (error) {
-    console.error('[Scolarité Workflows] Failed to fetch workflows:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Une erreur est survenue lors de la récupération des workflows.',
-    });
+    console.error('[Scolarité Workflows] Failed to fetch:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la récupération des workflows.' });
   }
 };
 
-/**
- * POST /api/scolarite/workflows
- *
- * Create a new workflow blueprint along with its steps (etapes) in a
- * single nested write / transaction.
- *
- * Body:
- *   - nom          (required) name of the workflow
- *   - description  (optional) description text
- *   - etapes       (required) array of { nom, ordre, role_responsable? }
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
 const createWorkflow = async (req, res) => {
   try {
     const { nom, description, etapes } = req.body;
 
-    // --- Validation ---
+    if (!nom || !nom.trim()) return res.status(400).json({ success: false, message: 'Le champ "nom" est requis.' });
+    if (!Array.isArray(etapes) || etapes.length === 0) return res.status(400).json({ success: false, message: 'Le workflow doit contenir au moins une étape.' });
 
-    if (!nom || typeof nom !== 'string' || !nom.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "nom" est requis.',
-      });
-    }
-
-    if (!Array.isArray(etapes) || etapes.length === 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "etapes" doit être un tableau contenant au moins une étape.',
-      });
-    }
-
-    // Validate each step has the required shape before touching the DB
-    for (let i = 0; i < etapes.length; i++) {
-      const etape = etapes[i];
-
-      if (!etape || typeof etape !== 'object') {
-        return res.status(400).json({
-          success: false,
-          message: `L'étape à l'index ${i} est invalide.`,
-        });
-      }
-
-      if (!etape.nom || typeof etape.nom !== 'string' || !etape.nom.trim()) {
-        return res.status(400).json({
-          success: false,
-          message: `L'étape à l'index ${i} doit avoir un champ "nom" valide.`,
-        });
-      }
-
-      if (etape.ordre === undefined || etape.ordre === null || Number.isNaN(Number(etape.ordre))) {
-        return res.status(400).json({
-          success: false,
-          message: `L'étape à l'index ${i} doit avoir un champ "ordre" numérique valide.`,
-        });
-      }
-    }
-
-    // --- Nested write: create the workflow + its etapes in one transaction ---
     const newWorkflow = await prisma.workflow.create({
       data: {
         nom: nom.trim(),
@@ -120,110 +52,111 @@ const createWorkflow = async (req, res) => {
           })),
         },
       },
-      include: {
-        etapes: {
-          orderBy: { ordre: 'asc' },
-        },
+      include: { 
+        etapes: { orderBy: { ordre: 'asc' } },
+        _count: { select: { demandes: true, types_demande: true } }
       },
     });
 
-    return res.status(201).json({
-      success: true,
-      message: 'Workflow créé avec succès.',
-      data: newWorkflow,
-    });
+    return res.status(201).json({ success: true, message: 'Workflow créé avec succès.', data: newWorkflow });
   } catch (error) {
-    console.error('[Scolarité Workflows] Failed to create workflow:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Une erreur est survenue lors de la création du workflow.',
-    });
+    console.error('[Scolarité Workflows] Failed to create:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la création du workflow.' });
   }
 };
 
-/**
- * PATCH /api/scolarite/workflows/:id/status
- *
- * Activate or deactivate a workflow by updating its statut.
- *
- * URL params:
- *   - id: id_workflow (UUID) of the workflow to update
- *
- * Body:
- *   - statut (required) — must be "Actif" or "Inactif"
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
+// NOUVEAU : Modifier un workflow complet
+const updateWorkflow = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nom, description, etapes } = req.body;
+
+    if (!nom || !nom.trim()) return res.status(400).json({ success: false, message: 'Le champ "nom" est requis.' });
+    if (!Array.isArray(etapes) || etapes.length === 0) return res.status(400).json({ success: false, message: 'Le workflow doit contenir au moins une étape.' });
+
+    // On utilise une transaction pour supprimer les anciennes étapes et recréer les nouvelles proprement
+    const updatedWorkflow = await prisma.$transaction(async (tx) => {
+      // 1. Supprimer les anciennes étapes
+      await tx.etapeWorkflow.deleteMany({ where: { id_workflow: id } });
+      
+      // 2. Mettre à jour le workflow et insérer les nouvelles étapes
+      return tx.workflow.update({
+        where: { id_workflow: id },
+        data: {
+          nom: nom.trim(),
+          description: description || null,
+          etapes: {
+            create: etapes.map((etape) => ({
+              nom: etape.nom.trim(),
+              ordre: Number(etape.ordre),
+              role_responsable: etape.role_responsable || null,
+            })),
+          },
+        },
+        include: { 
+          etapes: { orderBy: { ordre: 'asc' } },
+          _count: { select: { demandes: true, types_demande: true } }
+        },
+      });
+    });
+
+    return res.status(200).json({ success: true, message: 'Workflow mis à jour avec succès.', data: updatedWorkflow });
+  } catch (error) {
+    if (error.code === 'P2025') return res.status(404).json({ success: false, message: 'Workflow introuvable.' });
+    console.error('[Scolarité Workflows] Failed to update:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour.' });
+  }
+};
+
+// NOUVEAU : Supprimer un workflow
+const deleteWorkflow = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Vérifier si le workflow est utilisé
+    const workflow = await prisma.workflow.findUnique({
+      where: { id_workflow: id },
+      include: { _count: { select: { demandes: true } } }
+    });
+
+    if (!workflow) return res.status(404).json({ success: false, message: 'Workflow introuvable.' });
+    
+    // Protection : On refuse la suppression si des demandes existent déjà pour éviter la corruption de l'historique
+    if (workflow._count.demandes > 0) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Impossible de supprimer ce workflow car il est actuellement utilisé par des demandes. Désactivez-le à la place.' 
+      });
+    }
+
+    await prisma.workflow.delete({ where: { id_workflow: id } });
+    return res.status(200).json({ success: true, message: 'Workflow supprimé avec succès.' });
+  } catch (error) {
+    console.error('[Scolarité Workflows] Failed to delete:', error);
+    return res.status(500).json({ success: false, message: 'Erreur lors de la suppression.' });
+  }
+};
+
 const updateWorkflowStatus = async (req, res) => {
   try {
     const { id } = req.params;
     const { statut } = req.body;
 
-    // --- Validation ---
-
-    if (!statut) {
-      return res.status(400).json({
-        success: false,
-        message: 'Le champ "statut" est requis.',
-      });
-    }
-
-    if (!VALID_WORKFLOW_STATUTS.includes(statut)) {
-      return res.status(400).json({
-        success: false,
-        message: `Statut invalide: "${statut}". Valeurs autorisées: ${VALID_WORKFLOW_STATUTS.join(', ')}.`,
-      });
-    }
-
-    // --- Verify the workflow exists before attempting the update ---
-
-    const existingWorkflow = await prisma.workflow.findUnique({
-      where: { id_workflow: id },
-    });
-
-    if (!existingWorkflow) {
-      return res.status(404).json({
-        success: false,
-        message: `Aucun workflow trouvé avec l'id "${id}".`,
-      });
-    }
+    if (!statut || !VALID_WORKFLOW_STATUTS.includes(statut)) return res.status(400).json({ success: false, message: 'Statut invalide.' });
 
     const updatedWorkflow = await prisma.workflow.update({
       where: { id_workflow: id },
       data: { statut },
-      include: {
-        etapes: {
-          orderBy: { ordre: 'asc' },
-        },
+      include: { 
+        etapes: { orderBy: { ordre: 'asc' } },
+        _count: { select: { demandes: true, types_demande: true } } 
       },
     });
 
-    return res.status(200).json({
-      success: true,
-      message: `Workflow ${statut === 'Actif' ? 'activé' : 'désactivé'} avec succès.`,
-      data: updatedWorkflow,
-    });
+    return res.status(200).json({ success: true, message: `Workflow ${statut === 'Actif' ? 'activé' : 'désactivé'}.`, data: updatedWorkflow });
   } catch (error) {
-    // Prisma throws P2025 when the record to update is not found
-    // (race condition: deleted between the findUnique check and update)
-    if (error.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        message: 'Le workflow est introuvable ou a déjà été supprimé.',
-      });
-    }
-
-    console.error('[Scolarité Workflows] Failed to update workflow status:', error);
-    return res.status(500).json({
-      success: false,
-      message: 'Une erreur est survenue lors de la mise à jour du statut du workflow.',
-    });
+    return res.status(500).json({ success: false, message: 'Erreur de mise à jour.' });
   }
 };
 
-module.exports = {
-  getWorkflows,
-  createWorkflow,
-  updateWorkflowStatus,
-};
+module.exports = { getWorkflows, createWorkflow, updateWorkflow, deleteWorkflow, updateWorkflowStatus };

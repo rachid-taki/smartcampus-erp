@@ -4,6 +4,12 @@ const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const PDFDocument = require('pdfkit');
 
+// --- NOUVEAUX IMPORTS ---
+const nodemailer = require('nodemailer');
+const fs = require('fs');
+const path = require('path');
+// ------------------------
+
 const rawUrl = process.env.DATABASE_URL || "";
 const cleanUrl = rawUrl.split('?')[0];
 const pool = new Pool({ connectionString: cleanUrl });
@@ -68,19 +74,151 @@ const formatDateFr = (date) => {
   }
 };
 
+// -----------------------------------------------------------------------------
+// NOUVEAU HELPER : DESSINER LE CONTENU DU PDF (Utilisé pour Download & Email)
+// -----------------------------------------------------------------------------
+const drawAttestationContent = (doc, attestation) => {
+  const utilisateur = attestation.employe?.utilisateur || null;
+  const nom = utilisateur?.nom || 'N/A';
+  const prenom = utilisateur?.prenom || 'N/A';
+  const fonction = attestation.employe?.fonction || 'N/A';
+  const departement = attestation.employe?.departement || 'N/A';
+  const dateEmbauche = attestation.employe?.date_embauche
+    ? formatDateFr(attestation.employe.date_embauche)
+    : 'N/A';
+
+  // --- LOGO DE L'ÉCOLE ---
+  // Assurez-vous de placer un fichier "logo.png" dans le dossier "assets" à la racine du projet
+  // Si le logo n'est pas trouvé, le code l'ignorera sans crasher.
+  const logoPath = path.join(__dirname, '../../../assets/logo.png');
+  if (fs.existsSync(logoPath)) {
+    doc.image(logoPath, 50, 40, { width: 60 });
+  }
+
+  // ─────────────────────────────────────────────
+  // Header
+  // ─────────────────────────────────────────────
+  doc
+    .fontSize(18)
+    .fillColor('#065f46')
+    .font('Helvetica-Bold')
+    .text('Université SmartCampus', { align: 'center' });
+
+  doc
+    .fontSize(12)
+    .fillColor('#4b5563')
+    .font('Helvetica')
+    .text('Direction des Ressources Humaines', { align: 'center' });
+
+  doc.moveDown(0.5);
+
+  doc
+    .strokeColor('#d1d5db')
+    .lineWidth(1)
+    .moveTo(50, doc.y)
+    .lineTo(545, doc.y)
+    .stroke();
+
+  doc.moveDown(1.5);
+
+  // ─────────────────────────────────────────────
+  // Title (varies by attestation type)
+  // ─────────────────────────────────────────────
+  const title =
+    attestation.type === 'Attestation_Travail'
+      ? 'ATTESTATION DE TRAVAIL'
+      : 'ATTESTATION DE SALAIRE';
+
+  doc
+    .fontSize(16)
+    .fillColor('#111827')
+    .font('Helvetica-Bold')
+    .text(title, { align: 'center', underline: true });
+
+  doc.moveDown(2);
+
+  // ─────────────────────────────────────────────
+  // Body content
+  // ─────────────────────────────────────────────
+  doc
+    .fontSize(11)
+    .fillColor('#111827')
+    .font('Helvetica')
+    .text(`Nous, Direction des Ressources Humaines de l'Université SmartCampus, attestons par la présente que :`, { align: 'left' });
+
+  doc.moveDown(1.5);
+
+  const leftCol = 100;
+  
+  // Rendu en colonnes claires
+  doc.font('Helvetica-Bold').text('Nom et Prénom :', leftCol, doc.y, { continued: true }).font('Helvetica').text(`  ${prenom} ${nom}`);
+  doc.moveDown(0.5);
+  doc.font('Helvetica-Bold').text('Fonction :', leftCol, doc.y, { continued: true }).font('Helvetica').text(`  ${fonction}`);
+  doc.moveDown(0.5);
+  doc.font('Helvetica-Bold').text('Département :', leftCol, doc.y, { continued: true }).font('Helvetica').text(`  ${departement}`);
+  doc.moveDown(0.5);
+
+  if (attestation.type === 'Attestation_Travail') {
+    doc.font('Helvetica-Bold').text('Date d\'embauche :', leftCol, doc.y, { continued: true }).font('Helvetica').text(`  ${dateEmbauche}`);
+    doc.moveDown(2);
+    
+    doc.text(
+      `Fait partie de nos effectifs et est employé(e) régulièrement au sein de notre établissement depuis la date mentionnée ci-dessus.`,
+      50, doc.y, { align: 'justify' }
+    );
+  } else {
+    // Attestation Salaire
+    doc.moveDown(2);
+    doc.text(
+      `Est employé(e) au sein de notre établissement. Ce document tient lieu d'attestation officielle de statut. Les détails relatifs à la rémunération sont disponibles sur demande.`,
+      50, doc.y, { align: 'justify' }
+    );
+  }
+
+  doc.moveDown(1.5);
+  doc.text('Cette attestation est délivrée à l\'intéressé(e) pour servir et valoir ce que de droit.', { align: 'justify' });
+
+  doc.moveDown(3);
+
+  // ─────────────────────────────────────────────
+  // E-SIGNATURE VISUAL ENHANCEMENT
+  // ─────────────────────────────────────────────
+  const signatureY = doc.y;
+  doc.rect(350, signatureY, 180, 80).fillOpacity(0.05).fillAndStroke('#10b981', '#10b981');
+  
+  doc.fillOpacity(1).fillColor('#065f46').fontSize(10).font('Helvetica-Bold')
+     .text('SIGNATURE ÉLECTRONIQUE', 350, signatureY + 15, { width: 180, align: 'center' });
+     
+  doc.fontSize(8).font('Helvetica').fillColor('#374151')
+     .text(`Validé par le système RH\nLe ${formatDateFr(new Date())}\nRéf: ${attestation.id_demande_rh.split('-')[0].toUpperCase()}`, 350, signatureY + 35, { width: 180, align: 'center' });
+
+  doc.moveDown(5);
+
+  doc
+    .strokeColor('#d1d5db')
+    .lineWidth(1)
+    .moveTo(50, doc.y)
+    .lineTo(545, doc.y)
+    .stroke();
+
+  doc.moveDown(1);
+
+  // ─────────────────────────────────────────────
+  // Footer
+  // ─────────────────────────────────────────────
+  doc
+    .fontSize(9)
+    .fillColor('#9ca3af')
+    .font('Helvetica-Oblique')
+    .text(
+      `Document généré et signé électroniquement le ${formatDateFr(new Date())} par le Portail RH SmartCampus.`,
+      { align: 'center' }
+    );
+};
+
 /**
  * GET /api/rh/attestations
- *
- * Fetch all attestation requests (type in Attestation_Travail,
- * Attestation_Salaire), including the requesting employee's identity
- * and the handling HR staff member's identity (if assigned).
- *
- * Query params (optional):
- *   - statut (filter by status)
- *   - type   (filter by a specific attestation type)
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * ... (Comments from original) ...
  */
 const getAttestations = async (req, res) => {
   try {
@@ -132,17 +270,7 @@ const getAttestations = async (req, res) => {
 
 /**
  * POST /api/rh/attestations
- *
- * Create a new attestation request (simulating an employee submitting one).
- * Status defaults to 'Soumise'.
- *
- * Body:
- *   - id_employe (required) UUID of the requesting employee
- *   - type       (required) one of Attestation_Travail | Attestation_Salaire
- *   - motif      (optional) reason for the request
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * ... (Comments from original) ...
  */
 const createAttestation = async (req, res) => {
   try {
@@ -208,20 +336,7 @@ const createAttestation = async (req, res) => {
 
 /**
  * PUT /api/rh/attestations/:id/statut
- *
- * Update the status of an attestation request (HR validation/rejection).
- *
- * URL params:
- *   - id: id_demande_rh (UUID)
- *
- * Body:
- *   - statut           (required) one of Soumise | En_Traitement | Validee | Rejetee
- *   - commentaires_rh   (optional) HR notes/remarks
- *   - id_traite_par     (optional) id of the HR staff member (Employe) handling
- *                        it — ideally sourced from req.user once auth exists
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * ... (Comments from original) ...
  */
 const updateAttestationStatut = async (req, res) => {
   try {
@@ -252,6 +367,7 @@ const updateAttestationStatut = async (req, res) => {
     // --- Verify the request exists and is actually an "attestation" type ---
     const existingAttestation = await prisma.demandeRh.findUnique({
       where: { id_demande_rh: id },
+      include: ATTESTATION_INCLUDE // INCLUSION ajoutée pour récupérer l'email plus bas
     });
 
     if (!existingAttestation || !ATTESTATION_TYPES.includes(existingAttestation.type)) {
@@ -278,6 +394,81 @@ const updateAttestationStatut = async (req, res) => {
       data: updateData,
       include: ATTESTATION_INCLUDE,
     });
+
+    // ─────────────────────────────────────────────────────────────
+    // NOUVEAU WORKFLOW : Envoi de l'email + Notification si "Validee"
+    // ─────────────────────────────────────────────────────────────
+    if (statut === 'Validee') {
+      try {
+        const employeeEmail = existingAttestation.employe.utilisateur.email;
+        const employeeId = existingAttestation.employe.utilisateur.id_utilisateur;
+        
+        // 1. Créer le buffer du PDF en mémoire
+        const pdfBuffer = await new Promise((resolve, reject) => {
+          const doc = new PDFDocument({ size: 'A4', margin: 50 });
+          const buffers = [];
+          doc.on('data', buffers.push.bind(buffers));
+          doc.on('end', () => resolve(Buffer.concat(buffers)));
+          doc.on('error', reject);
+          
+          drawAttestationContent(doc, updatedAttestation);
+          doc.end();
+        });
+
+        // 2. Configurer le transporteur SMTP spécial RH (avec variables d'environnement)
+        const transporter = nodemailer.createTransport({
+          host: process.env.RH_SMTP_HOST,
+          port: process.env.RH_SMTP_PORT,
+          secure: process.env.RH_SMTP_PORT == 465, // true for 465, false for other ports
+          auth: { 
+            user: process.env.RH_SMTP_USER, 
+            pass: process.env.RH_SMTP_PASS 
+          },
+        });
+
+        // 3. Envoyer l'email
+        const attestationName = updatedAttestation.type === 'Attestation_Travail' ? 'Attestation de Travail' : 'Attestation de Salaire';
+        await transporter.sendMail({
+          from: `"Ressources Humaines - SmartCampus" <${process.env.RH_SMTP_USER}>`,
+          to: employeeEmail,
+          subject: `📄 Votre ${attestationName} est prête et signée`,
+          html: `
+            <div style="font-family: Arial, sans-serif; color: #374151; line-height: 1.6;">
+              <h2 style="color: #111827;">Bonjour ${existingAttestation.employe.utilisateur.prenom},</h2>
+              <p>Votre demande pour une <strong>${attestationName}</strong> a été validée.</p>
+              <p>Vous trouverez en pièce jointe la version numérique signée électroniquement.</p>
+              <div style="background-color: #f0fdf4; border-left: 4px solid #10b981; padding: 12px; margin-top: 20px;">
+                <strong>Information importante :</strong><br/>
+                Vous pouvez vous présenter au bureau des Ressources Humaines pour récupérer la version originale imprimée et tamponnée de ce document.
+              </div>
+              <br/>
+              <p>Cordialement,<br/>L'équipe RH SmartCampus</p>
+            </div>
+          `,
+          attachments: [{
+            filename: `${updatedAttestation.type}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+          }]
+        });
+
+        // 4. Créer la notification In-App
+        await prisma.notification.create({
+          data: {
+            id_utilisateur: employeeId,
+            titre: "Attestation Prête",
+            message: "Votre document a été envoyé par email. La version papier vous attend au bureau RH.",
+            type: "Document",
+            lu: false,
+            priorite: "Info"
+          }
+        });
+      } catch (err) {
+        console.error("[RH Workflow] Erreur lors de l'envoi d'email ou notification:", err);
+        // On log l'erreur mais on ne bloque pas la réponse de succès pour la mise à jour du statut.
+      }
+    }
+    // ─────────────────────────────────────────────────────────────
 
     return res.status(200).json({
       success: true,
@@ -309,17 +500,7 @@ const updateAttestationStatut = async (req, res) => {
 
 /**
  * GET /api/rh/attestations/:id/pdf
- *
- * Generate and stream a formal PDF attestation document.
- * Currently supports 'Attestation_Travail' (employment certificate)
- * with the employee's nom, prenom, fonction, departement, and
- * date_embauche. Other attestation types fall back to a generic layout.
- *
- * URL params:
- *   - id: id_demande_rh (UUID)
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
+ * ... (Comments from original) ...
  */
 const generateAttestationPdf = async (req, res) => {
   try {
@@ -353,11 +534,6 @@ const generateAttestationPdf = async (req, res) => {
     const utilisateur = attestation.employe?.utilisateur || null;
     const nom = utilisateur?.nom || 'N/A';
     const prenom = utilisateur?.prenom || 'N/A';
-    const fonction = attestation.employe?.fonction || 'N/A';
-    const departement = attestation.employe?.departement || 'N/A';
-    const dateEmbauche = attestation.employe?.date_embauche
-      ? formatDateFr(attestation.employe.date_embauche)
-      : 'N/A';
 
     // --- Initialize the PDF document ---
     const doc = new PDFDocument({ size: 'A4', margin: 50 });
@@ -380,174 +556,15 @@ const generateAttestationPdf = async (req, res) => {
       }
     });
 
+    // On branche le document directement sur la réponse HTTP
     doc.pipe(res);
 
-    // ─────────────────────────────────────────────
-    // Header
-    // ─────────────────────────────────────────────
-    doc
-      .fontSize(18)
-      .fillColor('#065f46')
-      .font('Helvetica-Bold')
-      .text('Université SmartCampus', { align: 'center' });
+    // On dessine le contenu via notre helper partagé !
+    drawAttestationContent(doc, attestation);
 
-    doc
-      .fontSize(12)
-      .fillColor('#4b5563')
-      .font('Helvetica')
-      .text('Portail Ressources Humaines', { align: 'center' });
-
-    doc.moveDown(0.5);
-
-    doc
-      .strokeColor('#d1d5db')
-      .lineWidth(1)
-      .moveTo(50, doc.y)
-      .lineTo(545, doc.y)
-      .stroke();
-
-    doc.moveDown(1.5);
-
-    // ─────────────────────────────────────────────
-    // Title (varies by attestation type)
-    // ─────────────────────────────────────────────
-    const title =
-      attestation.type === 'Attestation_Travail'
-        ? 'Attestation de Travail'
-        : 'Attestation de Salaire';
-
-    doc
-      .fontSize(16)
-      .fillColor('#111827')
-      .font('Helvetica-Bold')
-      .text(title, { align: 'center' });
-
-    doc.moveDown(2);
-
-    // ─────────────────────────────────────────────
-    // Body content
-    // ─────────────────────────────────────────────
-    if (attestation.type === 'Attestation_Travail') {
-      doc
-        .fontSize(11)
-        .fillColor('#111827')
-        .font('Helvetica')
-        .text(
-          `Nous, Université SmartCampus, attestons par la présente que :`,
-          { align: 'left' }
-        );
-
-      doc.moveDown(1);
-
-      const details = [
-        ['Nom', nom],
-        ['Prénom', prenom],
-        ['Fonction', fonction],
-        ['Département', departement],
-        ["Date d'embauche", dateEmbauche],
-      ];
-
-      details.forEach(([label, value]) => {
-        doc
-          .fontSize(11)
-          .fillColor('#374151')
-          .font('Helvetica-Bold')
-          .text(`${label} : `, { continued: true })
-          .font('Helvetica')
-          .fillColor('#111827')
-          .text(String(value));
-      });
-
-      doc.moveDown(1.5);
-
-      doc
-        .fontSize(11)
-        .fillColor('#111827')
-        .font('Helvetica')
-        .text(
-          `est employé(e) au sein de notre établissement en qualité de ${fonction}, ` +
-            `au sein du département ${departement}, depuis le ${dateEmbauche}.`,
-          { align: 'justify' }
-        );
-
-      doc.moveDown(1);
-
-      doc
-        .fontSize(11)
-        .font('Helvetica')
-        .text(
-          'Cette attestation est délivrée à l\'intéressé(e) pour servir et valoir ce que de droit.',
-          { align: 'justify' }
-        );
-    } else {
-      // Attestation_Salaire — generic layout (salary figures aren't in
-      // the DemandeRh/Employe schema provided, so this states identity
-      // and function only; extend once payroll data is available).
-      doc
-        .fontSize(11)
-        .fillColor('#111827')
-        .font('Helvetica')
-        .text(
-          `Nous, Université SmartCampus, attestons par la présente que :`,
-          { align: 'left' }
-        );
-
-      doc.moveDown(1);
-
-      const details = [
-        ['Nom', nom],
-        ['Prénom', prenom],
-        ['Fonction', fonction],
-        ['Département', departement],
-      ];
-
-      details.forEach(([label, value]) => {
-        doc
-          .fontSize(11)
-          .fillColor('#374151')
-          .font('Helvetica-Bold')
-          .text(`${label} : `, { continued: true })
-          .font('Helvetica')
-          .fillColor('#111827')
-          .text(String(value));
-      });
-
-      doc.moveDown(1.5);
-
-      doc
-        .fontSize(11)
-        .font('Helvetica')
-        .text(
-          'est employé(e) au sein de notre établissement. Les détails relatifs à la ' +
-            'rémunération sont disponibles auprès du service des Ressources Humaines.',
-          { align: 'justify' }
-        );
-    }
-
-    doc.moveDown(3);
-
-    doc
-      .strokeColor('#d1d5db')
-      .lineWidth(1)
-      .moveTo(50, doc.y)
-      .lineTo(545, doc.y)
-      .stroke();
-
-    doc.moveDown(1);
-
-    // ─────────────────────────────────────────────
-    // Footer
-    // ─────────────────────────────────────────────
-    doc
-      .fontSize(9)
-      .fillColor('#9ca3af')
-      .font('Helvetica-Oblique')
-      .text(
-        `Document généré automatiquement le ${formatDateFr(new Date())} par le Portail RH SmartCampus.`,
-        { align: 'center' }
-      );
-
+    // Fin du document (ferme le stream)
     doc.end();
+
   } catch (error) {
     console.error('[RH Attestations] Failed to generate attestation PDF:', error);
 

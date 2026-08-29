@@ -1,24 +1,38 @@
 const { Router } = require('express');
+
+// 1. Il manquait l'import de "deleteAbsence" ici :
 const {
   getAbsences,
   updateAbsenceStatut,
+  deleteAbsence 
 } = require('../controllers/enseignant.absences.controller');
+
+const authMiddleware = require('../../authentification/middlewares/auth.middleware');
 
 const router = Router();
 
+// Middleware d'authentification pour toutes les routes
+router.use(authMiddleware.verifyToken || authMiddleware);
+
 /**
  * @route   GET /api/enseignant/absences
- * @desc    List all absences, including student identity and
- *          session/course context. Ordered by date_heure descending.
- * @access  Private (Teacher — apply auth/role middleware as needed)
+ * @desc    Liste les absences des étudiants pour les cours de l'enseignant
+ * @access  Private (Teacher)
  */
-router.get('/absences', getAbsences);
+router.get('/', getAbsences);
 
 /**
  * @route   PUT /api/enseignant/absences/:id/statut
- * @desc    Update the status of an absence, with an optional teacher remark.
- * @access  Private (Teacher — apply auth/role middleware as needed)
+ * @desc    Mettre à jour le statut d'une absence
+ * @access  Private (Teacher)
  */
-router.put('/absences/:id/statut', updateAbsenceStatut);
+router.put('/:id/statut', updateAbsenceStatut);
+
+/**
+ * @route   DELETE /api/enseignant/absences/:id
+ * @desc    Supprimer une absence
+ * @access  Private (Teacher)
+ */
+router.delete('/:id', deleteAbsence);
 
 module.exports = router;

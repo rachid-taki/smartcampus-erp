@@ -9,21 +9,25 @@ const pool = new Pool({ connectionString: cleanUrl });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
-const UUID_REGEX =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Inclusions basées strictement sur schema.prisma
+// Utilitaire pour récupérer l'ID de l'enseignant depuis le token
+const getTeacherId = (req) => req.user?.id_utilisateur || req.user?.id;
+
+// Inclusions basées strictement sur schema.prisma (enrichies pour plus d'infos)
 const PRISMA_INCLUDE = {
   etudiant: {
     include: {
       utilisateur: {
-        select: { nom: true, prenom: true }, // Pas de CNE ici, il est dans "etudiant"
+        select: { nom: true, prenom: true }, 
       },
     },
   },
   session: {
     include: {
       cours: true,
+      filiere: true,
+      salle: true
     },
   },
 };
@@ -32,7 +36,6 @@ const PRISMA_INCLUDE = {
  * Traducteur : Base de données -> Frontend
  */
 const formatForFrontend = (item) => {
-  // Traduction des statuts
   let frontendStatut = 'En_Attente_Validation';
   if (item.statut === 'Excuse') frontendStatut = 'Justifiee';
   else if (item.statut === 'Absent') frontendStatut = 'Non_Justifiee';
@@ -43,14 +46,19 @@ const formatForFrontend = (item) => {
     id_absence: item.id_presence,
     statut: frontendStatut,
     date_heure: item.session?.date || item.heure_arrivee || new Date().toISOString(),
-    session_salle: item.session,
+    session_salle: {
+      ...item.session,
+      // Mapping flexible selon que la BDD utilise "nom" ou "nom_cours"
+      cours: item.session?.cours,
+      filiere: item.session?.filiere,
+      salle: item.session?.salle
+    },
     justificatif: null, // Ce champ n'existe pas en DB, on renvoie null
     remarques: null,    // Ce champ n'existe pas en DB, on renvoie null
     etudiant: {
       ...item.etudiant,
       utilisateur: {
         ...item.etudiant?.utilisateur,
-        // On injecte le CNE ici pour que le frontend le trouve là où il l'attend !
         CNE: item.etudiant?.cne 
       }
     }
@@ -59,14 +67,20 @@ const formatForFrontend = (item) => {
 
 /**
  * GET /api/enseignant/absences
+ * Récupère UNIQUEMENT les absences liées aux sessions de cet enseignant
  */
 const getAbsences = async (req, res) => {
   try {
-    // On ne récupère que les étudiants qui sont "Absent" ou "Excuse"
+    const teacherId = getTeacherId(req);
+
     const absences = await prisma.presenceEtudiant.findMany({
       where: {
         statut: {
           in: ['Absent', 'Excuse']
+        },
+        // SÉCURITÉ : Ne cibler que les sessions de cet enseignant
+        session: {
+          id_professeur: teacherId
         }
       },
       include: PRISMA_INCLUDE,
@@ -96,15 +110,25 @@ const updateAbsenceStatut = async (req, res) => {
   try {
     const { id } = req.params;
     const { statut } = req.body;
+    const teacherId = getTeacherId(req);
 
     if (!id || !UUID_REGEX.test(id)) {
-      return res.status(400).json({
-        success: false,
-        message: `L'identifiant fourni n'est pas valide.`,
-      });
+      return res.status(400).json({ success: false, message: `L'identifiant fourni n'est pas valide.` });
     }
 
-    // Traducteur : Frontend -> Base de données
+    // Vérifier l'appartenance de l'absence à cet enseignant
+    const existingAbsence = await prisma.presenceEtudiant.findUnique({
+      where: { id_presence: id },
+      include: { session: true }
+    });
+
+    if (!existingAbsence) {
+      return res.status(404).json({ success: false, message: "L'absence est introuvable." });
+    }
+    if (existingAbsence.session?.id_professeur !== teacherId) {
+      return res.status(403).json({ success: false, message: "Non autorisé à modifier cette absence." });
+    }
+
     let dbStatut = 'Absent';
     if (statut === 'Justifiee') dbStatut = 'Excuse';
     else if (statut === 'Non_Justifiee') dbStatut = 'Absent';
@@ -112,7 +136,7 @@ const updateAbsenceStatut = async (req, res) => {
 
     const updatedAbsence = await prisma.presenceEtudiant.update({
       where: { id_presence: id },
-      data: { statut: dbStatut }, // On ne sauvegarde pas "remarques" car absent de la DB
+      data: { statut: dbStatut },
       include: PRISMA_INCLUDE,
     });
 
@@ -122,13 +146,6 @@ const updateAbsenceStatut = async (req, res) => {
       data: formatForFrontend(updatedAbsence),
     });
   } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({
-        success: false,
-        message: "L'absence est introuvable.",
-      });
-    }
-
     console.error('[Enseignant Absences] Failed to update absence status:', error);
     return res.status(500).json({
       success: false,
@@ -137,7 +154,51 @@ const updateAbsenceStatut = async (req, res) => {
   }
 };
 
+/**
+ * DELETE /api/enseignant/absences/:id
+ * Supprime (physiquement) l'absence de la base de données.
+ */
+const deleteAbsence = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const teacherId = getTeacherId(req);
+
+    if (!id || !UUID_REGEX.test(id)) {
+      return res.status(400).json({ success: false, message: `L'identifiant fourni n'est pas valide.` });
+    }
+
+    // Vérifier l'appartenance
+    const existingAbsence = await prisma.presenceEtudiant.findUnique({
+      where: { id_presence: id },
+      include: { session: true }
+    });
+
+    if (!existingAbsence) {
+      return res.status(404).json({ success: false, message: "L'absence est introuvable." });
+    }
+    if (existingAbsence.session?.id_professeur !== teacherId) {
+      return res.status(403).json({ success: false, message: "Non autorisé à supprimer cette absence." });
+    }
+
+    await prisma.presenceEtudiant.delete({
+      where: { id_presence: id }
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "L'absence a été supprimée avec succès."
+    });
+  } catch (error) {
+    console.error('[Enseignant Absences] Failed to delete absence:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Une erreur est survenue lors de la suppression.',
+    });
+  }
+};
+
 module.exports = {
   getAbsences,
   updateAbsenceStatut,
+  deleteAbsence,
 };
