@@ -186,4 +186,19 @@ router.get(
   authorize(["ETUDIANT"]),
   studentController.downloadDocumentOfficiel
 );
+// Routes Présidence Club
+router.get(
+  "/presidence",
+  authMiddleware,
+  authorize(["ETUDIANT"]),
+  studentController.getPresidenceClub
+);
+
+router.post(
+  "/presidence/demandes",
+  authMiddleware,
+  authorize(["ETUDIANT"]),
+  studentController.createDemandeClub
+);
+
 module.exports = router;

@@ -10,6 +10,9 @@ import {
 
 import Icon from '../../student/common/Icon';
 import { navItems } from '../../../utils/navigation';
+import { Building2 } from 'lucide-react';
+import { useState,useEffect } from 'react';
+
 
 interface SidebarProps {
   isMobileOpen: boolean;
@@ -98,6 +101,42 @@ function SidebarContent({
     sessionStorage.clear();
     navigate("/", { replace: true });
   };
+  
+const [isPresidentDeClub, setIsPresidentDeClub] = useState(false);
+
+useEffect(() => {
+  const checkPresident = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch('http://localhost:3000/api/student/presidence', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      console.log('🔍 Présidence check status:', res.status);
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log('🏛️ Président trouvé:', data.club?.nom);
+        setIsPresidentDeClub(true);
+        localStorage.setItem('isPresidentClub', 'true');
+      } else {
+        console.log('❌ Pas président');
+        setIsPresidentDeClub(false);
+      }
+    } catch (error) {
+      console.error('Erreur check:', error);
+      setIsPresidentDeClub(false);
+    }
+  };
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  console.log('👤 Rôle utilisateur:', user.role);
+  if (user.role === 'ETUDIANT') {
+    checkPresident();
+  }
+}, []);
 
   return (
     <div className="flex h-full flex-col">
@@ -175,6 +214,44 @@ function SidebarContent({
             )}
           </NavLink>
         ))}
+       {isPresidentDeClub && (
+  <NavLink
+    to="/student/presidence"
+    onClick={onNavigate}
+    className={({ isActive }) =>
+      `group relative flex items-center rounded-lg py-2 transition-all duration-200 ${
+        collapsed ? 'justify-center px-0' : 'gap-2.5 px-3'
+      } ${
+        isActive
+          ? 'text-emerald-700 dark:text-emerald-300'
+          : 'text-slate-600 hover:bg-emerald-50 hover:text-emerald-700 dark:text-slate-400 dark:hover:bg-emerald-500/10 dark:hover:text-emerald-300'
+      }`
+    }
+  >
+    {({ isActive }) => (
+      <>
+        {isActive && (
+          <span className="absolute left-0 top-1/2 z-10 h-5 w-1 -translate-y-1/2 rounded-r-full bg-emerald-600 dark:bg-emerald-400" />
+        )}
+        {isActive && (
+          <motion.span
+            layoutId="sidebar-active-pill"
+            className="absolute inset-0 rounded-lg bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-500/10 dark:to-emerald-500/5"
+            transition={{ type: 'spring', stiffness: 500, damping: 40 }}
+          />
+        )}
+        <span className={`relative z-10 flex items-center ${collapsed ? 'justify-center w-full' : 'gap-2.5'}`}>
+          <Building2 className={`h-[17px] w-[17px] shrink-0 transition-transform duration-200 ${isActive ? 'scale-110' : 'group-hover:scale-105'}`} />
+          {!collapsed && (
+            <span className={`text-[13px] font-medium ${isActive ? 'font-semibold' : ''}`}>
+              Présidence Club
+            </span>
+          )}
+        </span>
+      </>
+    )}
+  </NavLink>
+)}
       </nav>
 
       <div className="border-t border-slate-200/70 px-2.5 py-3 dark:border-slate-800">
@@ -209,3 +286,6 @@ function SidebarContent({
     </div>
   );
 }
+
+
+

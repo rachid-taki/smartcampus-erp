@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Bell,
+  Building2,
   CalendarDays,
   Compass,
   FileText,
@@ -38,6 +39,7 @@ const PAGE_TITLES: Record<string, string> = {
   '/student/reclamations': 'Mes Réclamations',
   '/student/calendrier': 'Calendrier académique',
   '/student/parametres': 'Paramètres',
+  '/student/presidence': 'espace president',
 };
 
 const categoryIcon: Record<string, typeof Bell> = {
@@ -424,6 +426,7 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
             aria-label="Voir mon profil"
             className="flex cursor-pointer items-center gap-2.5 rounded-full py-1 pl-1 pr-2.5 transition hover:bg-slate-100/80 dark:hover:bg-slate-800/60"
           >
+           
             {student?.photo ? (
               <img
                 src={student.photo}
@@ -436,12 +439,21 @@ export default function Topbar({ isDark, onToggleDark, onOpenMobileSidebar }: To
               </div>
             )}
             <div className="hidden text-left leading-tight sm:block">
-              <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">
-                {firstName} {lastName}
-              </p>
+             <p className="inline-flex items-center gap-4 text-[12px] font-bold text-slate-800 dark:text-slate-100">
+  <span>{firstName} {lastName}</span>
+  {localStorage.getItem("isPresidentClub") === "true" && (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 px-2.5 py-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-300 ring-1 ring-emerald-200 dark:ring-emerald-800">
+      <Building2 size={11} strokeWidth={2} />
+      Président · {localStorage.getItem("clubName") || "Club"}
+    </span>
+  )}
+</p>
+
               <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                 Étudiant · {filiere.split(' — ')[0]}
+                
               </p>
+              
             </div>
           </button>
         </div>

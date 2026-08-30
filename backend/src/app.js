@@ -105,6 +105,10 @@ app.use("/api/student/assistant", assistantRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/scolarite/messages", scolariteMessagingRoutes);
 
+
+// ...
+
+
 // --- Scolarité ---
 app.use('/api/scolarite', scolariteDashboardRoutes);
 app.use('/api/scolarite', scolariteDemandesRoutes);

@@ -493,6 +493,117 @@ const downloadDocumentOfficiel = async (req, res) => {
         });
     }
 };
+// GET /api/student/presidence - Récupérer le club de l'étudiant président
+// GET /api/student/check-presidence - Le président est-il connecté ?
+const checkPresidence = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT pc.id_club, c.nom
+       FROM president_club pc
+       JOIN club c ON c.id_club = pc.id_club
+       WHERE pc.id_etudiant = $1 AND pc.statut = 'Actif'
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    res.json({
+      success: true,
+      isPresident: result.rows.length > 0,
+      clubName: result.rows[0]?.nom || null,
+    });
+  } catch (err) {
+    res.json({ success: true, isPresident: false });
+  }
+};
+
+// GET /api/student/presidence - Club + budget + demandes du président
+const getPresidenceClub = async (req, res) => {
+  try {
+    const presidentRes = await pool.query(
+      `SELECT pc.*, c.nom, c.description, c.budget
+       FROM president_club pc
+       JOIN club c ON c.id_club = pc.id_club
+       WHERE pc.id_etudiant = $1 AND pc.statut = 'Actif'
+       LIMIT 1`,
+      [req.user.id]
+    );
+
+    if (presidentRes.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Vous n'êtes pas président d'un club",
+      });
+    }
+
+    const president = presidentRes.rows[0];
+
+    const demandesRes = await pool.query(
+      `SELECT * FROM demande_club
+       WHERE id_club = $1
+       ORDER BY date_demande DESC`,
+      [president.id_club]
+    );
+
+    res.json({
+      success: true,
+      club: {
+        id_club: president.id_club,
+        nom: president.nom,
+        description: president.description,
+        budget: president.budget,
+      },
+      demandes: demandesRes.rows,
+    });
+  } catch (err) {
+    console.error("Erreur getPresidenceClub:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// POST /api/student/presidence/demandes - Créer une demande de club
+const createDemandeClub = async (req, res) => {
+  try {
+    const etudiantId = req.user.id;
+    const { type, objet, description, budgetDemande, dateDebut, heureDebut, heureFin, justificatif } = req.body;
+
+    const presidentResult = await pool.query(
+      `SELECT id_president, id_club FROM president_club WHERE id_etudiant = $1 AND statut = 'Actif' LIMIT 1`,
+      [etudiantId]
+    );
+    if (presidentResult.rows.length === 0) {
+      return res.status(403).json({ success: false, message: "Vous n'êtes pas autorisé à créer des demandes" });
+    }
+    const president = presidentResult.rows[0];
+
+    // ✅ Le président tape du texte libre — la conversion JSON est interne, il ne le voit jamais
+    let justificatifsJson = null;
+    if (justificatif && justificatif.trim() !== "") {
+      try {
+        JSON.parse(justificatif);                       // déjà du JSON valide → garder tel quel
+        justificatifsJson = justificatif;
+      } catch {
+        justificatifsJson = JSON.stringify({ note: justificatif });  // texte libre → enveloppé
+      }
+    }
+
+    const result = await pool.query(
+      `INSERT INTO demande_club
+        (id_club, id_president, type, objet, description, budget_demande,
+         date_evenement, heure_debut, heure_fin, justificatifs, statut, date_demande)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'Soumise',NOW())
+       RETURNING *`,
+      [president.id_club, president.id_president, type, objet, description,
+       budgetDemande || 0, dateDebut || null, heureDebut || null, heureFin || null, justificatifsJson]
+    );
+
+    res.status(201).json({ success: true, data: result.rows[0] });
+  } catch (error) {
+    console.error('Erreur createDemandeClub:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+// POST /api/student/presidence/demandes - Créer une demande de club
+
 
 module.exports = {
     getProfile,
@@ -523,6 +634,10 @@ module.exports = {
     markConversationRead,
     getDocumentsOfficiels,
     downloadDocumentOfficiel,
+    getPresidenceClub,
+    createDemandeClub,
+
+    
     
 
 };

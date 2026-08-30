@@ -1,9 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from "react-router-dom";
-import { Briefcase, GraduationCap, Tent, Users, Settings, Shield, User, AlertCircle, Bot, MessageSquare } from 'lucide-react';import Login from "./pages/Login";
+import { Briefcase, GraduationCap, Tent, Users, Settings, Shield, User, AlertCircle, Bot, MessageSquare, Building2 } from 'lucide-react';
+import Login from "./pages/Login";
+import PresidenceClub from "./pages/StudentPortal/PresidenceClub/PresidenceClub";
 
-// ═══════════════════════════════════════════════════════
-// ÉTUDIANT (depuis HEAD)
-// ═══════════════════════════════════════════════════════
 import Layout from "./components/student/layout/Layout";
 import Dashboard from "./pages/StudentPortal/Dashboard/Dashboard";
 import PageComingSoon from "./components/student/common/PageComingSoon";
@@ -18,9 +17,6 @@ import Reclamations from "./pages/StudentPortal/Reclamation/Reclamations";
 import Assistant from "./pages/Assistant/Assistant";
 import Messaging from "./pages/StudentPortal/Messaging";
 
-// ═══════════════════════════════════════════════════════
-// SUPER ADMIN (depuis HEAD)
-// ═══════════════════════════════════════════════════════
 import SuperAdminLayout from "./components/superadmin/layouts/SuperAdminLayout";
 import AdminDashboard from "./pages/admin/Dashboard";
 import AdminUsers from "./pages/admin/Users";
@@ -28,14 +24,8 @@ import AdminRoles from "./pages/admin/Roles";
 import AdminPermissions from "./pages/admin/Permissions";
 import AdminAudit from "./pages/admin/Audit";
 
-// ═══════════════════════════════════════════════════════
-// SCOLARITÉ MESSAGING (depuis HEAD)
-// ═══════════════════════════════════════════════════════
 import ScolariteMessaging from "./pages/scolarite/Messaging";
 
-// ═══════════════════════════════════════════════════════
-// LAYOUTS MODULAIRES (depuis feature/scolarite)
-// ═══════════════════════════════════════════════════════
 import ScolariteLayout from './modules/scolarite/layout/ScolariteLayout';
 import RhLayout from './modules/rh/layout/RhLayout';
 import EnseignantLayout from './modules/enseignant/layout/EnseignantLayout';
@@ -44,9 +34,6 @@ import ConfigLayout from './modules/configuration/layout/ConfigLayout';
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// ─────────────────────────────────────────────────────────────
-// Protège les routes : redirige vers login si pas connecté
-// ─────────────────────────────────────────────────────────────
 function ModuleProtectedRoute({ children, redirectTo }: { children: React.ReactNode; redirectTo: string }) {
   const userStr = localStorage.getItem("user");
   if (!userStr) {
@@ -61,28 +48,27 @@ function ModuleProtectedRoute({ children, redirectTo }: { children: React.ReactN
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// Page d'accueil : Sélecteur de Portail
-// ─────────────────────────────────────────────────────────────
 function PortalSelector() {
   const navigate = useNavigate();
-
-  // Vérifie si l'utilisateur actuel est un SUPER_ADMIN
   const userStr = localStorage.getItem("user");
+  
   let isSuperAdmin = false;
+  // let isPresidentDeClub = false;
+  const isPresidentDeClub = localStorage.getItem("isPresidentClub") === "true";
+
+  
   if (userStr) {
     try {
       const user = JSON.parse(userStr);
       isSuperAdmin = user.role === "SUPER_ADMIN";
+      // isPresidentDeClub = user.role === "PRESIDENT_CLUB";
     } catch (e) {
       console.error("Invalid user data in localStorage");
     }
   }
 
-  // CORRECTION : Naviguer directement vers le chemin. 
-  // Le ModuleProtectedRoute s'occupera de rediriger vers le login SI NÉCESSAIRE.
   const handleModuleClick = (path: string) => {
-    navigate(path);
+    navigate(`/login?redirect=${encodeURIComponent(path)}`, { replace: true });
   };
 
   return (
@@ -152,7 +138,6 @@ function PortalSelector() {
           <p className="text-sm text-slate-500 dark:text-slate-400">Paramètres globaux et calendrier académique.</p>
         </div>
 
-        {/* Module 2: Portail Étudiant */}
         <div
           onClick={() => handleModuleClick('/student/dashboard')}
           className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
@@ -164,7 +149,19 @@ function PortalSelector() {
           <p className="text-sm text-slate-500 dark:text-slate-400">Tableau de bord, demandes et historique.</p>
         </div>
 
-        {/* Module 3: Réclamations */}
+        {isPresidentDeClub && (
+          <div
+            onClick={() => handleModuleClick('/student/presidence')}
+            className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer border-emerald-200 dark:border-emerald-900/50"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 mb-4 group-hover:scale-110 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+              <Building2 className="h-8 w-8" />
+            </div>
+            <h2 className="text-lg font-bold text-slate-800 dark:text-white mb-2">Présidence Club</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Gestion du budget et demandes du club.</p>
+          </div>
+        )}
+
         <div
           onClick={() => handleModuleClick('/student/reclamations')}
           className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
@@ -176,7 +173,6 @@ function PortalSelector() {
           <p className="text-sm text-slate-500 dark:text-slate-400">Gestion des requêtes de notes et AMO.</p>
         </div>
 
-        {/* Module 4: Assistant IA */}
         <div
           onClick={() => handleModuleClick('/student/assistant')}
           className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
@@ -188,7 +184,6 @@ function PortalSelector() {
           <p className="text-sm text-slate-500 dark:text-slate-400">Chatbot, recherche intelligente et OCR.</p>
         </div>
 
-        {/* Module 9: Messagerie & Notifications */}
         <div
           onClick={() => handleModuleClick('/student/messages')}
           className="group w-full md:w-[calc(50%-1.5rem)] lg:w-[calc(25%-1.5rem)] card card-hover p-6 flex flex-col items-center text-center cursor-pointer"
@@ -200,7 +195,6 @@ function PortalSelector() {
           <p className="text-sm text-slate-500 dark:text-slate-400">Conversations internes et alertes.</p>
         </div>
 
-        {/* NOUVELLE CARTE SUPER ADMIN (Visible uniquement si le rôle est SUPER_ADMIN) */}
         {isSuperAdmin && (
           <div
             onClick={() => handleModuleClick('/admin')}
@@ -218,9 +212,6 @@ function PortalSelector() {
   );
 }
 
-// ─────────────────────────────────────────────────────────────
-// Redirection intelligente (depuis HEAD)
-// ─────────────────────────────────────────────────────────────
 function SmartRedirect() {
   const userStr = localStorage.getItem("user");
 
@@ -231,6 +222,8 @@ function SmartRedirect() {
     switch (user.role) {
       case "ETUDIANT":
         return <Navigate to="/student/dashboard" replace />;
+      case "PRESIDENT_CLUB":
+        return <Navigate to="/student/presidence" replace />;
       case "SCOLARITE":
         return <Navigate to="/scolarite/dashboard" replace />;
       case "SUPER_ADMIN":
@@ -243,9 +236,6 @@ function SmartRedirect() {
   }
 }
 
-// ─────────────────────────────────────────────────────────────
-// App Component : Configuration du Routage
-// ─────────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
@@ -253,7 +243,6 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/" element={<PortalSelector />} />
 
-        {/* ═══════════════ ÉTUDIANT (depuis HEAD) ═══════════════ */}
         <Route element={<Layout />}>
           <Route
             path="/student/dashboard"
@@ -263,7 +252,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/student/profile" element={<Profile />} />
+          <Route path="student/profile" element={<Profile />} />
           <Route
             path="/student/requests"
             element={
@@ -272,8 +261,8 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="/student/workflow" element={<WorkflowPage />} />
-          <Route path="/student/documents" element={<Documents />} />
+          <Route path="student/workflow" element={<WorkflowPage />} />
+          <Route path="student/documents" element={<Documents />} />
           <Route path="/student/notifications" element={<Notifications />} />
           <Route path="/student/calendrier" element={<AcademicCalendar />} />
           <Route path="/historique" element={<PageComingSoon title="Historique" />} />
@@ -281,9 +270,9 @@ export default function App() {
           <Route path="/student/reclamations" element={<Reclamations />} />
           <Route path="/student/assistant" element={<Assistant />} />
           <Route path="/student/messages" element={<Messaging />} />
+          <Route path="/student/presidence" element={<PresidenceClub />} />
         </Route>
 
-        {/* ═══════════════ MESSAGING SCOLARITÉ (depuis HEAD) ═══════════════ */}
         <Route
           path="/scolarite/messages"
           element={
@@ -293,7 +282,6 @@ export default function App() {
           }
         />
 
-        {/* ═══════════════ SUPER ADMIN (depuis HEAD) ═══════════════ */}
         <Route
           path="/admin"
           element={
@@ -310,7 +298,6 @@ export default function App() {
           <Route path="audit" element={<AdminAudit />} />
         </Route>
 
-        {/* ═══════════════ MODULES MODULAIRES (depuis feature/scolarite) ═══════════════ */}
         <Route
           path="/scolarite/*"
           element={
@@ -352,10 +339,8 @@ export default function App() {
           }
         />
 
-        {/* ═══════════════ REDIRECTION INTELLIGENTE ═══════════════ */}
         <Route path="/redirect" element={<SmartRedirect />} />
 
-        {/* ═══════════════ 404 ═══════════════ */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

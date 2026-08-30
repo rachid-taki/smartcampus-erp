@@ -5,6 +5,8 @@ import Topbar from '../../student/layout/Topbar';
 import Footer from '../../student/layout/Footer';
 import { useDarkMode } from '../../../hooks/useDarkMode';
 import AssistantWidget from "../../student/AssistantWidget";
+import { Building2 } from 'lucide-react';
+
 
 export default function Layout() {
   const [isDark, toggleDark] = useDarkMode();
