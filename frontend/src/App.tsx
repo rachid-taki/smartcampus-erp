@@ -34,6 +34,7 @@ import ConfigLayout from './modules/configuration/layout/ConfigLayout';
 
 import ProtectedRoute from "./components/ProtectedRoute";
 
+/*
 function ModuleProtectedRoute({ children, redirectTo }: { children: React.ReactNode; redirectTo: string }) {
   const userStr = localStorage.getItem("user");
   if (!userStr) {
@@ -46,6 +47,11 @@ function ModuleProtectedRoute({ children, redirectTo }: { children: React.ReactN
     localStorage.removeItem("user");
     return <Navigate to={`/login?redirect=${encodeURIComponent(redirectTo)}`} replace />;
   }
+}
+*/
+
+function ModuleProtectedRoute({ children }: { children: React.ReactNode; redirectTo?: string }) {
+  return <>{children}</>;
 }
 
 function PortalSelector() {
@@ -67,8 +73,11 @@ function PortalSelector() {
     }
   }
 
+  //const handleModuleClick = (path: string) => {
+  //  navigate(`/login?redirect=${encodeURIComponent(path)}`, { replace: true });
+  //};
   const handleModuleClick = (path: string) => {
-    navigate(`/login?redirect=${encodeURIComponent(path)}`, { replace: true });
+    navigate(path);
   };
 
   return (

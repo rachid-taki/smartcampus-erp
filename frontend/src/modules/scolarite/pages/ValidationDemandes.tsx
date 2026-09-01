@@ -222,13 +222,13 @@ function DemandeModal({
 }: {
   demande: Demande;
   onClose: () => void;
-  onSave: (statut: Statut, commentaires: string, fichier: File | null) => Promise<void>;
+  onSave: (statut: Statut, commentaires: string, fichier: File | null, sendEmail?: boolean, collectBureau?: boolean) => Promise<void>;
   saving: boolean;
 }) {
   const [selectedStatut, setSelectedStatut] = useState<Statut>(demande.statut);
   const [commentaires, setCommentaires] = useState<string>('');
   const [documentFile, setDocumentFile] = useState<File | null>(null);
-  const [sendEmail, setSendEmail] = useState<boolean>(true); // Coché par défaut
+  const [sendEmail, setSendEmail] = useState<boolean>(true);
   const [collectBureau, setCollectBureau] = useState<boolean>(false);
 
   const isDocRequired = requiresOfficialDocument(demande);
@@ -426,7 +426,7 @@ function DemandeModal({
                   </div>
                 )}
 
-                {/* --- NOUVEAU BLOC : MODE DE DÉLIVRANCE --- */}
+                {/* Mode de délivrance & Notification */}
                 {selectedStatut === 'Validee' && (
                   <div className="mt-4 p-3.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700">
                     <h4 className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">
@@ -458,7 +458,6 @@ function DemandeModal({
                     </div>
                   </div>
                 )}
-                {/* --- FIN NOUVEAU BLOC --- */}
 
                 {/* Champ Commentaire */}
                 <div className="pt-2">
@@ -479,7 +478,6 @@ function DemandeModal({
 
           {/* Footer Modale */}
           <div className="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900">
-            {/* FIXED: The Cancel button now just closes the modal */}
             <button
               type="button"
               onClick={onClose} 
@@ -489,7 +487,6 @@ function DemandeModal({
               Annuler
             </button>
             
-            {/* FIXED: The Save button now passes sendEmail and collectBureau */}
             <button
               type="button"
               onClick={() => onSave(selectedStatut, commentaires, documentFile, sendEmail, collectBureau)}
@@ -569,7 +566,29 @@ export default function ValidationDemandes() {
     fetchDemandes();
   }, [fetchDemandes]);
 
-  // On ajoute sendEmail et collectBureau aux paramètres
+  // --- NOUVELLE LOGIQUE DE TRAITEMENT DIRECT ---
+  const handleTraiterClick = async (d: Demande) => {
+    // Si la demande est "Soumise", on la passe directement en "En_Traitement" avant d'ouvrir la modale.
+    if (d.statut === 'Soumise') {
+      const updatedDemande = { ...d, statut: 'En_Traitement' as Statut };
+      setSelectedDemande(updatedDemande); // Ouvre la modale sur l'onglet "En Traitement"
+
+      try {
+        const formData = new FormData();
+        formData.append('statut', 'En_Traitement');
+        await fetch(`${API_BASE}/demandes/${d.id_demande}/status`, {
+          method: 'PATCH',
+          body: formData,
+        });
+        fetchDemandes(); // Actualise la base de données en arrière-plan sans perturber l'utilisateur
+      } catch (err) {
+        console.error("Erreur lors de la mise à jour automatique du statut en traitement", err);
+      }
+    } else {
+      setSelectedDemande(d); // Si elle est déjà en traitement ou validée, on ouvre juste la modale
+    }
+  };
+
   const handleSaveStatus = async (
     statut: Statut, 
     commentaires: string, 
@@ -585,13 +604,12 @@ export default function ValidationDemandes() {
       if (commentaires) formData.append('commentaires', commentaires);
       if (fichier) formData.append('document', fichier);
       
-      // Ajout des options de notification
       if (sendEmail !== undefined) formData.append('sendEmail', String(sendEmail));
       if (collectBureau !== undefined) formData.append('collectBureau', String(collectBureau));
 
       const res = await fetch(`${API_BASE}/demandes/${selectedDemande.id_demande}/status`, {
         method: 'PATCH',
-        body: formData, // On utilise formData dans tous les cas pour supporter ces nouveaux champs
+        body: formData,
       });
       const json = await res.json();
 
@@ -772,18 +790,16 @@ export default function ValidationDemandes() {
                             </button>
                           )}
 
-
-                          {/* Bouton Traiter caché dans l'historique */}
+                          {/* Nouveau bouton Traiter (déclenche handleTraiterClick) */}
                           {activeTab === 'actives' && (
                             <button
-                              onClick={() => setSelectedDemande(d)}
+                              onClick={() => handleTraiterClick(d)}
                               className="px-3 py-1.5 text-xs font-bold rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition-colors"
                             >
                               Traiter
                             </button>
                           )}
               
-                          
                           {/* Message si pas de document dans l'historique */}
                           {activeTab === 'historique' && d.statut === 'Rejetee' && (
                             <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">—</span>

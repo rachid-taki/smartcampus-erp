@@ -69,7 +69,7 @@ export default function GestionSallesIntelligente({ onNavigateToEmplois }: { onN
     try {
       const [pl, al] = await Promise.all([
         fetch(`${API}/salles/planning?date=${date}`).then(r => r.json()),
-        fetch('http://localhost:3000/api/alertes').then(r => r.json()),
+        fetch(`${API}/alertes`).then(r => r.json()), // ✅ CORRIGÉ ICI
       ]);
       if (pl.success) {
         setSalles(pl.data.salles || []); setSessions(pl.data.sessions || []); setReservations(pl.data.reservations || []);

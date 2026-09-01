@@ -61,8 +61,8 @@ interface Toast {
   message: string;
 }
 
-const API_PRESENCES = 'http://localhost:3000/api/presences';
-const API_SESSIONS = 'http://localhost:3000/api/sessions';
+const API_PRESENCES = 'http://localhost:3000/api/scolarite/presences';
+const API_SESSIONS = 'http://localhost:3000/api/scolarite/sessions';
 
 const METHODE_OPTIONS: MethodePointage[] = ['RFID', 'QR_Code', 'Facial', 'Manuel'];
 const STATUT_OPTIONS: StatutPresence[] = ['Present', 'Absent', 'Retard', 'Justifie'];

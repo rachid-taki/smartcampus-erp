@@ -6,7 +6,7 @@ const {
   getFilieres,
   sendNotification,
 } = require('../controllers/scolarite.dashboard.controller');
-const sallesCtrl = require('../controllers/salles.intelligente.controller');
+const sallesCtrl = require('../controllers/scolarite.salles.intelligente.controller');
 
 const router = express.Router();
 

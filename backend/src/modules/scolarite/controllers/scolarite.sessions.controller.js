@@ -65,6 +65,9 @@ const SESSION_INCLUDE = {
       },
     },
   },
+  filiere: {
+    select: { nom: true, code: true },
+  },
 };
 
 /**
@@ -72,7 +75,7 @@ const SESSION_INCLUDE = {
  */
 const getSessions = async (req, res) => {
   try {
-    const { statut, id_salle, date } = req.query;
+    const { statut, id_salle, date, id_filiere } = req.query;
     const where = {};
 
     if (statut) {
@@ -93,6 +96,17 @@ const getSessions = async (req, res) => {
         });
       }
       where.id_salle = id_salle;
+    }
+
+    if (id_filiere) {
+      if (id_filiere === 'none') {
+        where.id_filiere = null; // Filtre les sessions non-assignées
+      } else if (id_filiere !== 'all') {
+        if (!UUID_REGEX.test(id_filiere)) {
+          return res.status(400).json({ success: false, message: `UUID filière invalide.` });
+        }
+        where.id_filiere = id_filiere;
+      }
     }
 
     if (date) {
@@ -133,7 +147,7 @@ const getSessions = async (req, res) => {
  */
 const createSession = async (req, res) => {
   try {
-    const { id_salle, id_cours, id_professeur, date, heure_debut, heure_fin } = req.body;
+    const { id_salle, id_cours, id_professeur, id_filiere, date, heure_debut, heure_fin } = req.body;
 
     if (!id_salle || !UUID_REGEX.test(id_salle)) {
       return res.status(400).json({ success: false, message: 'Le champ "id_salle" est requis et doit être un UUID valide.' });
@@ -170,11 +184,13 @@ const createSession = async (req, res) => {
       return res.status(400).json({ success: false, message: '"heure_fin" doit être postérieure à "heure_debut".' });
     }
 
+    // Création de la session
     const newSession = await prisma.sessionSalle.create({
       data: {
         id_salle,
         id_cours,
         id_professeur,
+        id_filiere: id_filiere || null, // Relie la filière si fournie
         date: parsedDate,
         heure_debut: parsedHeureDebut,
         heure_fin: parsedHeureFin,
@@ -183,16 +199,60 @@ const createSession = async (req, res) => {
       include: SESSION_INCLUDE,
     });
 
+    // ─────────────────────────────────────────────────────────────
+    // GESTION DES NOTIFICATIONS (ENSEIGNANT ET ÉTUDIANTS)
+    // ─────────────────────────────────────────────────────────────
+    try {
+      const dateStr = parsedDate.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const coursNom = newSession.cours?.nom || 'Cours non spécifié';
+      const salleNum = newSession.salle?.numero || 'Salle non spécifiée';
+
+      // 1. Notification personnalisée pour l'ENSEIGNANT
+      await prisma.notification.create({
+        data: {
+          id_utilisateur: id_professeur,
+          titre: `Nouvelle session assignée : ${coursNom}`,
+          message: `Bonjour, une nouvelle session de cours vous a été assignée.\n\n📚 Cours : ${coursNom}\n📅 Date : ${dateStr}\n⏱ Horaires : de ${heure_debut} à ${heure_fin}\n📍 Salle : ${salleNum}\n\nMerci de prendre vos dispositions pour assurer ce cours.`,
+          type: 'Calendrier',
+          priorite: 'Info',
+        },
+      });
+
+      // 2. Notifications personnalisées pour les ÉTUDIANTS (si une filière est sélectionnée)
+      if (id_filiere) {
+        const etudiants = await prisma.etudiant.findMany({
+          where: { id_filiere: id_filiere, statut: 'Actif' },
+          select: { id_etudiant: true },
+        });
+
+        if (etudiants.length > 0) {
+          const notificationsEtudiants = etudiants.map((etu) => ({
+            id_utilisateur: etu.id_etudiant,
+            titre: `Nouvelle session planifiée : ${coursNom}`,
+            message: `Une nouvelle session a été ajoutée à votre emploi du temps.\n\n📚 Module : ${coursNom}\n📅 Date : ${dateStr}\n⏱ Horaires : de ${heure_debut} à ${heure_fin}\n📍 Salle : ${salleNum}\n\nVotre présence est requise.`,
+            type: 'Calendrier',
+            priorite: 'Info',
+          }));
+
+          await prisma.notification.createMany({
+            data: notificationsEtudiants,
+          });
+        }
+      }
+    } catch (notifError) {
+      console.error('[Sessions Salle] Erreur lors de l\'envoi des notifications:', notifError);
+    }
+
     return res.status(201).json({
       success: true,
-      message: 'Session créée avec succès.',
+      message: 'Session créée et notifications envoyées avec succès.',
       data: newSession,
     });
   } catch (error) {
     if (error.code === 'P2003') {
       return res.status(400).json({
         success: false,
-        message: 'Référence invalide: vérifiez que "id_salle", "id_cours" et "id_professeur" correspondent à des enregistrements existants.',
+        message: 'Référence invalide: vérifiez que "id_salle", "id_cours", "id_filiere" et "id_professeur" correspondent à des enregistrements existants.',
       });
     }
     console.error('[Sessions Salle] Failed to create session:', error);
@@ -290,7 +350,6 @@ const updateSessionStatut = async (req, res) => {
 
 /**
  * GET /api/cours
- * (NOUVEAU) - Permet d'alimenter la liste déroulante des cours dans le frontend
  */
 const getCours = async (req, res) => {
   try {
@@ -307,7 +366,6 @@ const getCours = async (req, res) => {
 
 /**
  * GET /api/professeurs
- * (NOUVEAU) - Permet d'alimenter la liste déroulante des professeurs
  */
 const getProfesseurs = async (req, res) => {
   try {
