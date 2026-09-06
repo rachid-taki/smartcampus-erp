@@ -10,7 +10,7 @@ const {
   getFilieres,
   getPeriodesAcademiques,
   mergeSalles
-} = require('../controllers/salles.intelligente.controller');
+} = require('../controllers/scolarite.salles.intelligente.controller');
 
 router.get('/planning', getPlanning);
 router.get('/filieres', getFilieres);

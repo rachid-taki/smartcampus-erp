@@ -10,7 +10,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import ScolariteDashboard from '../pages/ScolariteDashboard';
 import ValidationDemandes from '../pages/ValidationDemandes';
-import GestionWorkflows from '../pages/GestionWorkflows';
 import GestionDocumentaire from '../pages/GestionDocumentaire';
 import GestionSallesIntelligente from '../pages/GestionSallesIntelligente';
 import GestionEmplois from '../pages/GestionEmplois';
@@ -22,6 +21,7 @@ import Messaging from '../pages/Messaging';
 const CLUBS_PATH = '/clubs';
 const API_BASE = 'http://localhost:3000/api';
 const NOTIF_POLL_INTERVAL_MS = 30000; // 30s. Swap for a socket.io listener if you want true real-time.
+
 
 type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles' | 'emplois' | 'sessions' | 'presences' | 'alertes'| 'messaging';
 
@@ -45,10 +45,11 @@ const NAV_GROUPS = [
     title: 'Guichet & Administration',
     items: [
       { key: 'demandes', label: 'Demandes Étudiantes', icon: Inbox },
+
       { key: 'documents', label: 'Gestion Documentaire', icon: FolderOpen },
       { key: 'workflows', label: 'Moteur de Workflows', icon: GitMerge },
       { key: 'messaging', label: 'Messagerie', icon: MessageSquare }, 
-    ]
+ ]
   },
   {
     title: 'Académique & Opérations',
@@ -70,7 +71,6 @@ const NAV_GROUPS = [
 const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
   dashboard: { title: 'Tableau de bord', subtitle: 'Indicateurs de la scolarité' },
   demandes: { title: 'Traitement des demandes', subtitle: 'Validation des demandes administratives' },
-  workflows: { title: 'Workflows', subtitle: 'Processus de validation' },
   documents: { title: 'Base documentaire', subtitle: 'Documents officiels et archives' },
   messaging: { title: 'Messagerie', subtitle: 'Communication avec les étudiants' }, 
   salles: { title: 'Salles Intelligentes', subtitle: 'Supervision et état des salles' },
@@ -268,7 +268,6 @@ export default function ScolariteLayout() {
     switch (activeTab) {
       case 'dashboard': return <ScolariteDashboard />;
       case 'demandes': return <ValidationDemandes />;
-      case 'workflows': return <GestionWorkflows />;
       case 'documents': return <GestionDocumentaire />;
       case 'messaging': return <Messaging />;
       case 'salles': return <GestionSallesIntelligente onNavigateToEmplois={() => go('emplois')} />;

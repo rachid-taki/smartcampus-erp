@@ -1,21 +1,30 @@
-const { Router } = require('express');
+const express = require('express');
+const router = express.Router();
+
+// Import des fonctions de votre contrôleur
 const {
   getSessions,
   createSession,
   updateSessionStatut,
   getCours,
-  getProfesseurs
-} = require('../controllers/scolarite.sessions.controller');
+  getProfesseurs,
+} = require('../controllers/scolarite.sessions.controller'); // Ajustez le chemin selon votre structure
 
-const router = Router();
+// ─── Routes pour les Sessions ───
 
-// Routes pour les listes déroulantes (toujours en haut)
-router.get('/cours', getCours);
-router.get('/professeurs', getProfesseurs);
-
-// Routes pour les Sessions (corrigées avec "/")
+// GET /api/sessions
 router.get('/', getSessions);
+
+// POST /api/sessions
 router.post('/', createSession);
+
+// PUT /api/sessions/:id/statut
 router.put('/:id/statut', updateSessionStatut);
+
+// GET /api/sessions/cours
+router.get('/cours', getCours);
+
+// GET /api/sessions/professeurs
+router.get('/professeurs', getProfesseurs);
 
 module.exports = router;

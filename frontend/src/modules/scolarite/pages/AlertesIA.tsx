@@ -49,7 +49,7 @@ interface Toast {
   message: string;
 }
 
-const API_BASE = 'http://localhost:3000/api/alertes';
+const API_BASE = 'http://localhost:3000/api/scolarite/alertes';
 
 const GRAVITE_OPTIONS: Gravite[] = ['Faible', 'Moyenne', 'Haute', 'Critique'];
 const STATUT_OPTIONS: StatutAlerte[] = ['A_Traiter', 'Resolue', 'Fausse_Alerte'];

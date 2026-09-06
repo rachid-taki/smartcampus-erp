@@ -320,7 +320,12 @@ export default function GestionDocumentaire() {
       const response = await fetch(`${API_BASE}/documents`, { signal });
       const json = await response.json();
       if (json.success) setDocuments(json.data);
-    } finally { setLoadingDocs(false); }
+    } catch (error: any) {
+      if (error.name === 'AbortError') return; // Ignore intentionally aborted requests
+      console.error("Erreur lors de la récupération des documents:", error);
+    } finally { 
+      setLoadingDocs(false); 
+    }
   }, []);
 
   const fetchDocumentsOfficiels = useCallback(async (signal?: AbortSignal) => {
@@ -332,7 +337,12 @@ export default function GestionDocumentaire() {
         setDocumentsOfficiels(json.data);
         setOfficielsFetched(true);
       }
-    } finally { setLoadingOfficiels(false); }
+    } catch (error: any) {
+      if (error.name === 'AbortError') return; // Ignore intentionally aborted requests
+      console.error("Erreur lors de la récupération des documents officiels:", error);
+    } finally { 
+      setLoadingOfficiels(false); 
+    }
   }, []);
 
   useEffect(() => {

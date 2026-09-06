@@ -28,11 +28,10 @@ const calendrierRoutes = require('./modules/student/routes/calendrier.routes');
 // ═══════════════════════════════════════════════════════
 const scolariteDashboardRoutes = require('./modules/scolarite/routes/scolarite.dashboard.routes');
 const scolariteDemandesRoutes = require('./modules/scolarite/routes/scolarite.demandes.routes');
-const scolariteWorkflowsRoutes = require('./modules/scolarite/routes/scolarite.workflows.routes');
 const scolariteDocumentsRoutes = require('./modules/scolarite/routes/scolarite.documents.routes');
 const scolaritePdfRoutes = require('./modules/scolarite/routes/scolarite.pdf.routes');
 const scolariteSignatureRoutes = require('./modules/scolarite/routes/scolarite.signature.routes');
-const emploisRoutes = require('./modules/scolarite/routes/emplois.routes');
+const emploisRoutes = require('./modules/scolarite/routes/scolarite.salles.intelligente.routes');
 const presencesRoutes = require('./modules/scolarite/routes/scolarite.presences.routes');
 const alertesRoutes = require('./modules/scolarite/routes/scolarite.alertes.routes');
 const sessionsRoutes = require('./modules/scolarite/routes/scolarite.sessions.routes');
@@ -114,7 +113,6 @@ app.use('/api/student', calendrierRoutes);
 // --- Scolarité ---
 app.use('/api/scolarite', scolariteDashboardRoutes);
 app.use('/api/scolarite', scolariteDemandesRoutes);
-app.use('/api/scolarite', scolariteWorkflowsRoutes);
 app.use('/api/scolarite', scolariteDocumentsRoutes);
 app.use('/api/scolarite', scolaritePdfRoutes);
 app.use('/api/scolarite', scolariteSignatureRoutes);
