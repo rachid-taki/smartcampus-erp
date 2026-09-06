@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -10,21 +10,12 @@ import {
   PenLine,
   Presentation,
   Umbrella,
+  Loader2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import {
-  EVENTS,
-  EVENT_TYPE_CONFIG,
-  academicYearOf,
-  nextAcademicYear,
-  daysUntil,
-  eventEnd,
-  formatShort,
-  isOngoing,
-  parseDate,
-  startOfDay,
-} from "../../../data/academicCalendar";
-import type { EventType } from "../../../data/academicCalendar";
+import { getCalendrier, type CalendrierEvent } from "../../../services/calendrier.service";
+
+type EventType = "enseignement" | "controle" | "examen" | "deliberation" | "vacances" | "fete" | "soutenance";
 
 const TYPE_ICONS: Record<EventType, LucideIcon> = {
   enseignement: BookOpen,
@@ -36,18 +27,71 @@ const TYPE_ICONS: Record<EventType, LucideIcon> = {
   soutenance: Presentation,
 };
 
+const EVENT_TYPE_CONFIG: Record<EventType, { label: string; dot: string; tile: string }> = {
+  enseignement: { label: "Enseignement", dot: "bg-blue-500", tile: "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-300" },
+  controle: { label: "Contrôle", dot: "bg-amber-500", tile: "bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-300" },
+  examen: { label: "Examen", dot: "bg-rose-500", tile: "bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-300" },
+  deliberation: { label: "Délibération", dot: "bg-emerald-500", tile: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-300" },
+  vacances: { label: "Vacances", dot: "bg-slate-400", tile: "bg-slate-50 text-slate-600 dark:bg-slate-800 dark:text-slate-300" },
+  fete: { label: "Fête", dot: "bg-purple-500", tile: "bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-300" },
+  soutenance: { label: "Soutenance", dot: "bg-indigo-500", tile: "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-300" },
+};
+
+function parseDate(s: string) {
+  const [y, m, d] = s.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+function startOfDay(d: Date) {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function eventEnd(e: CalendrierEvent) {
+  return startOfDay(parseDate(e.end || e.start));
+}
+
+function isOngoing(e: CalendrierEvent, today: Date) {
+  const t = today.getTime();
+  return parseDate(e.start).getTime() <= t && eventEnd(e).getTime() >= t;
+}
+
+function daysUntil(e: CalendrierEvent, today: Date) {
+  return Math.ceil((parseDate(e.start).getTime() - today.getTime()) / 86400000);
+}
+
+function formatShort(s: string) {
+  return parseDate(s).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+}
+
 export default function MiniCalendar() {
   const navigate = useNavigate();
   const today = startOfDay(new Date());
+  const [loading, setLoading] = useState(true);
+  const [events, setEvents] = useState<CalendrierEvent[]>([]);
+  const [currentYear, setCurrentYear] = useState<string>("");
 
-  const year = useMemo(() => {
-    const ay = academicYearOf(new Date());
-    return EVENTS[ay].some((e) => eventEnd(e).getTime() >= today.getTime())
-      ? ay
-      : nextAcademicYear(ay);
-  }, [today]);
+  useEffect(() => {
+    loadCalendrier();
+  }, []);
 
-  const yearEvents = EVENTS[year] ?? [];
+  const loadCalendrier = async () => {
+    try {
+      setLoading(true);
+      const data = await getCalendrier();
+      setEvents(data.events);
+      if (data.annees.length > 0) {
+        setCurrentYear(data.annees[0]);
+      }
+    } catch (error) {
+      console.error("Erreur chargement mini calendrier:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const yearEvents = useMemo(() => {
+    return events.filter((e) => !currentYear || e.annee === currentYear || !e.annee);
+  }, [events, currentYear]);
 
   const ongoing = useMemo(
     () => yearEvents.filter((e) => isOngoing(e, today)),
@@ -63,6 +107,15 @@ export default function MiniCalendar() {
     [yearEvents, today]
   );
 
+  if (loading) {
+    return (
+      <div className="card flex flex-col items-center justify-center gap-3 p-8">
+        <Loader2 className="h-6 w-6 animate-spin text-primary-600" />
+        <p className="text-[11px] text-slate-500 dark:text-slate-400">Chargement...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="card flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -75,7 +128,7 @@ export default function MiniCalendar() {
               Calendrier académique
             </h3>
             <p className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-              Année {year}
+              Année {currentYear}
             </p>
           </div>
         </div>

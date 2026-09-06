@@ -21,6 +21,7 @@ const studentRoutes = require("./modules/student/routes/student.routes");
 const assistantRoutes = require("./modules/assistant/routes/assistant.routes");
 const notificationRoutes = require("./modules/notification/routes/notification.routes");
 const scolariteMessagingRoutes = require("./modules/scolarite/routes/messaging.routes");
+const calendrierRoutes = require('./modules/student/routes/calendrier.routes');
 
 // ═══════════════════════════════════════════════════════
 // SCOLARITÉ (depuis feature/scolarite)
@@ -104,6 +105,7 @@ app.use("/api/student", studentRoutes);
 app.use("/api/student/assistant", assistantRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/scolarite/messages", scolariteMessagingRoutes);
+app.use('/api/student', calendrierRoutes);
 
 
 // ...

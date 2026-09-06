@@ -4,7 +4,7 @@ import {
   LayoutDashboard, Inbox, GitMerge, FolderOpen, Menu, X, Bell, ChevronDown,
   Search, Settings, LogOut, User, ChevronsLeft, ChevronsRight, Moon, Sun,
   Building2, LayoutGrid, ArrowLeftRight, HelpCircle, BrainCircuit, QrCode,
-  CalendarDays, AlertTriangle, FileText, ArrowRight, WifiOff, Check, Clock
+  CalendarDays, AlertTriangle, FileText, ArrowRight, WifiOff, Check, Clock,MessageSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,12 +17,13 @@ import GestionEmplois from '../pages/GestionEmplois';
 import GestionSessions from '../pages/GestionSessions';
 import SuiviPresences from '../pages/SuiviPresences';
 import AlertesIA from '../pages/AlertesIA';
+import Messaging from '../pages/Messaging';
 
 const CLUBS_PATH = '/clubs';
 const API_BASE = 'http://localhost:3000/api';
 const NOTIF_POLL_INTERVAL_MS = 30000; // 30s. Swap for a socket.io listener if you want true real-time.
 
-type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles' | 'emplois' | 'sessions' | 'presences' | 'alertes';
+type TabKey = 'dashboard' | 'demandes' | 'workflows' | 'documents' | 'salles' | 'emplois' | 'sessions' | 'presences' | 'alertes'| 'messaging';
 
 interface NotificationItem {
   id_notification: string;
@@ -46,6 +47,7 @@ const NAV_GROUPS = [
       { key: 'demandes', label: 'Demandes Étudiantes', icon: Inbox },
       { key: 'documents', label: 'Gestion Documentaire', icon: FolderOpen },
       { key: 'workflows', label: 'Moteur de Workflows', icon: GitMerge },
+      { key: 'messaging', label: 'Messagerie', icon: MessageSquare }, 
     ]
   },
   {
@@ -70,6 +72,7 @@ const PAGE_TITLES: Record<TabKey, { title: string; subtitle: string }> = {
   demandes: { title: 'Traitement des demandes', subtitle: 'Validation des demandes administratives' },
   workflows: { title: 'Workflows', subtitle: 'Processus de validation' },
   documents: { title: 'Base documentaire', subtitle: 'Documents officiels et archives' },
+  messaging: { title: 'Messagerie', subtitle: 'Communication avec les étudiants' }, 
   salles: { title: 'Salles Intelligentes', subtitle: 'Supervision et état des salles' },
   emplois: { title: 'Emplois du Temps (IA)', subtitle: 'Génération automatique via extraction intelligente' },
   sessions: { title: 'Sessions de Cours', subtitle: 'Gestion des cours et plannings' },
@@ -267,6 +270,7 @@ export default function ScolariteLayout() {
       case 'demandes': return <ValidationDemandes />;
       case 'workflows': return <GestionWorkflows />;
       case 'documents': return <GestionDocumentaire />;
+      case 'messaging': return <Messaging />;
       case 'salles': return <GestionSallesIntelligente onNavigateToEmplois={() => go('emplois')} />;
       case 'emplois': return <GestionEmplois />;
       case 'sessions': return <GestionSessions />;
