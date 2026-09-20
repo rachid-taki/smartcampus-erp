@@ -92,7 +92,7 @@ export default function RoleSelector() {
       </div>
 
       <p className="text-center text-xs mt-10" style={{ color: "#9AA6C4" }}>
-        © {new Date().getFullYear()} SmartCampus ERP — Université Ibn Zohr
+        © {new Date().getFullYear()} SmartCampus ERP — ENSIASD Université Ibn Zohr
       </p>
     </div>
   );

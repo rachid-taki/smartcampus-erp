@@ -1,0 +1,61 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Employé (Prof, Staff)" as employe
+actor "Responsable RH" as rh
+actor "Super Admin" as admin
+actor "Système (Email)" as mail <<System>>
+
+package "Authentification & Profil" {
+  usecase "Se connecter (email + mot de passe)" as UC_Login
+  usecase "Consulter son profil employé" as UC_ProfilEmp
+  usecase "Consulter le tableau de bord RH (KPIs)" as UC_DashRH
+}
+
+package "Portail Employé" {
+  usecase "Demander un congé (normal / exceptionnel / maladie)" as UC_Conge
+  usecase "Demander une attestation (Travail / Salaire)" as UC_DemandeAttest
+  usecase "Déclarer des heures supplémentaires" as UC_HeuresSup
+  usecase "Demander une mission" as UC_Mission
+  usecase "Suivre l'état de ses demandes RH" as UC_SuiviRH
+  usecase "Télécharger ses attestations signées" as UC_TelechAttest
+}
+
+package "Administration RH" {
+  usecase "Traiter les congés et demandes" as UC_TraiterRH
+  usecase "Gérer la liste des employés" as UC_GererEmp
+  usecase "Générer & Signer les attestations RH (PDF)" as UC_SignRH
+  usecase "Envoyer une communication interne (Mass Mailing BCC)" as UC_Com
+  usecase "Consulter les statistiques d'absences" as UC_StatsAbs
+}
+
+package "Supervision" {
+  usecase "Auditer les actions RH" as UC_AuditRH
+}
+
+employe --> UC_Login
+employe --> UC_ProfilEmp
+employe --> UC_Conge
+employe --> UC_DemandeAttest
+employe --> UC_HeuresSup
+employe --> UC_Mission
+employe --> UC_SuiviRH
+employe --> UC_TelechAttest
+
+rh --> UC_Login
+rh --> UC_DashRH
+rh --> UC_TraiterRH
+rh --> UC_GererEmp
+rh --> UC_SignRH
+rh --> UC_Com
+rh --> UC_StatsAbs
+
+admin --> UC_Login
+admin --> UC_AuditRH
+
+UC_Conge ..> UC_SuiviRH : <<include>>
+UC_TraiterRH .> UC_SignRH : <<extend>> (Si Validée)
+UC_SignRH ..> mail : Déclenche envoi email
+UC_DemandeAttest .> UC_SignRH : <<include>>
+@enduml

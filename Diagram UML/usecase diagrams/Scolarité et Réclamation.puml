@@ -1,0 +1,91 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Étudiant" as etud
+actor "Staff Scolarité" as scolarite
+actor "Enseignant (Professeur)" as prof
+
+package "Authentification & Profil" {
+  usecase "Se connecter (email + mot de passe)" as UC_Login
+  usecase "Consulter / modifier son profil" as UC_Profil
+  usecase "Consulter le calendrier académique" as UC_Calendrier
+  usecase "Consulter ses notifications" as UC_Notif
+}
+
+package "Guichet Administratif" {
+  usecase "Soumettre une demande administrative" as UC_Demande
+  usecase "Joindre des documents (PDF)" as UC_JoinDoc
+  usecase "Suivre l'état de ses demandes" as UC_SuiviDemande
+  usecase "Télécharger ses documents officiels" as UC_Telecharger
+  usecase "Gérer les workflows de validation" as UC_Workflow
+  usecase "Générer des documents officiels (PDF)" as UC_GenererPDF
+  usecase "Apposer la signature électronique" as UC_Signature
+}
+
+package "Réclamations & Santé" {
+  usecase "Soumettre une réclamation (AMO, Bourse, Email)" as UC_ReclamationAdmin
+  usecase "Soumettre une réclamation de Note" as UC_ReclamationNote
+  usecase "Déposer un certificat médical" as UC_DepotCertif
+  usecase "Demander une vérification d'examen" as UC_VerifExam
+  usecase "Traiter les réclamations" as UC_TraiterReclam
+  usecase "Valider un certificat médical" as UC_ValiderCertif
+  usecase "Transmettre les vérifications aux professeurs" as UC_Transmettre
+}
+
+package "Présences & Messagerie" {
+  usecase "Pointer sa présence (RFID / QR / Facial)" as UC_Pointage
+  usecase "Consulter son historique de présences" as UC_HistPres
+  usecase "Envoyer un message à la scolarité" as UC_MsgEtud
+  usecase "Répondre aux messages étudiants" as UC_MsgScol
+}
+
+package "Assistant IA" {
+  usecase "Poser une question à l'assistant IA" as UC_Assistant
+  usecase "Rechercher dans la base de connaissances" as UC_KB
+}
+
+package "Espace Enseignant" {
+  usecase "Traiter les réclamations de notes" as UC_TraiterNotes
+  usecase "Planifier/Gérer les consultations d'examens" as UC_Consultation
+  usecase "Valider les absences étudiants" as UC_ValiderAbsences
+}
+
+etud --> UC_Login
+etud --> UC_Profil
+etud --> UC_Calendrier
+etud --> UC_Notif
+etud --> UC_Demande
+etud --> UC_JoinDoc
+etud --> UC_SuiviDemande
+etud --> UC_Telecharger
+etud --> UC_ReclamationAdmin
+etud --> UC_ReclamationNote
+etud --> UC_DepotCertif
+etud --> UC_VerifExam
+etud --> UC_Pointage
+etud --> UC_HistPres
+etud --> UC_MsgEtud
+etud --> UC_Assistant
+
+scolarite --> UC_Login
+scolarite --> UC_Workflow
+scolarite --> UC_GenererPDF
+scolarite --> UC_Signature
+scolarite --> UC_TraiterReclam
+scolarite --> UC_ValiderCertif
+scolarite --> UC_Transmettre
+scolarite --> UC_MsgScol
+scolarite --> UC_Notif
+
+prof --> UC_TraiterNotes
+prof --> UC_Consultation
+prof --> UC_ValiderAbsences
+
+UC_Demande .> UC_JoinDoc : <<include>>
+UC_Workflow .> UC_GenererPDF : <<include>>
+UC_GenererPDF .> UC_Signature : <<extend>>
+UC_ReclamationNote <.. UC_TraiterNotes : <<extend>>
+UC_VerifExam .> UC_Transmettre : <<include>>
+UC_Assistant .> UC_KB : <<include>>
+@enduml

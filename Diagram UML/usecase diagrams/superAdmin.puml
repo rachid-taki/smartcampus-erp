@@ -1,0 +1,37 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Super Admin" as admin
+actor "Système" as sys <<System>>
+
+package "Gestion des Accès (RBAC)" {
+  usecase "Se connecter (email + mot de passe)" as UC_Login
+  usecase "Gérer les utilisateurs (créer, désactiver)" as UC_Users
+  usecase "Gérer les rôles" as UC_Roles
+  usecase "Gérer les permissions par module" as UC_Perms
+  usecase "Attribuer un rôle à un utilisateur" as UC_AssignRole
+}
+
+package "Configuration & Supervision" {
+  usecase "Configurer les paramètres système" as UC_Config
+  usecase "Consulter les indicateurs globaux" as UC_Dash
+  usecase "Consulter le journal d'audit" as UC_Audit
+  usecase "Filtrer les logs (utilisateur, module, date)" as UC_FiltreAudit
+}
+
+admin --> UC_Login
+admin --> UC_Users
+admin --> UC_Roles
+admin --> UC_Perms
+admin --> UC_AssignRole
+admin --> UC_Config
+admin --> UC_Dash
+admin --> UC_Audit
+
+UC_Users .> UC_AssignRole : <<include>>
+UC_Roles .> UC_Perms : <<include>>
+UC_Audit .> UC_FiltreAudit : <<extend>>
+UC_Users ..> sys : Écrit dans audit_log
+UC_Config ..> sys : parametre_systeme
+@enduml

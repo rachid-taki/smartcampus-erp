@@ -1,0 +1,39 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Président de Club" as president
+actor "Staff Scolarité" as scolarite
+actor "Moteur IA (Gemini)" as ia <<System>>
+
+package "Vie Étudiante" {
+  usecase "Gérer le budget de son club" as UC_Budget
+  usecase "Soumettre une demande d'événement / matériel" as UC_Event
+  usecase "Traiter les demandes des clubs" as UC_TraiterClubs
+}
+
+package "Smart Campus & Salles" {
+  usecase "Extraire les emplois du temps (OCR PDF)" as UC_ImportPDF
+  usecase "Fusionner des salles physiques" as UC_Fusion
+  usecase "Pointer sa présence (RFID/QR)" as UC_RFID
+}
+
+package "Supervision IA" {
+  usecase "Détecter une Salle Fantôme (Réservée mais vide)" as UC_Fantome
+  usecase "Détecter une Surcharge de Capacité" as UC_Surcharge
+}
+
+president --> UC_Event
+president --> UC_Budget
+
+scolarite --> UC_TraiterClubs
+scolarite --> UC_ImportPDF
+scolarite --> UC_Fusion
+
+ia --> UC_Fantome
+ia --> UC_Surcharge
+ia .up.> UC_ImportPDF : <<execute>>
+
+UC_Fantome .> UC_RFID : <<analyse>>
+UC_Surcharge .> UC_RFID : <<analyse>>
+@enduml

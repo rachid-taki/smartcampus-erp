@@ -1,0 +1,60 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Professeur" as prof
+actor "Étudiant" as etud
+actor "Staff Scolarité" as scolarite
+actor "Système (Backend)" as sys <<System>>
+
+package "Authentification & Profil" {
+  usecase "Se connecter (email + mot de passe)" as UC_Login
+  usecase "Consulter ses notifications" as UC_Notif
+}
+
+package "Pédagogie & Réclamations" {
+  usecase "Soumettre une réclamation de note" as UC_RecNote
+  usecase "Traiter une réclamation (commentaires + décision)" as UC_TraiterNote
+  usecase "Planifier une consultation d'examen" as UC_PlanifierConsult
+  usecase "Joindre un justificatif à la réponse" as UC_JoindreJustif
+}
+
+package "Gestion des Séances (Smart Campus)" {
+  usecase "Consulter son planning (séances à venir)" as UC_Planning
+  usecase "Faire l'appel (validation groupée des absences)" as UC_Appel
+  usecase "Signaler un retard étudiant" as UC_Retard
+  usecase "Résoudre un conflit de planning (séances superposées)" as UC_Conflit
+  usecase "Clôturer un module avant la fin du semestre" as UC_Cloturer
+  usecase "Réserver une salle pour un rattrapage" as UC_ReservSalle
+}
+
+package "Communication" {
+  usecase "Notifier ses filières / étudiants" as UC_Notifier
+  usecase "Consulter la messagerie scolarité" as UC_MsgScol
+}
+
+etud --> UC_Login
+etud --> UC_RecNote
+etud --> UC_Notif
+
+prof --> UC_Login
+prof --> UC_Planning
+prof --> UC_Appel
+prof --> UC_Retard
+prof --> UC_Conflit
+prof --> UC_Cloturer
+prof --> UC_ReservSalle
+prof --> UC_TraiterNote
+prof --> UC_PlanifierConsult
+prof --> UC_JoindreJustif
+prof --> UC_Notifier
+prof --> UC_MsgScol
+prof --> UC_Notif
+
+scolarite --> UC_Notifier
+
+UC_TraiterNote .> UC_RecNote : <<répondre>>
+UC_TraiterNote ..> UC_JoindreJustif : <<extend>>
+UC_Appel ..> sys : Enregistre présence (Present / Retard / Absent)
+UC_Notifier ..> sys : Envoie notifications push
+@enduml
